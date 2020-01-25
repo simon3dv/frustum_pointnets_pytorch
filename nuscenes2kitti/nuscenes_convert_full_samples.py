@@ -219,5 +219,8 @@ if __name__ == '__main__':
             if i < args.numbers/2:
                 f_train.write(seqname+'\n')
             else:
-                f.val.write(seqname+'\n')
+                f_val.write(seqname+'\n')
+        f_train.close()
+        f_val.close()
+
 
