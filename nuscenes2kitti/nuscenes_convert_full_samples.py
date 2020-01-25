@@ -116,7 +116,7 @@ if __name__ == '__main__':
             # each sensor_data corresponds to one specific image in the dataset
             sensor_data = nusc.get('sample_data', present_sample['data'][present_sensor])
             data_path, box_list, cam_intrinsic = nusc.get_sample_data(present_sample['data'][present_sensor], getattr(BoxVisibility,truncation_level))
-            calib['CAM_FRONT'] = cam_intrinsic
+            calib[present_sensor] = cam_intrinsic
             img_file = data_root + sensor_data['filename']
             seqname = str(frame_counter).zfill(6)
             output_label_file = sensor_label_output_dir  +'/' + seqname + '.txt'
@@ -164,7 +164,7 @@ if __name__ == '__main__':
             # Get boxes in lidar frame.
             lidar_path, boxes, cam_intrinsic = nusc.get_sample_data(
                 present_sample['data']['LIDAR_TOP'])
-            #calib['LIDAR_TOP'] = cam_intrinsic
+            calib['LIDAR_TOP'] = cam_intrinsic
 
             # Get aggregated point cloud in lidar frame.
             sample_rec = nusc.get('sample', sd_record['sample_token'])
