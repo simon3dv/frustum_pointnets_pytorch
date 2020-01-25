@@ -9,8 +9,9 @@
 
 split = 'v1.0-mini'
 start_index = 0
-data_root = '/media/aming/2400391B0038F580/nuScenes/' + split + '/'
-out_root = '/media/aming/2400391B0038F580/nuScenes/nuscenes2kitti/'
+end_index = 10
+data_root = 'dataset/nuScenes/' + split + '/'
+out_root = 'dataset/nuscenes2kitti/'
 img_output_root = out_root +split+'/'
 label_output_root = out_root+split+'/'
 velodyne_output_root = out_root+split+'/LIDAR_TOP/'
