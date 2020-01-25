@@ -7,27 +7,6 @@
 # regardless of attributes indexed 2(if blocked) in KITTI label
 # however, object minimum visibility level is adjustable
 
-split = 'v1.0-mini'
-start_index = 0
-end_index = -1
-sets_root = 'dataset/nuScenes2KITTI/image_sets/'
-data_root = 'dataset/' + split + '/'
-out_root = 'dataset/nuScenes2KITTI/'
-img_output_root = out_root +split+'/'
-label_output_root = out_root+split+'/'
-velodyne_output_root = out_root+split+'/LIDAR_TOP/'
-calib_output_root = out_root+split+'/calib/'
-min_visibility_level = '2'
-truncation_level = 'ANY'
-'''
-    """ Enumerates the various level of box visibility in an image """
-    ALL = 0  # Requires all corners are inside the image.
-    ANY = 1  # Requires at least one corner visible in the image.
-    NONE = 2  # Requires no corners to be inside, i.e. box can be fully outside the image.
-'''
-delete_dontcare_objects = True
-
-
 from nuscenes.nuscenes import NuScenes
 from nuscenes.utils.geometry_utils import BoxVisibility, view_points
 import numpy as np
@@ -37,6 +16,7 @@ import shutil
 import ipdb
 from tqdm import tqdm
 from nuscenes.utils.data_classes import LidarPointCloud
+import argparse
 category_reflection = \
 {
     'human.pedestrian.adult': 'Pedestrian',
@@ -66,6 +46,31 @@ category_reflection = \
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--version',type=str,default='v1.0-mini')
+    parser.add_argument('--start_index', type=int, default='0')
+    parser.add_argument('--numbers',type=int,default='-1')
+    args = parser.parse_args()
+    split = args.version
+    start_index = 0
+    end_index = start_index + args.numbers
+    sets_root = 'dataset/nuScenes2KITTI/image_sets/'
+    data_root = 'dataset/' + split + '/'
+    out_root = 'dataset/nuScenes2KITTI/'
+    img_output_root = out_root + split + '/'
+    label_output_root = out_root + split + '/'
+    velodyne_output_root = out_root + split + '/LIDAR_TOP/'
+    calib_output_root = out_root + split + '/calib/'
+    min_visibility_level = '2'
+    truncation_level = 'ANY'
+    '''
+        """ Enumerates the various level of box visibility in an image """
+        ALL = 0  # Requires all corners are inside the image.
+        ANY = 1  # Requires at least one corner visible in the image.
+        NONE = 2  # Requires no corners to be inside, i.e. box can be fully outside the image.
+    '''
+    delete_dontcare_objects = True
+
     nusc = NuScenes(version=split, dataroot=data_root, verbose=True)
     sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
     #sensor_list = ['CAM_FRONT']
