@@ -9,9 +9,10 @@
 
 split = 'v1.0-mini'
 start_index = 0
+end_index = 10
 sets_root = 'dataset/image_sets/'
 data_root = 'dataset/' + split + '/'
-out_root = 'dataset/nuscenes2kitti/'
+out_root = 'dataset/nuScenes2KITTI/'
 img_output_root = out_root +split+'/'
 label_output_root = out_root+split+'/'
 velodyne_output_root = out_root+split+'/LIDAR_TOP/'
@@ -70,6 +71,10 @@ if __name__ == '__main__':
     #sensor_list = ['CAM_FRONT']
     frame_counter = start_index
 
+    if os.path.isdir(sets_root) == True:
+        print('previous sets output found. deleting...')
+        shutil.rmtree(sets_root)
+    os.makedirs(sets_root)
     if os.path.isdir(img_output_root) == True:
         print('previous image output found. deleting...')
         shutil.rmtree(img_output_root)
@@ -79,11 +84,11 @@ if __name__ == '__main__':
         shutil.rmtree(label_output_root)
     os.makedirs(label_output_root)
     if os.path.isdir(velodyne_output_root) == True:
-        print('previous label output found. deleting...')
+        print('previous velodyne output found. deleting...')
         shutil.rmtree(velodyne_output_root)
     os.makedirs(velodyne_output_root)
     if os.path.isdir(calib_output_root) == True:
-        print('previous label output found. deleting...')
+        print('previous calib output found. deleting...')
         shutil.rmtree(calib_output_root)
     os.makedirs(calib_output_root)
 
@@ -102,7 +107,6 @@ if __name__ == '__main__':
     print('Running...(saving to {})'.format(os.path.dirname(img_output_root)))
     seqname_list = []
     for present_sample in tqdm(nusc.sample):
-
         calib = {}
         # converting image data from 6 cameras (in the sensor list)
         for present_sensor in sensor_list:
@@ -196,7 +200,8 @@ if __name__ == '__main__':
                         line+='\n'
                     output_f.write(line)
         frame_counter += 1
-
+        if frame_counter == end_index:
+            break
     with open(sets_root + split + '.txt',"wb") as f:
         for seqname in seqname_list:
             f.write(seqname+'\n',encoding="utf-8")
