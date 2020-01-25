@@ -77,18 +77,11 @@ if __name__ == '__main__':
     #sensor_list = ['CAM_FRONT']
     frame_counter = start_index
 
-    if os.path.isdir(sets_root) == True:
-        print('previous sets output found. deleting...')
-        shutil.rmtree(sets_root)
-    os.makedirs(sets_root)
+    os.makedirs(sets_root,exist_ok=True)
     if os.path.isdir(img_output_root) == True:
         print('previous image output found. deleting...')
         shutil.rmtree(img_output_root)
     os.makedirs(img_output_root)
-    if os.path.isdir(label_output_root) == True:
-        print('previous label output found. deleting...')
-        shutil.rmtree(label_output_root)
-    os.makedirs(label_output_root)
     if os.path.isdir(velodyne_output_root) == True:
         print('previous velodyne output found. deleting...')
         shutil.rmtree(velodyne_output_root)
@@ -112,6 +105,7 @@ if __name__ == '__main__':
 
     print('Running...(saving to {})'.format(os.path.dirname(img_output_root)))
     seqname_list = []
+    print('Numbers:',args.numbers)
     for present_sample in tqdm(nusc.sample):
         calib = {}
         # converting image data from 6 cameras (in the sensor list)

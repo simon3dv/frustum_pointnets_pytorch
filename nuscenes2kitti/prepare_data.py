@@ -205,6 +205,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         None (will write a .pickle file to the disk)
     '''
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split)
+    sensor = 'CAM_FRONT'
     data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
 
     id_list = []  # int number
@@ -223,12 +224,12 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
     for data_idx in data_idx_list:
         print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx)  # 3 by 4 matrix
-        objects = dataset.get_label_objects(data_idx)
+        objects = dataset.get_label_objects(sensor, data_idx)
         pc_velo = dataset.get_lidar(data_idx)
         pc_rect = np.zeros_like(pc_velo)
         pc_rect[:, 0:3] = calib.project_velo_to_rect(pc_velo[:, 0:3])
         pc_rect[:, 3] = pc_velo[:, 3]
-        img = dataset.get_image(data_idx)
+        img = dataset.get_image(sensor, data_idx)
         img_height, img_width, img_channel = img.shape
         _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:, 0:3],
                                                                  calib, 0, 0, img_width, img_height, True)
