@@ -99,6 +99,7 @@ if __name__ == '__main__':
         os.makedirs(sensor_label_output_dir)
 
     print('Running...(saving to {})'.format(os.path.dirname(img_output_root)))
+    seqname_list = []
     for present_sample in tqdm(nusc.sample):
 
         calib = {}
@@ -113,6 +114,7 @@ if __name__ == '__main__':
             calib['CAM_FRONT'] = cam_intrinsic
             img_file = data_root + sensor_data['filename']
             seqname = str(frame_counter).zfill(6)
+            seqname_list.append(seqname)
             output_label_file = sensor_label_output_dir  +'/' + seqname + '.txt'
             with open(output_label_file, 'a') as output_f:
                 for box in box_list:
@@ -193,3 +195,7 @@ if __name__ == '__main__':
                         line+='\n'
                     output_f.write(line)
         frame_counter += 1
+
+    with open(out_root + split + '.txt',"wb") as f:
+        for seqname in seqname_list:
+            f.write(seqname+'\n',encoding="utf-8")

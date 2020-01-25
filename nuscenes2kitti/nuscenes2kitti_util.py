@@ -1,4 +1,4 @@
-""" Helper methods for loading and parsing KITTI data.
+""" Helper methods for loading and parsing nuscenes2kitti data.
 
 Author: Charles R. Qi
 Date: September 2017

@@ -1,7 +1,4 @@
-''' Helper class and functions for loading KITTI objects
-
-Author: Charles R. Qi
-Date: September 2017
+''' Helper class and functions for loading nuscenes2kitti objects
 '''
 from __future__ import print_function
 
