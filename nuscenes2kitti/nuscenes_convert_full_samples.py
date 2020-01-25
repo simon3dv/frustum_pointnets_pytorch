@@ -55,7 +55,7 @@ if __name__ == '__main__':
     split = args.version
     start_index = 0
     end_index = start_index + args.numbers
-    data_root = 'dataset/nuScenes/'
+    data_root = 'dataset/nuScenes/'+split+'/'
     sets_root = 'dataset/nuScenes2KITTI/image_sets/'
     out_root = 'dataset/nuScenes2KITTI/'
     img_output_root = out_root + split + '/'
