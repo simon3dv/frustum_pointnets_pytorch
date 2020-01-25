@@ -27,8 +27,8 @@ parser.add_argument('--batch_size', type=int, default=32, help='Batch Size durin
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
-parser.add_argument('--decay_step', type=int, default=11, help='Decay step for lr decay [default: 60]')
-parser.add_argument('--decay_rate', type=float, default=0.5, help='Decay rate for lr decay [default: 0.7]')
+parser.add_argument('--decay_step', type=int, default=20, help='Decay step for lr decay [default: 60]')
+parser.add_argument('--decay_rate', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
 parser.add_argument('--no_intensity', action='store_true', help='Only use XYZ for training')
 parser.add_argument('--restore_model_path', default=None, help='Restore model path e.g. log/model.ckpt [default: None]')
 parser.add_argument('--ckpt',type=str,default=None,help='Pre-trained model file')
@@ -37,6 +37,7 @@ parser.add_argument('--name', type=str, default='Default', help='tensorboard wri
 parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
 parser.add_argument('--debug', default=False, action='store_true',help='debug mode')
 parser.add_argument('--datatype', type=str, default='carpedcyc', help='caronly or carpedcyc')
+parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes')
 FLAGS = parser.parse_args()
 
 # Set training configurations

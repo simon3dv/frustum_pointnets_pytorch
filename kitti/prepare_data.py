@@ -44,7 +44,7 @@ def extract_pc_in_box2d(pc, box2d):
 def demo():
     import mayavi.mlab as mlab
     from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
-    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
+    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))=
     data_idx = 11
 
     # Load data from dataset

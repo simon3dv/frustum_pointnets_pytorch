@@ -14,6 +14,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import kitti_util as utils
+import shutil
+import ipdb
 
 try:
     raw_input          # Python 2
@@ -134,6 +136,23 @@ def show_image_with_boxes(img, objects, calib, show3d=True):
     Image.fromarray(img1).show()
     if show3d:
         Image.fromarray(img2).show()
+def return_image_with_boxes(img, objects, calib, show3d=True):
+    ''' Show image with 2D bounding boxes '''
+    img1 = np.copy(img) # for 2d bbox
+    img2 = np.copy(img) # for 3d bbox
+    for obj in objects:
+        if obj.type=='DontCare':continue
+        cv2.rectangle(img1, (int(obj.xmin),int(obj.ymin)),
+            (int(obj.xmax),int(obj.ymax)), (0,255,0), 2)
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P)
+        if np.sum(box3d_pts_2d==None)!=1:
+            img2 = utils.draw_projected_box3d(img2, box3d_pts_2d)
+    # Image.fromarray(img1).show()
+    if show3d:
+        # Image.fromarray(img2).show()
+        return img1,img2
+    else:
+        return img1
 
 def get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
@@ -201,24 +220,38 @@ def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
 
 def dataset_viz():
     dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
+    split = 'training'
+    save2ddir = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis2d')
+    save3ddir = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis3d')
+    if os.path.isdir(save2ddir) == True:
+        print('previous save2ddir found. deleting...')
+        shutil.rmtree(save2ddir)
+    os.makedirs(save2ddir)
+    if os.path.isdir(save3ddir) == True:
+        print('previous save3ddir found. deleting...')
+        shutil.rmtree(save3ddir)
+    os.makedirs(save3ddir)
 
     for data_idx in range(len(dataset)):
         # Load data from dataset
         objects = dataset.get_label_objects(data_idx)
         objects[0].print_object()
         img = dataset.get_image(data_idx)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_height, img_width, img_channel = img.shape
         print(('Image shape: ', img.shape))
-        pc_velo = dataset.get_lidar(data_idx)[:,0:3]
+        #pc_velo = dataset.get_lidar(data_idx)[:,0:3]
         calib = dataset.get_calibration(data_idx)
 
         # Draw 2d and 3d boxes on image
-        show_image_with_boxes(img, objects, calib, False)
-        raw_input()
+        # show_image_with_boxes(img, objects, calib, False)
+        img1,img2= return_image_with_boxes(img, objects, calib, True)
+        cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
+        cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
+        # raw_input()
         # Show all LiDAR points. Draw 3d box in LiDAR point cloud
-        show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
-        raw_input()
+        # show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
+        # raw_input()
 
 if __name__=='__main__':
     import mayavi.mlab as mlab
