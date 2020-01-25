@@ -161,46 +161,44 @@ if __name__ == '__main__':
             """ read from api """
             sd_record = nusc.get('sample_data', present_sample['data']['LIDAR_TOP'])
 
-            # Get boxes in lidar frame.
-            lidar_path, boxes, cam_intrinsic = nusc.get_sample_data(
-                present_sample['data']['LIDAR_TOP'])
-            calib['LIDAR_TOP'] = cam_intrinsic
+        # Get boxes in lidar frame.
+        lidar_path, boxes, cam_intrinsic = nusc.get_sample_data(
+            present_sample['data']['LIDAR_TOP'])
+        calib['LIDAR_TOP'] = cam_intrinsic
 
-            # Get aggregated point cloud in lidar frame.
-            sample_rec = nusc.get('sample', sd_record['sample_token'])
-            chan = sd_record['channel']
-            ref_chan = 'LIDAR_TOP'
-            pc, times = LidarPointCloud.from_file_multisweep(nusc,sample_rec,chan,ref_chan,nsweeps=10)
+        # Get aggregated point cloud in lidar frame.
+        sample_rec = nusc.get('sample', sd_record['sample_token'])
+        chan = sd_record['channel']
+        ref_chan = 'LIDAR_TOP'
+        pc, times = LidarPointCloud.from_file_multisweep(nusc,sample_rec,chan,ref_chan,nsweeps=10)
 
-            lidar_path = os.path.join(velodyne_output_root, seqname+".bin")
-            pc.points.astype('float32').tofile(open(lidar_path, "wb"))
+        lidar_path = os.path.join(velodyne_output_root, seqname+".bin")
+        pc.points.astype('float32').tofile(open(lidar_path, "wb"))
 
-            info = {
-                "lidar_path": lidar_path,
-                "token": present_sample["token"],
-                # "timestamp": times,
-            }
+        info = {
+            "lidar_path": lidar_path,
+            "token": present_sample["token"],
+            # "timestamp": times,
+        }
             # = os.path.join(data_root, "sample_10sweeps/LIDAR_TOP",
             #                      present_sample['data']['LIDAR_TOP'] + ".bin")
             #pc.points.astype('float32').tofile(open(lidar_path, "wb"))
 
-            # save calib
-            print(calib)
-            output_calib_file = calib_output_root + seqname + '.txt'
-            with open(output_calib_file, 'a') as output_f:
-                sensor_list2 = sensor_list.copy()
-                sensor_list2.append('LIDAR_TOP')
-                for sensor in sensor_list2:
-                    line = "{}: ".format(sensor)
+        # save calib
+        print(calib)
+        output_calib_file = calib_output_root + seqname + '.txt'
+        with open(output_calib_file, 'a') as output_f:
+            for sensor in sensor_list:
+                line = "{}: ".format(sensor)
+                output_f.write(line)
+                for i in range(calib[sensor].shape[0]):
+                    line = ""
+                    for j in range(calib[sensor].shape[1]):
+                        line += str(calib[sensor][i,j])
+                        line += ' '
+                    if i==calib[sensor].shape[0]-1:
+                        line+='\n'
                     output_f.write(line)
-                    for i in range(calib[sensor].shape[0]):
-                        line = ""
-                        for j in range(calib[sensor].shape[1]):
-                            line += str(calib[sensor][i,j])
-                            line += ' '
-                        if i==calib[sensor].shape[0]-1:
-                            line+='\n'
-                        output_f.write(line)
         frame_counter += 1
         seqname_list.append(seqname)
         if frame_counter == end_index:
