@@ -51,11 +51,12 @@ if __name__ == '__main__':
     parser.add_argument('--start_index', type=int, default='0')
     parser.add_argument('--numbers',type=int,default='-1')
     args = parser.parse_args()
+
     split = args.version
     start_index = 0
     end_index = start_index + args.numbers
+    data_root = 'dataset/'
     sets_root = 'dataset/nuScenes2KITTI/image_sets/'
-    data_root = 'dataset/' + split + '/'
     out_root = 'dataset/nuScenes2KITTI/'
     img_output_root = out_root + split + '/'
     label_output_root = out_root + split + '/'
