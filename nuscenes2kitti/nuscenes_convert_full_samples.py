@@ -187,17 +187,19 @@ if __name__ == '__main__':
             # save calib
             output_calib_file = calib_output_root + seqname + '.txt'
             with open(output_calib_file, 'a') as output_f:
-                sensor = 'CAM_FRONT'
-                line = "{}: ".format(sensor)
-                output_f.write(line)
-                for i in range(calib[sensor].shape[0]):
-                    line = ""
-                    for j in range(calib[sensor].shape[1]):
-                        line += str(calib[sensor][i,j])
-                        line += ' '
-                    if i==calib[sensor].shape[0]-1:
-                        line+='\n'
+                sensor_list2 = sensor_list.copy()
+                sensor_list2.append('LIDAR_TOP')
+                for sensor in sensor_list2:
+                    line = "{}: ".format(sensor)
                     output_f.write(line)
+                    for i in range(calib[sensor].shape[0]):
+                        line = ""
+                        for j in range(calib[sensor].shape[1]):
+                            line += str(calib[sensor][i,j])
+                            line += ' '
+                        if i==calib[sensor].shape[0]-1:
+                            line+='\n'
+                        output_f.write(line)
         frame_counter += 1
         seqname_list.append(seqname)
         if frame_counter == end_index:
