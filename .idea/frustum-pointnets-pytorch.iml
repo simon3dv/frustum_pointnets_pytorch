@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$/../frustum-pointnets-pytorch">
-      <excludeFolder url="file://$MODULE_DIR$/../frustum-pointnets-pytorch/dataset" />
-      <excludeFolder url="file://$MODULE_DIR$/../frustum-pointnets-pytorch/kitti" />
-      <excludeFolder url="file://$MODULE_DIR$/../frustum-pointnets-pytorch/log" />
-      <excludeFolder url="file://$MODULE_DIR$/../frustum-pointnets-pytorch/train/detection_results_v1" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/dataset" />
+      <excludeFolder url="file://$MODULE_DIR$/kitti" />
+      <excludeFolder url="file://$MODULE_DIR$/log" />
+      <excludeFolder url="file://$MODULE_DIR$/nuscenes2kitti/output" />
+      <excludeFolder url="file://$MODULE_DIR$/train/detection_results_v1" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.7 (torch1.3tf2.0cu100)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
