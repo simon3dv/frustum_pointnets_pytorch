@@ -9,7 +9,7 @@
 
 split = 'v1.0-mini'
 start_index = 0
-end_index = 10
+sets_root = 'dataset/image_sets/'
 data_root = 'dataset/' + split + '/'
 out_root = 'dataset/nuscenes2kitti/'
 img_output_root = out_root +split+'/'
@@ -197,6 +197,6 @@ if __name__ == '__main__':
                     output_f.write(line)
         frame_counter += 1
 
-    with open(out_root + split + '.txt',"wb") as f:
+    with open(sets_root + split + '.txt',"wb") as f:
         for seqname in seqname_list:
             f.write(seqname+'\n',encoding="utf-8")

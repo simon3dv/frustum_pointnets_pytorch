@@ -345,12 +345,21 @@ def get_box3d_dim_statistics(idx_filename):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--demo', action='store_true', help='Run demo.')
-    parser.add_argument('--vis_label', action='store_true', help='Run vis_label.')
-    parser.add_argument('--gen_train', action='store_true', help='Generate train split frustum data with perturbed GT 2D boxes')
-    parser.add_argument('--gen_val', action='store_true', help='Generate val split frustum data with GT 2D boxes')
-    #parser.add_argument('--gen_val_rgb_detection', action='store_true', help='Generate val split frustum data with RGB detection 2D boxes')
-    parser.add_argument('--car_only', action='store_true', help='Only generate cars; otherwise cars, peds and cycs')
+    parser.add_argument('--demo', action='store_true',
+                        help='Run demo.')
+    parser.add_argument('--vis_label', action='store_true',
+                        help='Run vis_label.')
+    parser.add_argument('--gen_mini', action='store_true',
+                        help='Generate train split frustum data with perturbed GT 2D boxes')
+    #parser.add_argument('--gen_trainval', action='store_true',
+    #                    help='Generate trainval split frustum data with GT 2D boxes')
+    #parser.add_argument('--gen_test', action='store_true',
+    #                    help='Generate test split frustum data with GT 2D boxes')
+
+    #parser.add_argument('--gen_val_rgb_detection', action='store_true',
+    #                    help='Generate val split frustum data with RGB detection 2D boxes')
+    parser.add_argument('--car_only', action='store_true',
+                        help='Only generate cars; otherwise cars, peds and cycs')
     args = parser.parse_args()
 
     if args.demo:
@@ -367,18 +376,11 @@ if __name__ == '__main__':
         type_whitelist = ['Car', 'Pedestrian', 'Cyclist']
         output_prefix = 'frustum_carpedcyc_'
 
-    if args.gen_train:
+    if args.gen_mini:
         extract_frustum_data(\
-            os.path.join(BASE_DIR, 'image_sets/train.txt'),
-            'training',
-            os.path.join(BASE_DIR, output_prefix+'train.pickle'),
+            os.path.join(BASE_DIR, 'image_sets/v1.0-mini.txt'),
+            'v1.0-mini',
+            os.path.join(BASE_DIR, output_prefix+'v1.0-mini.pickle'),
             viz=False, perturb_box2d=True, augmentX=5,
             type_whitelist=type_whitelist)
 
-    if args.gen_val:
-        extract_frustum_data(\
-            os.path.join(BASE_DIR, 'image_sets/val.txt'),
-            'training',
-            os.path.join(BASE_DIR, output_prefix+'val.pickle'),
-            viz=False, perturb_box2d=False, augmentX=1,
-            type_whitelist=type_whitelist)
