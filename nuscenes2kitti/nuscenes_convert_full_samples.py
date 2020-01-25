@@ -185,6 +185,7 @@ if __name__ == '__main__':
             #pc.points.astype('float32').tofile(open(lidar_path, "wb"))
 
             # save calib
+            print(calib)
             output_calib_file = calib_output_root + seqname + '.txt'
             with open(output_calib_file, 'a') as output_f:
                 sensor_list2 = sensor_list.copy()
