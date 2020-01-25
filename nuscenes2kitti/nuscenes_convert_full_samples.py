@@ -207,6 +207,16 @@ if __name__ == '__main__':
         seqname_list.append(seqname)
         if frame_counter == end_index:
             break
+
     with open(sets_root + split + '.txt',"w") as f:
         for seqname in seqname_list:
             f.write(seqname+'\n')
+    if args.version == 'v1.0-trainval':
+        f_train = open('train.txt','w')
+        f_val = open('val.txt','w')
+        for i,seqname in enumerate(seqname_list):
+            if i < args.numbers/2:
+                f_train.write(seqname+'\n')
+            else:
+                f.val.write(seqname+'\n')
+
