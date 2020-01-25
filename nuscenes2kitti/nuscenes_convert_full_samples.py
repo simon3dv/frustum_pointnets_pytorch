@@ -202,6 +202,6 @@ if __name__ == '__main__':
         frame_counter += 1
         if frame_counter == end_index:
             break
-    with open(sets_root + split + '.txt',"wb") as f:
+    with open(sets_root + split + '.txt',"w") as f:
         for seqname in seqname_list:
-            f.write(seqname+'\n',encoding="utf-8")
+            f.write(seqname+'\n')
