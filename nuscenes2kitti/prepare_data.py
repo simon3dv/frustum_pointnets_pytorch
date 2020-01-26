@@ -195,7 +195,7 @@ def demo():
     ax.set_ylim(-20,20)
     """
 
-
+    '''
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
     show_image_with_boxes(img, objects, getattr(calib,sensor))
@@ -204,7 +204,7 @@ def demo():
     print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
     #show_lidar_with_boxes(pc_velo, objects, calib)
     #raw_input()
-''' 
+    '''
     show_lidar_with_boxes(pc_velo, objects, getattr(calib,sensor), False, img_width, img_height)
     raw_input()
 
