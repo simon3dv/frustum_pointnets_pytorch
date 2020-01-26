@@ -192,14 +192,14 @@ def demo():
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
-    plt.show()
+
     #raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
     show_image_with_boxes(img, objects, calib.CAM_FRONT)
 
-
+    plt.show()
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
