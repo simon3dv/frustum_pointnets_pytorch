@@ -216,7 +216,7 @@ def draw_lidar_simple(pc, color=None):
     mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
     return fig
 """
-def show_lidar_with_boxes(pc_velo, objects, view,
+def show_lidar_with_boxes(pc_velo, objects, calib, view,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''

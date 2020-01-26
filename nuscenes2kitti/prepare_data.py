@@ -258,7 +258,7 @@ def demo():
     #show_lidar_with_boxes(pc_velo, objects, calib)
     #raw_input()
     '''
-    show_lidar_with_boxes(pc_velo, objects, getattr(calib,sensor), False, img_width, img_height)
+    show_lidar_with_boxes(pc_velo, objects, calib, getattr(calib,sensor), False, img_width, img_height)
     raw_input()
 
     #plt.show()
