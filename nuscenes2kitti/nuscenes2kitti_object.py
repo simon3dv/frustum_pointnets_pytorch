@@ -211,7 +211,7 @@ def show_lidar_with_boxes(pc_velo, objects, view,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     #draw_lidar(pc_velo, fig=fig)
-
+    draw_lidar_simple(pc_velo, fig=fig)
     for obj in objects:
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
