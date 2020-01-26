@@ -185,8 +185,8 @@ def demo():
 
     #, ax = plt.subplots(1, 1, figsize=(9, 9))
     plt.scatter(pc_velo[0, :], pc_velo[1, :], c=pc_velo[2, :], s=1)
-    plt.imshow()
-    #raw_input()
+    #plt.imshow()
+    raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
