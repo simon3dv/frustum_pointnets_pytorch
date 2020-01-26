@@ -184,7 +184,7 @@ def demo():
 
     view = np.eye(4)
     pc_velo[:, :3] = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
-    pc_rect = calib.project_velo_to_rect(pc_velo)
+    #pc_rect = calib.project_velo_to_rect(pc_velo)
     fig = draw_lidar_simple(pc_velo)
     raw_input()
     '''
