@@ -181,7 +181,9 @@ def demo():
     view = np.eye(4)
     pc_velo = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
     # pc_rect = calib.project_velo_to_rect(pc_velo)
-    fig = draw_lidar_simple(pc_velo)
+    # fig = draw_lidar_simple(pc_velo)
+    _, ax = plt.subplots(1, 1, figsize=(9, 9))
+    ax.scatter(pc_velo[0, :], pc_velo[1, :], c=pc_velo[2, :], s=1)
     raw_input()
 
     # Draw 2d and 3d boxes on image
