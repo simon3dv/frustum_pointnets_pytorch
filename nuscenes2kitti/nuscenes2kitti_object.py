@@ -87,6 +87,42 @@ class nuscenes2kitti_object(object):
 
     def get_top_down(self, idx):
         pass
+def render_objects(img, objects, view=np.eye(4), colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155),linewidth=2):
+    def draw_rect(selected_corners, color):
+        prev = selected_corners[-1]
+        for corner in selected_corners:
+            cv2.line(img,
+                     (int(prev[0]), int(prev[1])),
+                     (int(corner[0]), int(corner[1])),
+                     color, linewidth=linewidth)
+            prev = corner
+
+    for obj in objects:
+        if obj.type=='DontCare':continue
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, view)
+
+        # Draw the sides
+        for i in range(4):
+            cv2.line(img2,
+                     (int(corners_2d.T[i][0]), int(corners_2d.T[i][1])),
+                     (int(corners_2d.T[i + 4][0]), int(corners_2d.T[i + 4][1])),
+                     colors[c][::-1], linewidth)
+
+        # Draw front (first 4 corners) and rear (last 4 corners) rectangles(3d)/lines(2d)
+        draw_rect(corners_2d.T[:4], colors[c][::-1])
+        draw_rect(corners_2d.T[4:], colors[c][::-1])
+
+        corners_2d = box3d_pts_2d
+
+        # Draw line indicating the front
+        center_bottom_forward = np.mean(corners_2d.T[0:2], axis=0)
+        center_bottom = np.mean(corners_2d.T[[0, 1, 2, 3]], axis=0)
+        # center_bottom_forward = np.mean(corners_2d.T[2:4], axis=0)
+        # center_bottom = np.mean(corners_2d.T[[2, 3, 7, 6]], axis=0)
+        cv2.line(img,
+                 (int(center_bottom[0]), int(center_bottom[1])),
+                 (int(center_bottom_forward[0]), int(center_bottom_forward[1])),
+                 colors[0][::-1], linewidth)
 
 def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))):
     ''' Show image with 2D bounding boxes '''
@@ -159,12 +195,45 @@ def get_lidar_in_image_fov(pc_velo, view, xmin, ymin, xmax, ymax,
     else:
         return imgfov_pc_velo
 
+def draw_gt_boxes3d(gt_boxes3d, fig, color=(1,1,1), line_width=1, draw_text=True, text_scale=(1,1,1), color_list=None):
+    ''' Draw 3D bounding boxes
+    Args:
+        gt_boxes3d: numpy array (n,8,3) for XYZs of the box corners
+        fig: mayavi figure handler
+        color: RGB value tuple in range (0,1), box line color
+        line_width: box line width
+        draw_text: boolean, if true, write box indices beside boxes
+        text_scale: three number tuple
+        color_list: a list of RGB tuple, if not None, overwrite color.
+    Returns:
+        fig: updated fig
+    '''
+    num = len(gt_boxes3d)
+    for n in range(num):
+        b = gt_boxes3d[n]
+        if color_list is not None:
+            color = color_list[n]
+        if draw_text: mlab.text3d(b[4,0], b[4,1], b[4,2], '%d'%n, scale=text_scale, color=color, figure=fig)
+        for k in range(0,4):
+            #http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html
+            i,j=k,(k+1)%4
+            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
+
+            i,j=k+4,(k+1)%4 + 4
+            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
+
+            i,j=k,k+4
+            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
+    #mlab.show(1)
+    #mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
+    return fig
+
 def show_lidar_with_boxes(pc_velo, objects, view,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
-    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
+    from viz_util import draw_lidar_simple, draw_lidar
 
     print(('All point num: ', pc_velo.shape[0]))
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
@@ -173,7 +242,7 @@ def show_lidar_with_boxes(pc_velo, objects, view,
         pc_velo = get_lidar_in_image_fov(pc_velo, view, 0, 0,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
-    draw_lidar(pc_velo, fig=fig)
+    #draw_lidar(pc_velo, fig=fig)
 
     for obj in objects:
         if obj.type=='DontCare':continue
@@ -191,6 +260,7 @@ def show_lidar_with_boxes(pc_velo, objects, view,
         x1,y1,z1 = ori3d_pts_3d_velo[0,:]
         x2,y2,z2 = ori3d_pts_3d_velo[1,:]
         draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
+
         mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5),
             tube_radius=None, line_width=1, figure=fig)
     mlab.show(1)
