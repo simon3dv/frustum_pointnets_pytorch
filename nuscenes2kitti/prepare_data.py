@@ -183,8 +183,8 @@ def demo():
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     # fig = draw_lidar_simple(pc_velo)
 
-    _, ax = plt.subplots(1, 1, figsize=(9, 9))
-    ax.scatter(pc_velo[0, :], pc_velo[1, :], c=pc_velo[2, :], s=1)
+    #, ax = plt.subplots(1, 1, figsize=(9, 9))
+    plt.scatter(pc_velo[0, :], pc_velo[1, :], c=pc_velo[2, :], s=1)
     plt.imshow()
     #raw_input()
 
