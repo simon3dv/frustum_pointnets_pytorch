@@ -179,7 +179,7 @@ def demo():
     print(' -------- LiDAR points in rect camera coordination --------')
     print('pc_velo.shape:',pc_velo.shape)
     view = np.eye(4)
-    pc_velo = utils.view_points(pc_velo[:3, :], view, normalize=False)
+    pc_velo = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     fig = draw_lidar_simple(pc_velo)
     raw_input()
