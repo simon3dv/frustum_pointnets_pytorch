@@ -194,7 +194,7 @@ def demo():
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
     '''
-    #raw_input()
+    raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
