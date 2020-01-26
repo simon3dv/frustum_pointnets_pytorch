@@ -17,7 +17,7 @@ from nuscenes2kitti_object import *
 import argparse
 import ipdb
 import shutil
-
+import matplotlib.pyplot as plt
 
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
@@ -182,6 +182,7 @@ def demo():
     pc_velo = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     # fig = draw_lidar_simple(pc_velo)
+
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     ax.scatter(pc_velo[0, :], pc_velo[1, :], c=pc_velo[2, :], s=1)
     raw_input()
