@@ -191,7 +191,7 @@ def demo():
     print(pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-20,20)
-    ax.set_ylim(-20,20)
+    ax.set_ylim(-20,50)
 
     #raw_input()
 
