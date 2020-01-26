@@ -183,7 +183,7 @@ def demo():
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
     show_image_with_boxes(img, objects, calib.CAM_FRONT)
-    
+
 
 
 

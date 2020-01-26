@@ -22,7 +22,7 @@ except NameError:
 class nuscenes2kitti_object(object):
     '''Load and parse object data into a usable format.'''
     
-    def __init__(self, root_dir, split='training'):
+    def __init__(self, root_dir, split='v1.0-mini'):
         '''root_dir contains training and testing folders'''
         self.root_dir = root_dir
         self.split = split
