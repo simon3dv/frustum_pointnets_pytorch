@@ -251,19 +251,14 @@ def demo():
     show_image_with_boxes(img, objects, getattr(calib,sensor))
     raw_input()
 
-    # 4.Show all LiDAR points. Draw 3d box in LiDAR point cloud
-    print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
-    #show_lidar_with_boxes(pc_velo, objects, calib)
-    #raw_input()
-
-    """
+    print(' -------- render LiDAR points and 3D boxes in LIDAR_TOP coordinate --------')
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print(pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
-    #plt.show()
-    """
+    plt.show()
+
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
