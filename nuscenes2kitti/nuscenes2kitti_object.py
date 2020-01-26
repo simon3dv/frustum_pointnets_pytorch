@@ -140,7 +140,7 @@ def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = (
     if show3d:
         Image.fromarray(img2).show()
 
-def project_velo_to_image(sview, pts_3d_velo):
+def project_velo_to_image(view, pts_3d_velo):
     ''' Input: nx3 points in velodyne coord.
         Output: nx2 points in image2 coord.
     '''

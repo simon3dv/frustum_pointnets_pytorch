@@ -185,7 +185,7 @@ def demo():
     # view = np.eye(4)
     # pc_velo = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
     # pc_rect = calib.project_velo_to_rect(pc_velo)
-    fig = draw_lidar_simple(pc_velo)
+    # fig = draw_lidar_simple(pc_velo)
     # raw_input()
     '''
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
@@ -203,8 +203,9 @@ def demo():
     print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
     #show_lidar_with_boxes(pc_velo, objects, calib)
     #raw_input()
+
     show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
-    raw_input()
+    #raw_input()
 
     #plt.show()
 
