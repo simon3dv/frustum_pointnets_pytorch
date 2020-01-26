@@ -185,7 +185,7 @@ def demo():
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     # fig = draw_lidar_simple(pc_velo)
 
-    , ax = plt.subplots(1, 1, figsize=(9, 9))
+    _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print(pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     plt.show()
