@@ -186,7 +186,7 @@ def demo():
 
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     fig = draw_lidar_simple(pc_velo)
-    raw_input()
+    #raw_input()
 
     '''
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
