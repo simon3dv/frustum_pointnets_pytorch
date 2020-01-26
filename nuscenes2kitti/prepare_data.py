@@ -251,12 +251,44 @@ def demo():
     show_image_with_boxes(img, objects, getattr(calib,sensor))
     raw_input()
 
-    print(' -------- render LiDAR points and 3D boxes in LIDAR_TOP coordinate --------')
+    print(' -------- render LiDAR points (and 3D boxes) in LIDAR_TOP coordinate --------')
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print(pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
+
+    linewidth = 2
+    colors=('b', 'r', 'k')
+    for obj in objects:
+        if obj.type=='DontCare':continue
+        # Draw 3d bounding box
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
+        box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d)
+
+        corners = box3d_pts_3d_velo.T
+        def draw_rect(selected_corners, color):
+            prev = selected_corners[-1]
+            for corner in selected_corners:
+                ax.plot([prev[0], corner[0]], [prev[1], corner[1]], color=color, linewidth=linewidth)
+                prev = corner
+
+        # Draw the sides
+        for i in range(4):
+            ax.plot([corners.T[i][0], corners.T[i + 4][0]],
+                      [corners.T[i][1], corners.T[i + 4][1]],
+                      color=colors[2], linewidth=linewidth)
+
+        # Draw front (first 4 corners) and rear (last 4 corners) rectangles(3d)/lines(2d)
+        draw_rect(corners.T[:4], colors[0])
+        draw_rect(corners.T[4:], colors[1])
+
+        # Draw line indicating the front
+        center_bottom_forward = np.mean(corners.T[2:4], axis=0)
+        center_bottom = np.mean(corners.T[[2, 3, 7, 6]], axis=0)
+        axis.plot([center_bottom[0], center_bottom_forward[0]],
+                  [center_bottom[1], center_bottom_forward[1]],
+                  color=colors[0], linewidth=linewidth)
     plt.show()
 
 
