@@ -237,24 +237,20 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
     for obj in objects:
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
-        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
         box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d)
-        print(box3d_pts_3d)
         # box3d_pts_3d_velo = box3d_pts_3d
-        print(box3d_pts_3d_velo.shape)
         # Draw heading arrow
         ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, np.eye(4))
         #ori3d_pts_3d_velo = calib.project_rect_to_velo(ori3d_pts_3d)
         ori3d_pts_3d_velo = ori3d_pts_3d
-        print(ori3d_pts_3d_velo.shape)
-
         x1,y1,z1 = ori3d_pts_3d_velo[0,:]
         x2,y2,z2 = ori3d_pts_3d_velo[1,:]
         draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
 
         mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5),
             tube_radius=None, line_width=1, figure=fig)
-    mlab.show(1)
+    mlab.show()
 
 def show_lidar_on_image(pc_velo, img, view, img_width, img_height):
     ''' Project LiDAR points to image '''
