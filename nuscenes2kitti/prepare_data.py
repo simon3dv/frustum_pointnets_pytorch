@@ -171,23 +171,22 @@ def demo():
     #print('frustum_angle:', frustum_angle)
     img = dataset.get_image(sensor, data_idx)  # (370, 1224, 3)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img_height, img_width, img_channel = img.shape
     print(('Image shape: ', img.shape))
     print(dataset.get_lidar(data_idx).shape)
     pc_velo = dataset.get_lidar(data_idx)[:, 0:3]  # (115384, 3)
     calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
     print(calib)
-    # Draw lidar in rect camera coord
+    # 1.Draw lidar in rect camera coord
     print(' -------- LiDAR points in rect camera coordination --------')
     print('pc_velo.shape:',pc_velo.shape)
     print('pc_velo[:10,:]:',pc_velo[:10,:])
 
-    #view = np.eye(4)
-    #pc_velo = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
-
+    # view = np.eye(4)
+    # pc_velo = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     fig = draw_lidar_simple(pc_velo)
-    #raw_input()
-
+    # raw_input()
     '''
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print(pc_velo.shape)
@@ -195,11 +194,17 @@ def demo():
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
     '''
-    #raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
     show_image_with_boxes(img, objects, calib.CAM_FRONT)
+
+    # Show all LiDAR points. Draw 3d box in LiDAR point cloud
+    print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
+    #show_lidar_with_boxes(pc_velo, objects, calib)
+    #raw_input()
+    show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
+    raw_input()
 
     #plt.show()
 
@@ -251,7 +256,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         img = dataset.get_image(sensor, data_idx)
         img_height, img_width, img_channel = img.shape
         _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:, 0:3],
-                                                                 calib, 0, 0, img_width, img_height, True)
+                                                                 calib[sensor], 0, 0, img_width, img_height, True)
 
         for obj_idx in range(len(objects)):
             if objects[obj_idx].type not in type_whitelist: continue

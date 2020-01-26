@@ -140,10 +140,16 @@ def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = (
     if show3d:
         Image.fromarray(img2).show()
 
-def get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax,
+def project_velo_to_image(self, view, pts_3d_velo):
+    ''' Input: nx3 points in velodyne coord.
+        Output: nx2 points in image2 coord.
+    '''
+    return utils.view_points(pts_3d_velo[:, :3].T, view, normalize=False).T
+
+def get_lidar_in_image_fov(pc_velo, view, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
     ''' Filter lidar points, keep those in image FOV '''
-    pts_2d = calib.project_velo_to_image(pc_velo)
+    pts_2d = project_velo_to_image(view, pc_velo)
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
     fov_inds = fov_inds & (pc_velo[:,0]>clip_distance)
@@ -153,7 +159,7 @@ def get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax,
     else:
         return imgfov_pc_velo
 
-def show_lidar_with_boxes(pc_velo, objects, calib,
+def show_lidar_with_boxes(pc_velo, objects, view,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
@@ -164,7 +170,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
-        pc_velo = get_lidar_in_image_fov(pc_velo, calib, 0, 0,
+        pc_velo = get_lidar_in_image_fov(pc_velo, view, 0, 0,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     draw_lidar(pc_velo, fig=fig)
@@ -173,10 +179,12 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
         box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib)
-        box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
+        #box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
+        box3d_pts_3d_velo = box3d_pts_3d
         # Draw heading arrow
         ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, calib)
-        ori3d_pts_3d_velo = calib.project_rect_to_velo(ori3d_pts_3d)
+        #ori3d_pts_3d_velo = calib.project_rect_to_velo(ori3d_pts_3d)
+        ori3d_pts_3d_velo = ori3d_pts_3d
         x1,y1,z1 = ori3d_pts_3d_velo[0,:]
         x2,y2,z2 = ori3d_pts_3d_velo[1,:]
         draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
@@ -184,10 +192,10 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
             tube_radius=None, line_width=1, figure=fig)
     mlab.show(1)
 
-def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
+def show_lidar_on_image(pc_velo, img, view, img_width, img_height):
     ''' Project LiDAR points to image '''
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
-        calib, 0, 0, img_width, img_height, True)
+        view, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
     imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
