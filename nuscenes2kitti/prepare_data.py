@@ -148,13 +148,14 @@ def vis_label():
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'),img2)
 
 def demo():
+    sensor = 'CAM_FRONT'
     import mayavi.mlab as mlab
     from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'))
     data_idx = 11
 
     # Load data from dataset
-    objects = dataset.get_label_objects(data_idx)  # objects = [Object3d(line) for line in lines]
+    objects = dataset.get_label_objects(sensor, data_idx)  # objects = [Object3d(line) for line in lines]
     objects[0].print_object()
 
     calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
@@ -168,7 +169,7 @@ def demo():
     #frustum_angle = -1 * np.arctan2(box2d_center_rect[0, 2],
     #                                box2d_center_rect[0, 0])
     #print('frustum_angle:', frustum_angle)
-    img = dataset.get_image(data_idx)  # (370, 1224, 3)
+    img = dataset.get_image(sensor, data_idx)  # (370, 1224, 3)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     print(('Image shape: ', img.shape))
     pc_velo = dataset.get_lidar(data_idx)[:, 0:3]  # (115384, 3)
