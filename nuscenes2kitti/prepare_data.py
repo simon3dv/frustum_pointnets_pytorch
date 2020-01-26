@@ -172,6 +172,7 @@ def demo():
     img = dataset.get_image(sensor, data_idx)  # (370, 1224, 3)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     print(('Image shape: ', img.shape))
+    print(dataset.get_lidar(data_idx).shape)
     pc_velo = dataset.get_lidar(data_idx)[:, 0:3]  # (115384, 3)
     calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
     print(calib)
