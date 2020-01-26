@@ -171,18 +171,20 @@ def demo():
     img = dataset.get_image(data_idx)  # (370, 1224, 3)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     print(('Image shape: ', img.shape))
-    #pc_velo = dataset.get_lidar(data_idx)[:, 0:3]  # (115384, 3)
-    #calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
+    pc_velo = dataset.get_lidar(data_idx)[:, 0:3]  # (115384, 3)
+    calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
+    print(calib)
+    # Draw lidar in rect camera coord
+    print(' -------- LiDAR points in rect camera coordination --------')
+    pc_rect = calib.project_velo_to_rect(pc_velo)
+    fig = draw_lidar_simple(pc_rect)
+    raw_input()
 
-    ## Draw lidar in rect camera coord
-    # print(' -------- LiDAR points in rect camera coordination --------')
-    # pc_rect = calib.project_velo_to_rect(pc_velo)
-    # fig = draw_lidar_simple(pc_rect)
-    # raw_input()
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
-    show_image_with_boxes(img, objects, calib)
-    #raw_input()
+    show_image_with_boxes(img, objects, calib.CAM_FRONT)
+    
+
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,

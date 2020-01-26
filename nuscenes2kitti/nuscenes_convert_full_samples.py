@@ -185,7 +185,6 @@ if __name__ == '__main__':
             #pc.points.astype('float32').tofile(open(lidar_path, "wb"))
 
         # save calib
-        print(calib)
         output_calib_file = calib_output_root + seqname + '.txt'
         with open(output_calib_file, 'a') as output_f:
             for sensor in sensor_list:
@@ -218,4 +217,4 @@ if __name__ == '__main__':
         f_train.close()
         f_val.close()
 
-
+    print('Done!(saving to {})'.format(os.path.dirname(img_output_root)))

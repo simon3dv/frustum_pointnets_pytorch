@@ -150,31 +150,37 @@ class Calibration(object):
     # ------- 3d to 3d ---------- 
     # =========================== 
     def project_velo_to_ref(self, pts_3d_velo):
-        pts_3d_velo = self.cart2hom(pts_3d_velo) # nx4
-        return np.dot(pts_3d_velo, np.transpose(self.V2C))
+        #pts_3d_velo = self.cart2hom(pts_3d_velo) # nx4
+        #return np.dot(pts_3d_velo, np.transpose(self.V2C))
+        return pts_3d_velo
 
     def project_ref_to_velo(self, pts_3d_ref):
-        pts_3d_ref = self.cart2hom(pts_3d_ref) # nx4
-        return np.dot(pts_3d_ref, np.transpose(self.C2V))
+        #pts_3d_ref = self.cart2hom(pts_3d_ref) # nx4
+        #return np.dot(pts_3d_ref, np.transpose(self.C2V))
+        return pts_3d_velo
 
     def project_rect_to_ref(self, pts_3d_rect):
-        ''' Input and Output are nx3 points '''
-        return np.transpose(np.dot(np.linalg.inv(self.R0), np.transpose(pts_3d_rect)))
-    
+        #''' Input and Output are nx3 points '''
+        #return np.transpose(np.dot(np.linalg.inv(self.R0), np.transpose(pts_3d_rect)))
+        return pts_3d_rect
+
     def project_ref_to_rect(self, pts_3d_ref):
-        ''' Input and Output are nx3 points '''
-        return np.transpose(np.dot(self.R0, np.transpose(pts_3d_ref)))
- 
+        #''' Input and Output are nx3 points '''
+        #return np.transpose(np.dot(self.R0, np.transpose(pts_3d_ref)))
+        return pts_3d_ref
+
     def project_rect_to_velo(self, pts_3d_rect):
         ''' Input: nx3 points in rect camera coord.
             Output: nx3 points in velodyne coord.
         ''' 
-        pts_3d_ref = self.project_rect_to_ref(pts_3d_rect)
-        return self.project_ref_to_velo(pts_3d_ref)
+        #pts_3d_ref = self.project_rect_to_ref(pts_3d_rect)
+        #return self.project_ref_to_velo(pts_3d_ref)
+        return pts_3d_rect
 
     def project_velo_to_rect(self, pts_3d_velo):
-        pts_3d_ref = self.project_velo_to_ref(pts_3d_velo)
-        return self.project_ref_to_rect(pts_3d_ref)
+        #pts_3d_ref = self.project_velo_to_ref(pts_3d_velo)
+        #return self.project_ref_to_rect(pts_3d_ref)
+        return pts_3d_velo
 
     # =========================== 
     # ------- 3d to 2d ---------- 
@@ -334,7 +340,7 @@ def view_points(points: np.ndarray, view: np.ndarray, normalize: bool) -> np.nda
 
     return points
 
-def compute_box_3d(obj,calib):
+def compute_box_3d(obj,view):
     ''' Takes an object and a projection matrix (P) and projects the 3d
         bounding box into the image plane.
         Returns:
@@ -374,14 +380,14 @@ def compute_box_3d(obj,calib):
     
     # project the 3d bounding box into the image plane
     # corners_2d = project_to_image(np.transpose(corners_3d), P);
-    sensor = 'CAM_FRONT'
-    view = getattr(calib,sensor)# 3x3
+    #sensor = 'CAM_FRONT'
+    #view = getattr(calib,sensor)# 3x3
     corners_2d = view_points(corners_3d, view, normalize=True)[:2, :]#2x8, mean=590.067...
     #print 'corners_2d: ', corners_2d
     return corners_2d, np.transpose(corners_3d)
 
 
-def compute_orientation_3d(obj, P):
+def compute_orientation_3d(obj, view):
     ''' Takes an object and a projection matrix (P) and projects the 3d
         object orientation vector into the image plane.
         Returns:
@@ -407,7 +413,8 @@ def compute_orientation_3d(obj, P):
       return orientation_2d, np.transpose(orientation_3d)
     
     # project orientation into the image plane
-    orientation_2d = project_to_image(np.transpose(orientation_3d), P);
+    # orientation_2d = project_to_image(np.transpose(orientation_3d), P);
+    orientation_2d = view_points(orientation_3d, view, normalize=True)[:2, :]
     return orientation_2d, np.transpose(orientation_3d)
 
 def draw_projected_box3d(image, qs, color=(255,255,255), thickness=2):

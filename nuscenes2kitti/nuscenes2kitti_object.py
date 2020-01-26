@@ -29,7 +29,7 @@ class nuscenes2kitti_object(object):
         self.split_dir = os.path.join(root_dir, split)
 
         if split == 'v1.0-mini':
-            self.num_samples = 397
+            self.num_samples = 404
         elif split == 'v1.0-training':
             self.num_samples = 10000
         elif split == 'v1.0-test':
@@ -88,7 +88,7 @@ class nuscenes2kitti_object(object):
     def get_top_down(self, idx):
         pass
 
-def show_image_with_boxes(img, objects, calib, show3d=True,linewidth=2,colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))):
+def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))):
     ''' Show image with 2D bounding boxes '''
     img1 = np.copy(img) # for 2d bbox
     img2 = np.copy(img) # for 3d bbox
@@ -102,7 +102,7 @@ def show_image_with_boxes(img, objects, calib, show3d=True,linewidth=2,colors = 
         cv2.rectangle(img1, (int(obj.xmin),int(obj.ymin)),
             (int(obj.xmax),int(obj.ymax)), colors[c][::-1], 2)
 
-        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib)
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, view)
 
         #img2 = utils.draw_projected_box3d(img2, box3d_pts_2d)
         def draw_rect(selected_corners, color):
@@ -172,10 +172,10 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
     for obj in objects:
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
-        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P) 
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib)
         box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
         # Draw heading arrow
-        ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, calib.P)
+        ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, calib)
         ori3d_pts_3d_velo = calib.project_rect_to_velo(ori3d_pts_3d)
         x1,y1,z1 = ori3d_pts_3d_velo[0,:]
         x2,y2,z2 = ori3d_pts_3d_velo[1,:]
@@ -205,7 +205,7 @@ def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
     return img
 
 def dataset_viz():
-    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
+    dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
 
     for data_idx in range(len(dataset)):
         # Load data from dataset
@@ -219,7 +219,7 @@ def dataset_viz():
         calib = dataset.get_calibration(data_idx)
 
         # Draw 2d and 3d boxes on image
-        show_image_with_boxes(img, objects, calib, False)
+        show_image_with_boxes(img, objects, calib.CAM_FRONT, False)
         raw_input()
         # Show all LiDAR points. Draw 3d box in LiDAR point cloud
         show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
