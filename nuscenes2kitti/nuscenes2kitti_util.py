@@ -175,7 +175,9 @@ class Calibration(object):
         ''' 
         #pts_3d_ref = self.project_rect_to_ref(pts_3d_rect)
         #return self.project_ref_to_velo(pts_3d_ref)
-        return pts_3d_global[:,[0,2,1]]
+        pts_3d_velo = pts_3d_global[:,[0,2,1]]
+        pts_3d_velo[:,2] *= -1
+        return pts_3d_velo
 
     def project_velo_to_rect(self, pts_3d_velo):
         #pts_3d_ref = self.project_velo_to_ref(pts_3d_velo)

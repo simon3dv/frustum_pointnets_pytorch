@@ -259,7 +259,7 @@ def demo():
     # Show all LiDAR points. Draw 3d box in LiDAR point cloud
     print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
     #show_lidar_with_boxes(pc_velo, objects, calib)
-    #raw_input()
+    raw_input()
     #plt.show()
 
 
