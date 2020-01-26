@@ -286,7 +286,7 @@ def demo():
         # Draw line indicating the front
         center_bottom_forward = np.mean(corners.T[2:4], axis=0)
         center_bottom = np.mean(corners.T[[2, 3, 7, 6]], axis=0)
-        axis.plot([center_bottom[0], center_bottom_forward[0]],
+        ax.plot([center_bottom[0], center_bottom_forward[0]],
                   [center_bottom[1], center_bottom_forward[1]],
                   color=colors[0], linewidth=linewidth)
     plt.show()

@@ -226,8 +226,8 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
     from viz_util import draw_gt_boxes3d
 
     print(('All point num: ', pc_velo.shape[0]))
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
-        fgcolor=None, engine=None, size=(1000, 500))
+    #fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+    #    fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
         pc_velo = get_lidar_in_image_fov(pc_velo, view, 0, 0,
             img_width, img_height)
