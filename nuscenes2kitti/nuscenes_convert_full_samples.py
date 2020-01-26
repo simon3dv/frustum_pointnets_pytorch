@@ -172,6 +172,13 @@ if __name__ == '__main__':
         ref_chan = 'LIDAR_TOP'
         pc, times = LidarPointCloud.from_file_multisweep(nusc,sample_rec,chan,ref_chan,nsweeps=10)
 
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(1, 2, figsize=(18, 9))
+        view = np.eye(4)
+        LidarPointCloud.from_file(lidar_path).render_height(axes[0], view=view)
+        plt.show()
+
+        print(pc.shape)
         lidar_path = os.path.join(velodyne_output_root, seqname+".bin")
         pc.points.astype('float32').tofile(open(lidar_path, "wb"))
 
