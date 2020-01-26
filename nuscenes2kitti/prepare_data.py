@@ -229,18 +229,31 @@ def demo():
     print(dataset.get_lidar(data_idx).shape)
     pc_velo = dataset.get_lidar(data_idx)[:, 0:3]  # (115384, 3)
     calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
-    print(calib)
+
     # 1.Draw lidar in LIDAR_TOP coord
-    print(' -------- LiDAR points in rect camera coordination --------')
+    print(' -------- LiDAR points in LIDAR_TOP coordination --------')
     print('pc_velo.shape:',pc_velo.shape)
     print('pc_velo[:10,:]:',pc_velo[:10,:])
-    view = np.eye(4)
-    pc_velo[:, :3] = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
-    #pc_rect = calib.project_velo_to_rect(pc_velo)
-    fig = draw_lidar_simple(pc_velo)
+    ##view = np.eye(4)
+    ##pc_velo[:, :3] = utils.view_points(pc_velo[:, :3].T, view, normalize=False).T
+    ##pc_rect = calib.project_velo_to_rect(pc_velo)
+    #fig = draw_lidar_simple(pc_velo)
     #raw_input()
+
     # 2.Draw lidar with boxes in LIDAR_TOP coord
+    print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
+    #show_lidar_with_boxes(pc_velo, objects, calib)
     show_lidar_with_boxes(pc_velo, objects, calib, getattr(calib,sensor), False, img_width, img_height)
+    raw_input()
+
+    # 3.Draw 2d and 3d boxes on CAM_FRONT image
+    print(' -------- 2D bounding boxes in images --------')
+    show_image_with_boxes(img, objects, getattr(calib,sensor))
+    raw_input()
+
+    # 4.Show all LiDAR points. Draw 3d box in LiDAR point cloud
+    print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
+    #show_lidar_with_boxes(pc_velo, objects, calib)
     #raw_input()
 
     """
@@ -249,18 +262,8 @@ def demo():
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
-    """
-
-
-    #3.Draw 2d and 3d boxes on CAM_FRONT image
-    print(' -------- 2D bounding boxes in images --------')
-    show_image_with_boxes(img, objects, getattr(calib,sensor))
-
-    # Show all LiDAR points. Draw 3d box in LiDAR point cloud
-    print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
-    #show_lidar_with_boxes(pc_velo, objects, calib)
-    raw_input()
     #plt.show()
+    """
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
