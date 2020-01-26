@@ -194,7 +194,7 @@ def get_lidar_in_image_fov(pc_velo, view, xmin, ymin, xmax, ymax,
         return imgfov_pc_velo, pts_2d, fov_inds
     else:
         return imgfov_pc_velo
-
+'''
 def draw_lidar_simple(pc, color=None):
     ''' Draw lidar points. simplest set up. '''
     import mayavi.mlab as mlab
@@ -215,13 +215,13 @@ def draw_lidar_simple(pc, color=None):
     mlab.plot3d([0, axes[2,0]], [0, axes[2,1]], [0, axes[2,2]], color=(0,0,1), tube_radius=None, figure=fig)
     mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
     return fig
-
+'''
 def show_lidar_with_boxes(pc_velo, objects, view,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
-    #from viz_util import draw_lidar_simple, \
+    from viz_util import draw_lidar_simple
     from viz_util import draw_lidar
     from viz_util import draw_gt_boxes3d
 
