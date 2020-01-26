@@ -206,7 +206,7 @@ def demo():
     #raw_input()
 
     show_lidar_with_boxes(pc_velo, objects, getattr(calib,sensor), True, img_width, img_height)
-    #raw_input()
+    raw_input()
 
     #plt.show()
 
