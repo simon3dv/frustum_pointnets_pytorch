@@ -219,6 +219,7 @@ def show_lidar_with_boxes(pc_velo, objects, view,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
+    import mayavi.mlab as mlab
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     #from viz_util import draw_lidar_simple, \
     from viz_util import draw_lidar
