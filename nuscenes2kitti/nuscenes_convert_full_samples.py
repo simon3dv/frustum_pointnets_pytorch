@@ -178,7 +178,7 @@ if __name__ == '__main__':
         #LidarPointCloud.from_file(lidar_path).render_height(axes[0], view=view)
         #plt.show()
 
-
+        print(pc.points.shape)
         lidar_path = os.path.join(velodyne_output_root, seqname+".bin")
         pc.points.astype('float32').tofile(open(lidar_path, "wb"))
 
