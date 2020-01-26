@@ -87,7 +87,7 @@ class nuscenes2kitti_object(object):
 
     def get_top_down(self, idx):
         pass
-def render_objects(img, objects, view=np.eye(4), colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155),linewidth=2):
+def render_objects(img, objects, view=np.eye(4), colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155)),linewidth=2):
     def draw_rect(selected_corners, color):
         prev = selected_corners[-1]
         for corner in selected_corners:
@@ -103,7 +103,7 @@ def render_objects(img, objects, view=np.eye(4), colors = ((0, 0, 255), (255, 0,
 
         # Draw the sides
         for i in range(4):
-            cv2.line(img2,
+            cv2.line(img,
                      (int(corners_2d.T[i][0]), int(corners_2d.T[i][1])),
                      (int(corners_2d.T[i + 4][0]), int(corners_2d.T[i + 4][1])),
                      colors[c][::-1], linewidth)
