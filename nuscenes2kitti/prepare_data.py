@@ -152,7 +152,7 @@ def demo():
     import mayavi.mlab as mlab
     from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'))
-    data_idx = 0
+    data_idx = 1
 
     # Load data from dataset
     objects = dataset.get_label_objects(sensor, data_idx)  # objects = [Object3d(line) for line in lines]
@@ -190,8 +190,8 @@ def demo():
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print(pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
-    ax.set_xlim(-20,20)
-    ax.set_ylim(-50,50)
+    ax.set_xlim(-30,30)
+    ax.set_ylim(-30,30)
 
     #raw_input()
 
