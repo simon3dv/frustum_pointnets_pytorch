@@ -187,13 +187,13 @@ def demo():
     #pc_rect = calib.project_velo_to_rect(pc_velo)
     fig = draw_lidar_simple(pc_velo)
     raw_input()
-    '''
+    """
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print(pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
-    '''
+    """
 
 
     # Draw 2d and 3d boxes on image
@@ -204,7 +204,7 @@ def demo():
     print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
     #show_lidar_with_boxes(pc_velo, objects, calib)
     #raw_input()
-
+''' 
     show_lidar_with_boxes(pc_velo, objects, getattr(calib,sensor), False, img_width, img_height)
     raw_input()
 
