@@ -195,45 +195,13 @@ def get_lidar_in_image_fov(pc_velo, view, xmin, ymin, xmax, ymax,
     else:
         return imgfov_pc_velo
 
-def draw_gt_boxes3d(gt_boxes3d, fig, color=(1,1,1), line_width=1, draw_text=True, text_scale=(1,1,1), color_list=None):
-    ''' Draw 3D bounding boxes
-    Args:
-        gt_boxes3d: numpy array (n,8,3) for XYZs of the box corners
-        fig: mayavi figure handler
-        color: RGB value tuple in range (0,1), box line color
-        line_width: box line width
-        draw_text: boolean, if true, write box indices beside boxes
-        text_scale: three number tuple
-        color_list: a list of RGB tuple, if not None, overwrite color.
-    Returns:
-        fig: updated fig
-    '''
-    num = len(gt_boxes3d)
-    for n in range(num):
-        b = gt_boxes3d[n]
-        if color_list is not None:
-            color = color_list[n]
-        if draw_text: mlab.text3d(b[4,0], b[4,1], b[4,2], '%d'%n, scale=text_scale, color=color, figure=fig)
-        for k in range(0,4):
-            #http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html
-            i,j=k,(k+1)%4
-            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
-
-            i,j=k+4,(k+1)%4 + 4
-            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
-
-            i,j=k,k+4
-            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
-    #mlab.show(1)
-    #mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
-    return fig
 
 def show_lidar_with_boxes(pc_velo, objects, view,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
-    from viz_util import draw_lidar_simple, draw_lidar
+    from viz_util import draw_lidar_simple, draw_lidar,draw_gt_boxes3d
 
     print(('All point num: ', pc_velo.shape[0]))
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
