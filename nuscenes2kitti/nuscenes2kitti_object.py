@@ -240,7 +240,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
         box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))
         box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d)
         print(box3d_pts_3d)
-        box3d_pts_3d_velo = box3d_pts_3d
+        # box3d_pts_3d_velo = box3d_pts_3d
         print(box3d_pts_3d_velo.shape)
         # Draw heading arrow
         ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, np.eye(4))
