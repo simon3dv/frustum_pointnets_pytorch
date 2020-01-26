@@ -42,9 +42,62 @@ def extract_pc_in_box2d(pc, box2d):
     box2d_roi_inds = in_hull(pc[:, 0:2], box2d_corners)
     return pc[box2d_roi_inds, :], box2d_roi_inds
 
+def draw_gt_boxes3d(gt_boxes3d, fig, color=(1,1,1), line_width=1, draw_text=True, text_scale=(1,1,1), color_list=None):
+    ''' Draw 3D bounding boxes
+    Args:
+        gt_boxes3d: numpy array (n,8,3) for XYZs of the box corners
+        fig: mayavi figure handler
+        color: RGB value tuple in range (0,1), box line color
+        line_width: box line widthf
+        draw_text: boolean, if true, write box indices beside boxes
+        text_scale: three number tuple
+        color_list: a list of RGB tuple, if not None, overwrite color.
+    Returns:
+        fig: updated fig
+        Draw 3d bounding box in image
+    Tips:
+        KITTI
+            1 -------- 0
+           /|         /|
+          2 -------- 3 .
+          | |        | |
+          . 5 -------- 4
+          |/         |/
+          6 -------- 7
+        nuScenes
+            1 -------- 0
+           /|         /|
+          5 -------- 4 .
+          | |        | |
+          . 2 -------- 3
+          |/         |/
+          6 -------- 7
+
+    '''
+    import mayavi.mlab as mlab
+    num = len(gt_boxes3d)
+    for n in range(num):
+        b = gt_boxes3d[n]
+        if color_list is not None:
+            color = color_list[n]
+        if draw_text: mlab.text3d(b[4,0], b[4,1], b[4,2], '%d'%n, scale=text_scale, color=color, figure=fig)
+        for k in range(0,4):
+            #http://docs.enthought.com/mayavi/mayavi/auto/mlab_helper_functions.html
+            i,j=k,(k+1)%4
+            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
+
+            i,j=k+4,(k+1)%4 + 4
+            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
+
+            i,j=k,k+4
+            mlab.plot3d([b[i,0], b[j,0]], [b[i,1], b[j,1]], [b[i,2], b[j,2]], color=color, tube_radius=None, line_width=line_width, figure=fig)
+    #mlab.show(1)
+    #mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
+    return fig
+
 def vis_label():
     import mayavi.mlab as mlab
-    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
+    from viz_util import draw_lidar, draw_lidar_simple# , draw_gt_boxes3d
 
     split = 'v1.0-mini'
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'),split=split)
