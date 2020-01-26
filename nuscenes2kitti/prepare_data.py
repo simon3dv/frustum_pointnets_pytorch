@@ -152,7 +152,7 @@ def demo():
     import mayavi.mlab as mlab
     from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'))
-    data_idx = 11
+    data_idx = 0
 
     # Load data from dataset
     objects = dataset.get_label_objects(sensor, data_idx)  # objects = [Object3d(line) for line in lines]
@@ -193,7 +193,7 @@ def demo():
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
     plt.show()
-    raw_input()
+    #raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
