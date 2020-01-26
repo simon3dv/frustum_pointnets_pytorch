@@ -186,6 +186,7 @@ def demo():
 
     # pc_rect = calib.project_velo_to_rect(pc_velo)
     fig = draw_lidar_simple(pc_velo)
+    raw_input()
 
     '''
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
@@ -194,13 +195,13 @@ def demo():
     ax.set_xlim(-20,20)
     ax.set_ylim(-20,20)
     '''
-    raw_input()
+    #raw_input()
 
     # Draw 2d and 3d boxes on image
     print(' -------- 2D bounding boxes in images --------')
     show_image_with_boxes(img, objects, calib.CAM_FRONT)
 
-    plt.show()
+    #plt.show()
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
