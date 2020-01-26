@@ -234,6 +234,8 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
         print(('FOV point num: ', pc_velo.shape[0]))
     #draw_lidar(pc_velo, fig=fig)
     fig = draw_lidar_simple(pc_velo)
+    obj_mean = np.array([0,0,0])
+    obj_count = 0
     for obj in objects:
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
@@ -250,6 +252,11 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
 
         mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5),
             tube_radius=None, line_width=1, figure=fig)
+
+        obj_mean += np.sum(box3d_pts_3d_velo,axis=0)
+        obj_count += 1
+    obj_mean = obj_mean / obj_count
+    print("mean:",obj_mean)
     mlab.show(1)
 
 def show_lidar_on_image(pc_velo, img, view, img_width, img_height):
