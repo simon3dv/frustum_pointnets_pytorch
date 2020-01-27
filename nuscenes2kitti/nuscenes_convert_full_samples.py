@@ -116,6 +116,11 @@ if __name__ == '__main__':
             # each sensor_data corresponds to one specific image in the dataset
             sensor_data = nusc.get('sample_data', present_sample['data'][present_sensor])
             data_path, box_list, cam_intrinsic = nusc.get_sample_data(present_sample['data'][present_sensor], getattr(BoxVisibility,truncation_level))
+            """
+            get_sample_data:        
+                Returns the data path as well as all annotations related to that sample_data.
+                Note that the boxes are transformed into the current sensor's coordinate frame.
+            """
             calib[present_sensor] = cam_intrinsic
             img_file = data_root + sensor_data['filename']
             seqname = str(frame_counter).zfill(6)
@@ -162,9 +167,23 @@ if __name__ == '__main__':
             sd_record = nusc.get('sample_data', present_sample['data']['LIDAR_TOP'])
 
         # Get boxes in lidar frame.
-        lidar_path, boxes, cam_intrinsic = nusc.get_sample_data(
-            present_sample['data']['LIDAR_TOP'])
-        calib['LIDAR_TOP'] = cam_intrinsic
+        lidar_token = present_sample['data']['LIDAR_TOP']
+        sd_rec = nusc.get('sample_data', present_sample['data']["LIDAR_TOP"])
+        cs_record = nusc.get('calibrated_sensor', sd_rec['calibrated_sensor_token'])
+        pose_record = nusc.get('ego_pose', sd_rec['ego_pose_token'])
+        lidar_path, boxes, cam_intrinsic = nusc.get_sample_data(lidar_token)
+
+        lidar2ego_translation = cs_record['translation']
+        lidar2ego_rotation = cs_record['rotation']
+        ego2global_translation = pose_record['translation']
+        ego2global_rotation = pose_record['rotation']
+        from pyquaternion import Quaternion
+        l2e_r_mat = Quaternion(lidar2ego_translation).rotation_matrix
+        e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix
+        print('lidar2ego_translation:', lidar2ego_translation)
+        print('lidar2ego_rotation:',lidar2ego_rotation)
+        print('l2e_r_mat:',l2e_r_mat)
+        ipdb.set_trace()
 
         # Get aggregated point cloud in lidar frame.
         sample_rec = nusc.get('sample', sd_record['sample_token'])
