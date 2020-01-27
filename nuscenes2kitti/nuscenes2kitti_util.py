@@ -85,9 +85,12 @@ class Calibration(object):
             calibs = self.read_calib_from_video(calib_filepath)
         else:
             calibs = self.read_calib_file(calib_filepath)
-        # Projection matrix from rect camera coord to image2 coord
-        self.CAM_FRONT = calibs['CAM_FRONT']
-        self.CAM_FRONT = np.reshape(self.CAM_FRONT, [3,3])
+        # Projection matrix from global coord to image2 coord
+        sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+        for sensor in sensor_list:
+            getattr(self,sensor) = np.reshape(calibs[sensor], [3, 3])
+            #self.CAM_FRONT = calibs['CAM_FRONT']
+            #self.CAM_FRONT = np.reshape(self.CAM_FRONT, [3, 3])
         # Rigid transform from Velodyne coord to reference camera coord
         # self.V2C = calibs['Tr_velo_to_cam']
         # self.V2C = np.reshape(self.V2C, [3,4])
@@ -97,10 +100,10 @@ class Calibration(object):
         # self.R0 = np.reshape(self.R0,[3,3])
 
         # Camera intrinsics and extrinsics
-        self.c_u = self.CAM_FRONT[0,2]
-        self.c_v = self.CAM_FRONT[1,2]
-        self.f_u = self.CAM_FRONT[0,0]
-        self.f_v = self.CAM_FRONT[1,1]
+        #self.c_u = self.CAM_FRONT[0,2]
+        #self.c_v = self.CAM_FRONT[1,2]
+        #self.f_u = self.CAM_FRONT[0,0]
+        #self.f_v = self.CAM_FRONT[1,1]
         # self.b_x = self.P[0,3]/(-self.f_u) # relative
         # self.b_y = self.P[1,3]/(-self.f_v)
 
