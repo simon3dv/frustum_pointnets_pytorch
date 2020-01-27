@@ -163,7 +163,7 @@ def vis_label():
                 cv2.rectangle(img1, (int(obj.xmin), int(obj.ymin)),
                               (int(obj.xmax), int(obj.ymax)), colors[c][::-1], 2)
 
-                box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib[present_sensor])
+                box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, getattr(calib,present_sensor))
 
                 # img2 = utils.draw_projected_box3d(img2, box3d_pts_2d)
                 def draw_rect(selected_corners, color):
