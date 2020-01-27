@@ -44,6 +44,17 @@ category_reflection = \
     'static_object.bicycle_rack': 'DontCare',
 }
 
+def write_array_to_file(output_f,name,array):
+    line = "{}: ".format(name)
+    output_f.write(line)
+    for i in range(array.shape[0]):
+        line = ""
+        for j in range(array.shape[1]):
+            line += str(array[i, j])
+            line += ' '
+        if i == array.shape[0] - 1:
+            line += '\n'
+        output_f.write(line)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -173,17 +184,19 @@ if __name__ == '__main__':
         pose_record = nusc.get('ego_pose', sd_rec['ego_pose_token'])
         lidar_path, boxes, cam_intrinsic = nusc.get_sample_data(lidar_token)
 
-        lidar2ego_translation = cs_record['translation']
-        lidar2ego_rotation = cs_record['rotation']
-        ego2global_translation = pose_record['translation']
-        ego2global_rotation = pose_record['rotation']
+        lidar2ego_translation = cs_record['translation']#[0.943713, 0.0, 1.84023]
+        lidar2ego_rotation = cs_record['rotation']#[0.7077955119163518, -0.006492242056004365, 0.010646214713995808, -0.7063073142877817]
+        ego2global_translation = pose_record['translation']#[411.3039349319818, 1180.8903791765097, 0.0]
+        ego2global_rotation = pose_record['rotation']#[0.5720320396729045, -0.0016977771610471074, 0.011798001930183783, -0.8201446642457809]
         from pyquaternion import Quaternion
-        #l2e_r_mat = Quaternion(lidar2ego_translation).rotation_matrix
-        #e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix
-        print('lidar2ego_translation:', lidar2ego_translation)
-        print('lidar2ego_rotation:',lidar2ego_rotation)
-       # print('l2e_r_mat:',l2e_r_mat)
-        ipdb.set_trace()
+        l2e_t_mat = np.array(lidar2ego_translation)#(1,3)
+        e2g_t_mat = np.array(ego2global_translation)#(1,3)
+        l2e_r_mat = Quaternion(lidar2ego_rotation).rotation_matrix#(3, 3)
+        e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix#(3, 3)
+        calib['lidar2ego_translation'] = l2e_t_mat
+        calib['lidar2ego_rotation'] = l2e_r_mat
+        calib['ego2global_translation'] = e2g_t_mat
+        calib['ego2global_rotation'] = e2g_r_mat
 
         # Get aggregated point cloud in lidar frame.
         sample_rec = nusc.get('sample', sd_record['sample_token'])
@@ -227,6 +240,10 @@ if __name__ == '__main__':
                     if i==calib[sensor].shape[0]-1:
                         line+='\n'
                     output_f.write(line)
+            write_array_to_file(output_f, 'lidar2ego_translation', calib['lidar2ego_translation'])
+            write_array_to_file(output_f, 'lidar2ego_rotation', calib['lidar2ego_rotation'])
+            write_array_to_file(output_f, 'ego2global_translation', calib['ego2global_translation'])
+            write_array_to_file(output_f, 'ego2global_rotation', calib['ego2global_rotation'])
         frame_counter += 1
         seqname_list.append(seqname)
         if frame_counter == end_index:
