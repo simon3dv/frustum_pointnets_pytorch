@@ -86,11 +86,15 @@ class Calibration(object):
         else:
             calibs = self.read_calib_file(calib_filepath)
         # Projection matrix from global coord to image2 coord
-        sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
-        for sensor in sensor_list:
-            getattr(self,sensor) = np.reshape(calibs[sensor], [3, 3])
-            #self.CAM_FRONT = calibs['CAM_FRONT']
-            #self.CAM_FRONT = np.reshape(self.CAM_FRONT, [3, 3])
+        self.sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+        self.CAM_FRONT = np.reshape(calibs['CAM_FRONT'], [3, 3])
+        self.CAM_BACK = np.reshape(calibs['CAM_BACK'], [3, 3])
+        self.CAM_FRONT_LEFT = np.reshape(calibs['CAM_FRONT_LEFT'], [3, 3])
+        self.CAM_BACK_LEFT = np.reshape(calibs['CAM_BACK_LEFT'], [3, 3])
+        self.CAM_FRONT_RIGHT = np.reshape(calibs['CAM_FRONT_RIGHT'], [3, 3])
+        self.CAM_BACK_RIGHT = np.reshape(calibs['CAM_BACK_RIGHT'], [3, 3])
+        #self.CAM_FRONT = calibs['CAM_FRONT']
+        #self.CAM_FRONT = np.reshape(self.CAM_FRONT, [3, 3])
         # Rigid transform from Velodyne coord to reference camera coord
         # self.V2C = calibs['Tr_velo_to_cam']
         # self.V2C = np.reshape(self.V2C, [3,4])
