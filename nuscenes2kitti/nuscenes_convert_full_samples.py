@@ -178,11 +178,11 @@ if __name__ == '__main__':
         ego2global_translation = pose_record['translation']
         ego2global_rotation = pose_record['rotation']
         from pyquaternion import Quaternion
-        l2e_r_mat = Quaternion(lidar2ego_translation).rotation_matrix
-        e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix
+        #l2e_r_mat = Quaternion(lidar2ego_translation).rotation_matrix
+        #e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix
         print('lidar2ego_translation:', lidar2ego_translation)
         print('lidar2ego_rotation:',lidar2ego_rotation)
-        print('l2e_r_mat:',l2e_r_mat)
+       # print('l2e_r_mat:',l2e_r_mat)
         ipdb.set_trace()
 
         # Get aggregated point cloud in lidar frame.
