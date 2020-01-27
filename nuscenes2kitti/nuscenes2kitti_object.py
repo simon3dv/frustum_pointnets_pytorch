@@ -259,7 +259,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
     print("mean:",obj_mean)
     mlab.show(1)
 
-def show_lidar_on_image(pc_velo, img, view, img_width, img_height):
+def show_lidar_on_image(pc_velo, img, calib, view, img_width, img_height):
     ''' Project LiDAR points to image '''
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         view, 0, 0, img_width, img_height, True)

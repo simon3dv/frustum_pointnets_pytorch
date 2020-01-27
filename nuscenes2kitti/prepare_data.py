@@ -163,7 +163,7 @@ def vis_label():
                 cv2.rectangle(img1, (int(obj.xmin), int(obj.ymin)),
                               (int(obj.xmax), int(obj.ymax)), colors[c][::-1], 2)
 
-                box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib)
+                box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib[present_sensor])
 
                 # img2 = utils.draw_projected_box3d(img2, box3d_pts_2d)
                 def draw_rect(selected_corners, color):
@@ -291,6 +291,10 @@ def demo():
                   color=colors[0], linewidth=linewidth)
     plt.show()
 
+    # Visualize LiDAR points on images
+    print(' -------- LiDAR points projected to image plane --------')
+    show_lidar_on_image(pc_velo, img, calib, view, img_width, img_height)
+    raw_input()
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
