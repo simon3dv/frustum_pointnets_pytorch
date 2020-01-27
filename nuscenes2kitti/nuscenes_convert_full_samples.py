@@ -189,8 +189,8 @@ if __name__ == '__main__':
         ego2global_translation = pose_record['translation']#[411.3039349319818, 1180.8903791765097, 0.0]
         ego2global_rotation = pose_record['rotation']#[0.5720320396729045, -0.0016977771610471074, 0.011798001930183783, -0.8201446642457809]
         from pyquaternion import Quaternion
-        l2e_t_mat = np.array(lidar2ego_translation)#(1,3)
-        e2g_t_mat = np.array(ego2global_translation)#(1,3)
+        l2e_t_mat = np.array(lidar2ego_translation).reshape(1,3)#(1,3)
+        e2g_t_mat = np.array(ego2global_translation).reshape(1,3)#(1,3)
         l2e_r_mat = Quaternion(lidar2ego_rotation).rotation_matrix#(3, 3)
         e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix#(3, 3)
         calib['lidar2ego_translation'] = l2e_t_mat
