@@ -293,7 +293,8 @@ def demo():
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
-    show_lidar_on_image(pc_velo, img, calib, getattr(calib,sensor), img_width, img_height)
+    ipdb.set_trace()
+    show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)
     raw_input()
 
 
@@ -343,8 +344,8 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         pc_rect[:, 3] = pc_velo[:, 3]
         img = dataset.get_image(sensor, data_idx)
         img_height, img_width, img_channel = img.shape
-        _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:, 0:3],
-                                                                 calib[sensor], 0, 0, img_width, img_height, True)
+        _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:, 0:3],calib,
+                                                                 sensor, 0, 0, img_width, img_height, True)
 
         for obj_idx in range(len(objects)):
             if objects[obj_idx].type not in type_whitelist: continue

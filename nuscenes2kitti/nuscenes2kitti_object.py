@@ -239,7 +239,7 @@ def draw_lidar_simple(pc, color=None):
     mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
     return fig
 """
-def show_lidar_with_boxes(pc_velo, objects, calib, view,
+def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
                           img_fov=False, img_width=None, img_height=None): 
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
@@ -248,11 +248,12 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
     from viz_util import draw_lidar
     from viz_util import draw_gt_boxes3d
 
+    view = getattr(calib,sensor)
     print(('All point num: ', pc_velo.shape[0]))
     #fig = mlab.figure(figure=None, bgcolor=(0,0,0),
     #    fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
-        pc_velo = get_lidar_in_image_fov(pc_velo, view, 0, 0,
+        pc_velo = get_lidar_in_image_fov(pc_velo, calib,sensor, 0, 0,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     #draw_lidar(pc_velo, fig=fig)
@@ -300,10 +301,11 @@ def rotate(points, rot_matrix: np.ndarray) -> None:
     points[:3, :] = np.dot(rot_matrix, points[:3, :])
     return points
 
-def show_lidar_on_image(pc_velo, img, calib, view, img_width, img_height):
+def show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height):
     ''' Project LiDAR points to image '''
+    view = getattr(calib,sensor)
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
-        calib, view, 0, 0, img_width, img_height, True)
+        calib, sensor, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
     imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
