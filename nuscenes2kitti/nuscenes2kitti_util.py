@@ -203,28 +203,29 @@ class Calibration(object):
         return pts_3d_global
 
     def project_global_to_ego(self, pts_3d_global):
+        ipdb.set_trace()
         pts_3d_ego = self.translate(pts_3d_global, -getattr(self, 'ego2global_translation'))
         pts_3d_ego = self.rotate(pts_3d_ego, getattr(self, 'ego2global_rotation').T)
         return pts_3d_global
 
     def project_cam_to_ego(self, pts_3d_cam, sensor):
-        pts_3d_ego_cam = self.rotate(pts_3d_cam, getattr(calib, sensor + '_' + 'cam2ego_rotation'))
-        pts_3d_ego_cam = self.translate(pts_3d_ego_cam, getattr(calib,sensor+'_'+'cam2ego_translation'))
+        pts_3d_ego_cam = self.rotate(pts_3d_cam, getattr(self, sensor + '_' + 'cam2ego_rotation'))
+        pts_3d_ego_cam = self.translate(pts_3d_ego_cam, getattr(self,sensor+'_'+'cam2ego_translation'))
         return pts_3d_ego_cam
 
     def project_ego_to_cam(self, pts_3d_ego_cam, sensor):
-        pts_3d_cam = self.translate(pts_3d_ego_cam, -getattr(calib,sensor+'_'+'cam2ego_translation'))
-        pts_3d_cam = self.rotate(pts_3d_cam, getattr(calib, sensor + '_' + 'cam2ego_rotation').T)
+        pts_3d_cam = self.translate(pts_3d_ego_cam, -getattr(self,sensor+'_'+'cam2ego_translation'))
+        pts_3d_cam = self.rotate(pts_3d_cam, getattr(self, sensor + '_' + 'cam2ego_rotation').T)
         return pts_3d_cam
 
     def project_ego_to_global_cam(self, pts_3d_ego_cam, sensor):
-        pts_3d_global_cam = self.rotate(pts_3d_ego_cam, getattr(calib, sensor + '_' + 'ego2global_rotation'))
-        pts_3d_global_cam = self.translate(pts_3d_global_cam, getattr(calib,sensor+'_'+'ego2global_translation'))
+        pts_3d_global_cam = self.rotate(pts_3d_ego_cam, getattr(self, sensor + '_' + 'ego2global_rotation'))
+        pts_3d_global_cam = self.translate(pts_3d_global_cam, getattr(self,sensor+'_'+'ego2global_translation'))
         return pts_3d_global_cam
 
     def project_global_to_ego_cam(self, pts_3d_global_cam, sensor):
-        pts_3d_ego_cam = self.translate(pts_3d_global_cam, -getattr(calib,sensor+'_'+'ego2global_translation'))
-        pts_3d_ego_cam = self.rotate(pts_3d_ego_cam, getattr(calib, sensor + '_' + 'ego2global_rotation').T)
+        pts_3d_ego_cam = self.translate(pts_3d_global_cam, -getattr(self,sensor+'_'+'ego2global_translation'))
+        pts_3d_ego_cam = self.rotate(pts_3d_ego_cam, getattr(self, sensor + '_' + 'ego2global_rotation').T)
         return pts_3d_ego_cam
 
     def project_global_to_velo(self, pts_3d_global):
