@@ -226,7 +226,7 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         view, 0, 0, img_width, img_height, True)
         '''
-    pts_global = calib.project_lidar_to_global(calib, pc_velo.T)
+    pts_global = calib.project_velo_to_global(calib, pc_velo.T)
     pts_2d = calib.project_global_to_cam(calib, sensor, pts_global).T
 
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
