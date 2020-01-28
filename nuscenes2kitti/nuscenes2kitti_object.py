@@ -177,13 +177,15 @@ def show_image_with_boxes(img, objects, calib, sensor, show3d=True,linewidth=2,c
     if show3d:
         Image.fromarray(img2).show()
 
-def project_velo_to_image(calib, sensor, pts_3d_velo):
+def project_velo_to_image(calib, sensor, pts_3d_velo,return_time=False):
     ''' Input: nx3 points in velodyne coord.
         Output: nx3 points in image2 coord.
     '''
     # Points live in the point sensor frame. So they need to be transformed via global to the image plane.
     # First step: transform the point-cloud to the ego vehicle frame for the timestamp of the sweep.
-
+    if return_time:
+        import time
+        start = time.time()
     pts_3d_velo = pts_3d_velo.T
     pts_3d_ego = rotate(pts_3d_velo, getattr(calib,'lidar2ego_rotation'))
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
@@ -205,14 +207,19 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     pts_2d_cam = utils.view_points(pts_3d_cam[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
     pts_2d_cam = pts_2d_cam.T
     pts_2d_cam[:,2] = depths.T
-    return pts_2d_cam
+    if return_time:
+        end = time.time()
+        print('Time(project_velo_to_image):',end-start)
+        return pts_2d_cam,end-start
+    else:
+        return pts_2d_cam
 
 def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
     ''' Filter lidar points, keep those in image FOV '''
     '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         view, 0, 0, img_width, img_height, True)'''
-    pts_2d = project_velo_to_image(calib, sensor, pc_velo)#mean:array([1.11870802e+05, 2.31304646e+05, 1.00000000e+00])
+    pts_2d,pt_time = project_velo_to_image(calib, sensor, pc_velo, return_time=True)#array([150.19827696, 740.45344083,  -1.66486715])
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
     ipdb.set_trace()
