@@ -183,7 +183,7 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     '''
     # Points live in the point sensor frame. So they need to be transformed via global to the image plane.
     # First step: transform the point-cloud to the ego vehicle frame for the timestamp of the sweep.
-    ipdb.set_trace()
+
     pts_3d_ego = rotate(pts_3d_velo, getattr(calib,'lidar2ego_rotation'))
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
 
@@ -293,7 +293,7 @@ def translate(points, x: np.ndarray) -> None:
     """
     for i in range(3):
         points[i, :] = points[i, :] + x[i]
-
+    return points
 
 def rotate(points, rot_matrix: np.ndarray) -> None:
     """
