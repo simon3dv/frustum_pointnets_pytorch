@@ -451,7 +451,6 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 box3d_size_list.append(box3d_size)
                 frustum_angle_list.append(frustum_angle)
 
-                ipdb.set_trace()
                 # collect statistics
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
