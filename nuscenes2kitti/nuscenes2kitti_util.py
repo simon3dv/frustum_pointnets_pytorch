@@ -203,7 +203,6 @@ class Calibration(object):
         return pts_3d_global
 
     def project_global_to_ego(self, pts_3d_global):
-        ipdb.set_trace()
         pts_3d_ego = self.translate(pts_3d_global, -getattr(self, 'ego2global_translation'))
         pts_3d_ego = self.rotate(pts_3d_ego, getattr(self, 'ego2global_rotation').T)
         return pts_3d_global
