@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     print('Running...(saving to {})'.format(os.path.dirname(img_output_root)))
     seqname_list = []
-    print('Numbers:',args.numbers)
+    print('Number:',args.number)
     for present_sample in tqdm(nusc.sample):
         calib = {}
         # converting image data from 6 cameras (in the sensor list)
@@ -291,7 +291,7 @@ if __name__ == '__main__':
         f_train = open('train.txt','w')
         f_val = open('val.txt','w')
         for i,seqname in enumerate(seqname_list):
-            if i < args.numbers/2:
+            if i < args.number/2:
                 f_train.write(seqname+'\n')
             else:
                 f_val.write(seqname+'\n')
