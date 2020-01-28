@@ -93,6 +93,10 @@ class Calibration(object):
         self.CAM_BACK_LEFT = np.reshape(calibs['CAM_BACK_LEFT'], [3, 3])
         self.CAM_FRONT_RIGHT = np.reshape(calibs['CAM_FRONT_RIGHT'], [3, 3])
         self.CAM_BACK_RIGHT = np.reshape(calibs['CAM_BACK_RIGHT'], [3, 3])
+        self.lidar2ego_translation = np.reshape(calibs['lidar2ego_translation'], [3, 1])
+        self.lidar2ego_rotation = np.reshape(calibs['lidar2ego_rotation'], [3, 3])
+        self.lego2global_translation = np.reshape(calibs['ego2global_translation'], [3, 1])
+        self.ego2global_rotation = np.reshape(calibs['ego2global_rotation'], [3, 3])
         #self.CAM_FRONT = calibs['CAM_FRONT']
         #self.CAM_FRONT = np.reshape(self.CAM_FRONT, [3, 3])
         # Rigid transform from Velodyne coord to reference camera coord

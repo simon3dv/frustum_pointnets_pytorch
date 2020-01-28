@@ -12,7 +12,7 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import nuscenes2kitti_util as utils
 import ipdb
-
+from pyquaternion import Quaternion
 try:
     raw_input          # Python 2
 except NameError:
@@ -176,16 +176,36 @@ def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = (
     if show3d:
         Image.fromarray(img2).show()
 
-def project_velo_to_image(view, pts_3d_velo):
+def project_velo_to_image(calib, view, pts_3d_velo):
     ''' Input: nx3 points in velodyne coord.
         Output: nx2 points in image2 coord.
     '''
+    # Points live in the point sensor frame. So they need to be transformed via global to the image plane.
+    # First step: transform the point-cloud to the ego vehicle frame for the timestamp of the sweep.
+    pts_3d_ego = rotate(pts_3d_velo, getattr(calib,'lidar2ego_rotation'))
+    pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
+
+    # Second step: transform to the global frame.
+    pts_3d_global=rotate(pts_3d_egp,getattr(calib,'ego2global_rotation'))
+    pts_3d_global=translate(pts_3d_global,getattr(calib,'ego2global_translation'))
+
+    # Third step: transform into the ego vehicle frame for the timestamp of the image.
+    poserecord = self.nusc.get('ego_pose', cam['ego_pose_token'])
+    pc.translate(-np.array(poserecord['translation']))
+    pc.rotate(Quaternion(poserecord['rotation']).rotation_matrix.T)
+
+    # Fourth step: transform into the camera.
+    cs_record = self.nusc.get('calibrated_sensor', cam['calibrated_sensor_token'])
+    pc.translate(-np.array(cs_record['translation']))
+    pc.rotate(Quaternion(cs_record['rotation']).rotation_matrix.T)
     return utils.view_points(pts_3d_velo[:, :3].T, view, normalize=False).T
 
-def get_lidar_in_image_fov(pc_velo, view, xmin, ymin, xmax, ymax,
+def get_lidar_in_image_fov(pc_velo, calib, view, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
     ''' Filter lidar points, keep those in image FOV '''
-    pts_2d = project_velo_to_image(view, pc_velo)
+    '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
+        view, 0, 0, img_width, img_height, True)'''
+    pts_2d = project_velo_to_image(calib, view, pc_velo)
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
     fov_inds = fov_inds & (pc_velo[:,0]>clip_distance)
@@ -259,10 +279,28 @@ def show_lidar_with_boxes(pc_velo, objects, calib, view,
     print("mean:",obj_mean)
     mlab.show(1)
 
+
+def translate(points, x: np.ndarray) -> None:
+    """
+    Applies a translation to the point cloud.
+    :param x: <np.float: 3, 1>. Translation in x, y, z.
+    """
+    for i in range(3):
+        points[i, :] = points[i, :] + x[i]
+
+
+def rotate(points, rot_matrix: np.ndarray) -> None:
+    """
+    Applies a rotation.
+    :param rot_matrix: <np.float: 3, 3>. Rotation matrix.
+    """
+    points[:3, :] = np.dot(rot_matrix, points[:3, :])
+    return points
+
 def show_lidar_on_image(pc_velo, img, calib, view, img_width, img_height):
     ''' Project LiDAR points to image '''
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
-        view, 0, 0, img_width, img_height, True)
+        calib, view, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
     imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 

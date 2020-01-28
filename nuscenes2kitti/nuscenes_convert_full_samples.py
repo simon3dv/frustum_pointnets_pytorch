@@ -17,6 +17,7 @@ import ipdb
 from tqdm import tqdm
 from nuscenes.utils.data_classes import LidarPointCloud
 import argparse
+from pyquaternion import Quaternion
 category_reflection = \
 {
     'human.pedestrian.adult': 'Pedestrian',
@@ -122,11 +123,34 @@ if __name__ == '__main__':
         # converting image data from 6 cameras (in the sensor list)
         for present_sensor in sensor_list:
 
+
+            img_token = present_sample['data'][present_sensor]
+
+            if(present_sensor == 'CAM_FRONT'):
+                sd_rec = nusc.get('sample_data', img_token)
+                cs_record = nusc.get('calibrated_sensor', sd_rec['calibrated_sensor_token'])
+                pose_record = nusc.get('ego_pose', sd_rec['ego_pose_token'])
+                cam2ego_translation = cs_record['translation']  # [0.943713, 0.0, 1.84023]
+                cam2ego_rotation = cs_record[
+                    'rotation']  # [0.7077955119163518, -0.006492242056004365, 0.010646214713995808, -0.7063073142877817]
+                ego2global_translation = pose_record['translation']  # [411.3039349319818, 1180.8903791765097, 0.0]
+                ego2global_rotation = pose_record[
+                    'rotation']  # [0.5720320396729045, -0.0016977771610471074, 0.011798001930183783, -0.8201446642457809]
+
+                c2e_t_mat = np.array(cam2ego_translation).reshape(1, 3)  # (1,3)
+                e2g_t_mat = np.array(ego2global_translation).reshape(1, 3)  # (1,3)
+                c2e_r_mat = Quaternion(cam2ego_rotation).rotation_matrix  # (3, 3)
+                e2g_r_mat = Quaternion(ego2global_rotation).rotation_matrix  # (3, 3)
+                calib[present_sensor+'_'+'cam2ego_translation'] = c2e_t_mat
+                calib[present_sensor+'_'+'cam2ego_rotation'] = c2e_r_mat
+                calib[present_sensor+'_'+'ego2global_translation'] = e2g_t_mat
+                calib[present_sensor+'_'+'ego2global_rotation'] = e2g_r_mat
+
             sensor_img_output_dir = os.path.join(img_output_root, 'image_' + present_sensor)
             sensor_label_output_dir = os.path.join(label_output_root, 'label_' + present_sensor)
             # each sensor_data corresponds to one specific image in the dataset
-            sensor_data = nusc.get('sample_data', present_sample['data'][present_sensor])
-            data_path, box_list, cam_intrinsic = nusc.get_sample_data(present_sample['data'][present_sensor], getattr(BoxVisibility,truncation_level))
+            sensor_data = nusc.get('sample_data', img_token)
+            data_path, box_list, cam_intrinsic = nusc.get_sample_data(img_token, getattr(BoxVisibility,truncation_level))
             """
             get_sample_data:        
                 Returns the data path as well as all annotations related to that sample_data.
@@ -188,7 +212,7 @@ if __name__ == '__main__':
         lidar2ego_rotation = cs_record['rotation']#[0.7077955119163518, -0.006492242056004365, 0.010646214713995808, -0.7063073142877817]
         ego2global_translation = pose_record['translation']#[411.3039349319818, 1180.8903791765097, 0.0]
         ego2global_rotation = pose_record['rotation']#[0.5720320396729045, -0.0016977771610471074, 0.011798001930183783, -0.8201446642457809]
-        from pyquaternion import Quaternion
+
         l2e_t_mat = np.array(lidar2ego_translation).reshape(1,3)#(1,3)
         e2g_t_mat = np.array(ego2global_translation).reshape(1,3)#(1,3)
         l2e_r_mat = Quaternion(lidar2ego_rotation).rotation_matrix#(3, 3)
@@ -244,6 +268,13 @@ if __name__ == '__main__':
             write_array_to_file(output_f, 'lidar2ego_rotation', calib['lidar2ego_rotation'])
             write_array_to_file(output_f, 'ego2global_translation', calib['ego2global_translation'])
             write_array_to_file(output_f, 'ego2global_rotation', calib['ego2global_rotation'])
+
+            for sensor in ['CAM_FRONT']:
+                write_array_to_file(output_f, sensor+'_'+'cam2ego_rotation', calib['cam2ego_rotation'])
+                write_array_to_file(output_f, sensor+'_'+'cam2ego_translation', calib['cam2ego_translation'])
+                write_array_to_file(output_f, sensor+'_'+'ego2global_rotation', calib['ego2global_rotation'])
+                write_array_to_file(output_f, sensor+'_'+'ego2global_translation', calib['ego2global_translation'])
+
         frame_counter += 1
         seqname_list.append(seqname)
         if frame_counter == end_index:
