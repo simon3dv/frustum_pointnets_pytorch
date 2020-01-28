@@ -183,7 +183,7 @@ def show_image_with_boxes(img, objects, calib, sensor, show3d=True,linewidth=2,c
     if show3d:
         Image.fromarray(img2).show()
 
-def project_velo_to_image(calib, sensor, pts_3d_velo,return_time=False):
+def project_velo_to_image(calib, sensor, pc_velo,return_time=False):
     ''' Input: nx3 points in velodyne coord.
         Output: nx3 points in image2 coord.
     '''
@@ -192,7 +192,7 @@ def project_velo_to_image(calib, sensor, pts_3d_velo,return_time=False):
     if return_time:
         import time
         start = time.time()
-    pts_3d_velo = pts_3d_velo.T
+    pts_3d_velo = pc_velo.T
     pts_3d_ego = rotate(pts_3d_velo, getattr(calib,'lidar2ego_rotation'))
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
 
