@@ -100,10 +100,11 @@ class Calibration(object):
         for sensor in self.sensor_list:
             for m in [ 'cam2ego_translation','ego2global_translation']:
                 attrt = sensor + '_'+ m
-                eval('self.'+attrt+' = np.reshape(calibs['+attrt+'],[3,1])')
+                ipdb.set_trace()
+                eval('self.'+attrt)  = np.reshape(calibs[attrt],[3,1])
             for m in ['cam2ego_rotation','ego2global_rotation']:
                 attrt = sensor + '_'+ m
-                eval('self.'+attrt+' = np.reshape(calibs['+attrt+'],[3,3])')
+                eval('self.'+attrt) = np.reshape(calibs[attrt],[3,3])
         #self.CAM_FRONT = calibs['CAM_FRONT']
         #self.CAM_FRONT = np.reshape(self.CAM_FRONT, [3, 3])
         # Rigid transform from Velodyne coord to reference camera coord

@@ -299,7 +299,6 @@ def rotate(points, rot_matrix: np.ndarray) -> None:
 
 def show_lidar_on_image(pc_velo, img, calib, view, img_width, img_height):
     ''' Project LiDAR points to image '''
-    ipdb.set_trace()
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         calib, view, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
