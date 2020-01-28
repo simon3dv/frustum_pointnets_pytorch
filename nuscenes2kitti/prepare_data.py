@@ -407,8 +407,8 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 # Augment data by box2d perturbation
                 if perturb_box2d:
                     xmin, ymin, xmax, ymax = random_shift_box2d(box2d)
-                    print(box2d)
-                    print(xmin, ymin, xmax, ymax)
+                    #print(box2d)
+                    #print(xmin, ymin, xmax, ymax)
                 else:
                     xmin, ymin, xmax, ymax = box2d
                 box_fov_inds = (pc_image_coord[:, 0] < xmax) & \
@@ -451,6 +451,7 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 box3d_size_list.append(box3d_size)
                 frustum_angle_list.append(frustum_angle)
 
+                ipdb.set_trace()
                 # collect statistics
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
