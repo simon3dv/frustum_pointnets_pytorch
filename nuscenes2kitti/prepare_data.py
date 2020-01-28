@@ -320,14 +320,15 @@ def demo(data_idx):
     print(' -------- LiDAR points in a frustum from a 2D box --------')
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         calib, sensor, 0, 0, img_width, img_height, True)
-    imgfov_pts_2d = pts_2d[fov_inds,:]
-    ipdb.set_trace()
-    imgfov_pc_global = calib.project_lidar_to_global(imgfov_pc_velo)
+    imgfov_pts_2d = pts_2d[fov_inds,:]#(3067, 3)
+    imgfov_pc_global = calib.project_lidar_to_global(imgfov_pc_velo.T)
     imgfov_pc_cam = calib.project_global_to_cam(imgfov_pc_global, sensor)
-
-    cameraUVDepth = np.zeros_like(imgfov_pc_cam)
-    cameraUVDepth[:,0:2] = imgfov_pts_2d[:, 0:2]
-    cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
+    cameraUVDepth = utils.view_points(imgfov_pc_cam[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
+    cameraUVDepth = cameraUVDepth.T
+    ipdb.set_trace()
+    #cameraUVDepth = np.zeros_like(imgfov_pc_cam)
+    #cameraUVDepth[:,0:2] = imgfov_pts_2d[:, 0:2]
+    #cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
 
     # Show that the points are exactly the same
     backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
