@@ -293,12 +293,14 @@ def demo():
         ax.plot([center_bottom[0], center_bottom_forward[0]],
                   [center_bottom[1], center_bottom_forward[1]],
                   color=colors[0], linewidth=linewidth)
-    plt.show()
+
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
     show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)#pc_velo:(n,3)
     raw_input()
+
+    plt.show()
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
