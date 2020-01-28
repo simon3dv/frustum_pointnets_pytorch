@@ -17,6 +17,7 @@ sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import nuscenes2kitti_util as utils
 import ipdb
 from pyquaternion import Quaternion
+import mayavi.mlab as mlab
 try:
     raw_input          # Python 2
 except NameError:
