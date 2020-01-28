@@ -266,7 +266,7 @@ def demo(data_idx):
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
         box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
-        box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T)  # (3,8)
+        box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
         box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global)#(3,8)
         corners = box3d_pts_3d_velo#(3,8)
         def draw_rect(selected_corners, color):
