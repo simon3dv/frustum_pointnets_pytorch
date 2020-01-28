@@ -266,8 +266,8 @@ def draw_nusc_lidar(pc, color=None, fig=None, bgcolor=(0, 0, 0), pts_scale=1, pt
 
     # draw fov (todo: update to real sensor spec.)
     fov = np.array([  # 45 degree
-        [20., 20., 0., 0.],
-        [20., -20., 0., 0.],
+        [20., 0., 20., 0.],
+        [20., 0., -20, 0.],
     ], dtype=np.float64)
 
     mlab.plot3d([0, fov[0, 0]], [0, fov[0, 1]], [0, fov[0, 2]], color=(1, 1, 1), tube_radius=None, line_width=1,
