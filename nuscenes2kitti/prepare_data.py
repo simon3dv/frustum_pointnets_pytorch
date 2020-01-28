@@ -293,7 +293,7 @@ def demo():
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
-    show_lidar_on_image(pc_velo, img, calib, view, img_width, img_height)
+    show_lidar_on_image(pc_velo, img, calib, getattr(calib,sensor), img_width, img_height)
     raw_input()
 
 
