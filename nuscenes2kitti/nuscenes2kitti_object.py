@@ -218,13 +218,14 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
     ''' Filter lidar points, keep those in image FOV '''
     '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
-        view, 0, 0, img_width, img_height, True)'''
+        view, 0, 0, img_width, img_height, True)
+        '''
     pts_2d = project_velo_to_image(calib, sensor, pc_velo)#array([150.19827696, 740.45344083,  -1.66486715])
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
-        (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
-    ipdb.set_trace()
-    fov_inds = fov_inds & (pc_velo[:,2]>clip_distance)#Here is depth before projection
-    imgfov_pc_velo = pc_velo[fov_inds,:]
+        (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)#26414->7149
+    # Use depth before projection
+    fov_inds = fov_inds & (pc_velo[:,2]>clip_distance)#7149->3067
+    imgfov_pc_velo = pc_velo[fov_inds,:]#(3067, 3),mean:array([-1.1616094e-02,  1.8041308e-01,  1.5962053e+01], dtype=float32)
     if return_more:
         return imgfov_pc_velo, pts_2d, fov_inds
     else:
@@ -320,14 +321,14 @@ def show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height):
         calib, sensor, 0, 0, img_width, img_height, True)
 
     imgfov_pts_2d = pts_2d[fov_inds,:]
-    imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
+    #imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
     import matplotlib.pyplot as plt
     cmap = plt.cm.get_cmap('hsv', 256)
     cmap = np.array([cmap(i) for i in range(256)])[:,:3]*255
 
     for i in range(imgfov_pts_2d.shape[0]):
-        depth = imgfov_pc_rect[i,2]
+        depth = pc_velo[i,2]
         color = cmap[int(640.0/depth),:]
         cv2.circle(img, (int(np.round(imgfov_pts_2d[i,0])),
             int(np.round(imgfov_pts_2d[i,1]))),
