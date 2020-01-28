@@ -289,11 +289,11 @@ class Calibration(object):
         n = uv_depth.shape[0]
         x = ((uv_depth[:,0]-c_u)*uv_depth[:,2])/f_u + b_x
         y = ((uv_depth[:,1]-c_v)*uv_depth[:,2])/f_v + b_y
-        pts_3d_rect = np.zeros((n,3))
-        pts_3d_rect[:,0] = x
-        pts_3d_rect[:,1] = y
-        pts_3d_rect[:,2] = uv_depth[:,2]
-        return pts_3d_rect
+        pts_3d_cam = np.zeros((n,3))
+        pts_3d_cam[:,0] = x
+        pts_3d_cam[:,1] = y
+        pts_3d_cam[:,2] = uv_depth[:,2]
+        return pts_3d_cam
 
     def project_cam_to_image(self, pts_3d_cam, sensor):
         pts_2d = view_points(pts_3d_cam[:3, :], getattr(self,sensor), normalize=True).T#(n,3)

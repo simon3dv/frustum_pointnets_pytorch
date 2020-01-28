@@ -300,12 +300,13 @@ def demo(data_idx=0,obj_idx=0):
 
     #consider intrinsic
     print('imgfov_pc_cam.shape:',imgfov_pc_cam.shape)
-    cameraUVDepth = calib.project_cam_to_image(imgfov_pc_cam, sensor)
+    cameraUVDepth = calib.project_cam_to_image(imgfov_pc_cam, sensor)#(n,3)
     print('cameraUVDepth.shape:',cameraUVDepth.shape)
-    backprojected_pc_cam = calib.project_image_to_cam(cameraUVDepth, sensor)
+    backprojected_pc_cam = calib.project_image_to_cam(cameraUVDepth, sensor)#(n,3)
+    print('backprojected_pc_cam.shape:', backprojected_pc_cam.shape)
 
     # Show that the points are exactly the same
-    backprojected_pc_global = calib.project_cam_to_global(backprojected_pc_cam, sensor)
+    backprojected_pc_global = calib.project_cam_to_global(backprojected_pc_cam.T, sensor)
     backprojected_pc_velo = calib.project_global_to_lidar(backprojected_pc_global).T
     print('imgfov_pc_velo.shape:',imgfov_pc_velo.shape)
     print(imgfov_pc_velo[0:5,:])
