@@ -1,7 +1,8 @@
 """ Helper methods for loading and parsing nuscenes2kitti data.
 
-Author: Charles R. Qi
-Date: September 2017
+Authod: Siming Fan
+Acknowledge: Charles R. Qi
+Date: Jan 2020
 """
 from __future__ import print_function
 
@@ -10,7 +11,7 @@ import os
 import cv2
 import numpy as np
 import ipdb
-
+import mayavi.mlab as mlab
 class Object3d(object):
     ''' 3d object label '''
     def __init__(self, label_file_line):

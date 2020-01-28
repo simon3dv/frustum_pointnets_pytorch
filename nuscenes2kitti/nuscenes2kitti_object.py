@@ -1,4 +1,8 @@
 ''' Helper class and functions for loading nuscenes2kitti objects
+
+Authod: Siming Fan
+Acknowledge: Charles R. Qi
+Date: Jan 2020
 '''
 from __future__ import print_function
 
@@ -231,29 +235,6 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
         return imgfov_pc_velo, pts_2d, fov_inds
     else:
         return imgfov_pc_velo
-"""
-def draw_lidar_simple(pc, color=None):
-    ''' Draw lidar points. simplest set up. '''
-    import mayavi.mlab as mlab
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1600, 1000))
-    if color is None: color = pc[:,2]
-    #draw points
-    mlab.points3d(pc[:,0], pc[:,2], pc[:,1], color, color=None, mode='point', colormap = 'gnuplot', scale_factor=1, figure=fig)
-    #draw origin
-    mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2)
-    #draw axis
-    axes=np.array([
-        [2.,0.,0.,0.],
-        [0.,0.,2.,0.],
-        [0.,2.,0.,0.],
-    ],dtype=np.float64)
-    mlab.plot3d([0, axes[0,0]], [0, axes[0,1]], [0, axes[0,2]], color=(1,0,0), tube_radius=None, figure=fig)
-    mlab.plot3d([0, axes[1,0]], [0, axes[1,1]], [0, axes[1,2]], color=(0,1,0), tube_radius=None, figure=fig)
-    mlab.plot3d([0, axes[2,0]], [0, axes[2,1]], [0, axes[2,2]], color=(0,0,1), tube_radius=None, figure=fig)
-    mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
-    return fig
-"""
-
 
 def draw_nusc_lidar(pc, color=None, fig=None, bgcolor=(0, 0, 0), pts_scale=1, pts_mode='point', pts_color=None):
     ''' Draw lidar points
