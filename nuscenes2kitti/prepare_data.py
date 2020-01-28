@@ -335,10 +335,10 @@ def demo(data_idx):
     # Show that the points are exactly the same
     backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
     backprojected_pc_velo = calib.project_global_to_lidar(backprojected_pc_global)
-    print('imgfov_pc_velo.shape:',imgfov_pc_velo)
-    print(imgfov_pc_velo[0:10])
+    print('imgfov_pc_velo.shape:',imgfov_pc_velo.shape)
+    print(imgfov_pc_velo[:,0:5])
     print('backprojected_pc_velo.shape:', backprojected_pc_velo.shape)
-    print(backprojected_pc_velo[0:10])
+    print(backprojected_pc_velo[:,0:5])
 
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
