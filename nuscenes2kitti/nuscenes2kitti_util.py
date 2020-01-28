@@ -95,7 +95,7 @@ class Calibration(object):
         self.CAM_BACK_RIGHT = np.reshape(calibs['CAM_BACK_RIGHT'], [3, 3])
         self.lidar2ego_translation = np.reshape(calibs['lidar2ego_translation'], [3, 1])
         self.lidar2ego_rotation = np.reshape(calibs['lidar2ego_rotation'], [3, 3])
-        self.lego2global_translation = np.reshape(calibs['ego2global_translation'], [3, 1])
+        self.ego2global_translation = np.reshape(calibs['ego2global_translation'], [3, 1])
         self.ego2global_rotation = np.reshape(calibs['ego2global_rotation'], [3, 3])
         for sensor in self.sensor_list:
             for m in [ 'cam2ego_translation','ego2global_translation']:
