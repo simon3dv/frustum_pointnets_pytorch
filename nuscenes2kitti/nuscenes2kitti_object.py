@@ -152,8 +152,7 @@ def show_image_with_boxes(img, objects, calib, sensor, show3d=True,linewidth=2,c
                          color, linewidth)
                 prev = corner
 
-        corners_2d = box3d_pts_2d
-        ipdb.set_trace()
+        corners_2d = box3d_pts_2d#(8,2)
         # Draw the sides
         for i in range(4):
             cv2.line(img2,
