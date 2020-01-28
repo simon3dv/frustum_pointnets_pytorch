@@ -214,6 +214,7 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     pts_2d = project_velo_to_image(calib, sensor, pc_velo)#mean:array([1.11870802e+05, 2.31304646e+05, 1.00000000e+00])
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
+    ipdb.set_trace()
     fov_inds = fov_inds & (pc_velo[:,0]>clip_distance)
     imgfov_pc_velo = pc_velo[fov_inds,:]
     if return_more:
