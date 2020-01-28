@@ -186,6 +186,7 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
 
     # Second step: transform to the global frame.
+    ipdb.set_trace()
     pts_3d_global=rotate(pts_3d_ego,getattr(calib,'ego2global_rotation'))
     pts_3d_global=translate(pts_3d_global,getattr(calib,'ego2global_translation'))
 
