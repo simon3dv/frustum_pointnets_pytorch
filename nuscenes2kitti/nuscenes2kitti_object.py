@@ -267,7 +267,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
     #fig = mlab.figure(figure=None, bgcolor=(0,0,0),
     #    fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
-        pc_velo = get_lidar_in_image_fov(pc_velo, calib,sensor, 0, 0,
+        pc_velo = get_lidar_in_image_fov(pc_velo, calib, sensor, 0, 0,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     #draw_lidar(pc_velo, fig=fig)
@@ -278,11 +278,13 @@ def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
         box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
-        box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d.T).T#(8,3)
+        box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T)  # (3,8)
+        box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global).T#(8,3)
         # box3d_pts_3d_velo = box3d_pts_3d
         # Draw heading arrow
         ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, np.eye(4))#(2,2),(2,3)
-        ori3d_pts_3d_velo = calib.project_global_to_velo(ori3d_pts_3d.T).T
+        ori3d_pts_3d_global = calib.project_cam_to_global(ori3d_pts_3d.T)#(3,2)
+        ori3d_pts_3d_velo = calib.project_global_to_velo(ori3d_pts_3d_global.T).T#(2,3)
         ori3d_pts_3d_velo = ori3d_pts_3d
         x1,y1,z1 = ori3d_pts_3d_velo[0,:]
         x2,y2,z2 = ori3d_pts_3d_velo[1,:]
