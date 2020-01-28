@@ -330,7 +330,7 @@ def demo(data_idx):
     #cameraUVDepth = np.zeros_like(imgfov_pc_cam)
     #cameraUVDepth[:,0:2] = imgfov_pts_2d[:, 0:2]
     #cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
-    cameraUVDepth = imfov_pc_cam
+    cameraUVDepth = imgfov_pc_cam
 
     # Show that the points are exactly the same
     backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
