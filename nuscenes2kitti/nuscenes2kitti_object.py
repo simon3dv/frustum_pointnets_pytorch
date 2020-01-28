@@ -277,6 +277,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
     for obj in objects:
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
+        ipdb.set_trace()
         box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
         box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
         box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global).T#(8,3)
