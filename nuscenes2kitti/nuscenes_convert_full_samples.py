@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     nusc = NuScenes(version=split, dataroot=data_root, verbose=True)
     if args.CAM_FRONT_only:
-        sensor_list = 'CAM_FRONT'
+        sensor_list = ['CAM_FRONT']
     else:
         sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
     #sensor_list = ['CAM_FRONT']
