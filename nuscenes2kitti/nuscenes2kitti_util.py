@@ -210,19 +210,27 @@ class Calibration(object):
     def project_cam_to_ego(self, pts_3d_cam, sensor):
         pts_3d_ego_cam = self.rotate(pts_3d_cam, getattr(calib, sensor + '_' + 'cam2ego_rotation'))
         pts_3d_ego_cam = self.translate(pts_3d_ego_cam, getattr(calib,sensor+'_'+'cam2ego_translation'))
+        return pts_3d_ego_cam
 
     def project_ego_to_cam(self, pts_3d_ego_cam, sensor):
         pts_3d_cam = self.translate(pts_3d_ego_cam, -getattr(calib,sensor+'_'+'cam2ego_translation'))
         pts_3d_cam = self.rotate(pts_3d_cam, getattr(calib, sensor + '_' + 'cam2ego_rotation').T)
+        return pts_3d_cam
 
     def project_ego_to_global_cam(self, pts_3d_ego_cam, sensor):
         pts_3d_global_cam = self.rotate(pts_3d_ego_cam, getattr(calib, sensor + '_' + 'ego2global_rotation'))
         pts_3d_global_cam = self.translate(pts_3d_global_cam, getattr(calib,sensor+'_'+'ego2global_translation'))
+        return pts_3d_global_cam
 
     def project_global_to_ego_cam(self, pts_3d_global_cam, sensor):
         pts_3d_ego_cam = self.translate(pts_3d_global_cam, -getattr(calib,sensor+'_'+'ego2global_translation'))
         pts_3d_ego_cam = self.rotate(pts_3d_ego_cam, getattr(calib, sensor + '_' + 'ego2global_rotation').T)
+        return pts_3d_ego_cam
 
+    def project_global_to_velo(self, pts_3d_global):
+        pts_3d_ego = self.project_global_to_ego(pts_3d_global)
+        pts_3d_velo = self.project_ego_to_lidar(pts_3d_ego)
+        return pts_3d_velo
     """
     def project_global_to_velo(self, pts_3d_global):
         ''' Input: nx3 points in rect camera coord.
