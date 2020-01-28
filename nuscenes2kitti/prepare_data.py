@@ -383,7 +383,6 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
 
     pos_cnt = 0.0
     all_cnt = 0.0
-    ipdb.set_trace()
     for data_idx in data_idx_list:
         print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx)
@@ -456,7 +455,6 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
 
-    ipdb.set_trace()
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(id_list)))
 
