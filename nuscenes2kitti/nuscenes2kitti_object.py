@@ -176,7 +176,7 @@ def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = (
     if show3d:
         Image.fromarray(img2).show()
 
-def project_velo_to_image(calib, view, pts_3d_velo):
+def project_velo_to_image(calib, sensor, pts_3d_velo):
     ''' Input: nx3 points in velodyne coord.
         Output: nx2 points in image2 coord.
     '''
@@ -186,26 +186,28 @@ def project_velo_to_image(calib, view, pts_3d_velo):
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
 
     # Second step: transform to the global frame.
-    pts_3d_global=rotate(pts_3d_egp,getattr(calib,'ego2global_rotation'))
+    pts_3d_global=rotate(pts_3d_ego,getattr(calib,'ego2global_rotation'))
     pts_3d_global=translate(pts_3d_global,getattr(calib,'ego2global_translation'))
 
     # Third step: transform into the ego vehicle frame for the timestamp of the image.
-    poserecord = self.nusc.get('ego_pose', cam['ego_pose_token'])
-    pc.translate(-np.array(poserecord['translation']))
-    pc.rotate(Quaternion(poserecord['rotation']).rotation_matrix.T)
+    pts_3d_ego_cam = translate(pts_3d_global, -getattr(calib,sensor+'_'+'ego2global_translation'))
+    pts_3d_ego_cam = rotate(pts_3d_ego_cam, getattr(calib,sensor+'_'+'ego2global_rotation').T)
 
     # Fourth step: transform into the camera.
-    cs_record = self.nusc.get('calibrated_sensor', cam['calibrated_sensor_token'])
-    pc.translate(-np.array(cs_record['translation']))
-    pc.rotate(Quaternion(cs_record['rotation']).rotation_matrix.T)
-    return utils.view_points(pts_3d_velo[:, :3].T, view, normalize=False).T
+    pts_3d_cam = translate(pts_3d_ego_cam, -getattr(calib,sensor+'_'+'cam2ego_translation'))
+    pts_3d_cam = rotate(pts_3d_cam, getattr(calib,sensor+'_'+'cam2ego_rotation').T)
 
-def get_lidar_in_image_fov(pc_velo, calib, view, xmin, ymin, xmax, ymax,
+    # Take the actual picture (matrix multiplication with camera-matrix + renormalization).
+    pts_2d_cam = utils.view_points(pts_3d_cam[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
+    return pts_2d_cam.T
+
+def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
     ''' Filter lidar points, keep those in image FOV '''
     '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         view, 0, 0, img_width, img_height, True)'''
-    pts_2d = project_velo_to_image(calib, view, pc_velo)
+    pts_2d = project_velo_to_image(calib, sensor, pc_velo)
+    ipdb.set_trace()
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
     fov_inds = fov_inds & (pc_velo[:,0]>clip_distance)
