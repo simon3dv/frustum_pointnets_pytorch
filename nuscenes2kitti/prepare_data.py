@@ -202,7 +202,7 @@ def vis_label():
 def demo(data_idx):
     sensor = 'CAM_FRONT'
     import mayavi.mlab as mlab
-    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
+    from viz_util import draw_lidar_simple, draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'))
 
     # Load data from dataset
@@ -309,7 +309,7 @@ def demo(data_idx):
     print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
-    draw_lidar(box3droi_pc_velo, fig=fig)
+    utils.draw_nusc_lidar(box3droi_pc_velo, fig=fig)
     draw_gt_boxes3d([box3d_pts_3d_velo.T], fig=fig)
     mlab.show(1)
     raw_input()
@@ -341,7 +341,7 @@ def demo(data_idx):
 
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
-    draw_lidar(backprojected_pc_velo, fig=fig)
+    utils.draw_nusc_lidar(backprojected_pc_velo, fig=fig)
     raw_input()
 
 

@@ -255,7 +255,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple
-    from viz_util import draw_lidar
+    #from viz_util import draw_lidar
     from viz_util import draw_gt_boxes3d
 
     view = getattr(calib,sensor)
@@ -362,5 +362,5 @@ def dataset_viz():
 
 if __name__=='__main__':
     import mayavi.mlab as mlab
-    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
+    from viz_util import draw_lidar_simple, draw_gt_boxes3d
     dataset_viz()
