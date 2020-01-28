@@ -232,7 +232,7 @@ if __name__ == '__main__':
         #plt.show()
 
         #print(pc.points.shape)#(4,n)
-        #pc.points[:3, :] = view_points(pc.points[:3, :], np.eye(4), normalize=False)
+        pc.points[:3, :] = view_points(pc.points[:3, :], np.eye(4), normalize=False)
         pc.points = pc.points.T
         #print(pc.points.shape)#(n,4)
         lidar_path = os.path.join(velodyne_output_root, seqname+".bin")
