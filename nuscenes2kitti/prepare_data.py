@@ -428,7 +428,7 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                                                 box2d_center_cam[0, 0])
                 # 3D BOX: Get pts velo in 3d box
                 obj = objects[obj_idx]
-                box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P)  # (8, 2)(8, 3)
+                box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, getattr(calib, sensor))  # (8, 2)(8, 3)
                 _, inds = extract_pc_in_box3d(pc_in_box_fov, box3d_pts_3d)  # (375, 4)(1607,)
                 label = np.zeros((pc_in_box_fov.shape[0]))  # (1607,)
                 label[inds] = 1
