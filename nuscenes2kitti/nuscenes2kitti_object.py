@@ -200,8 +200,11 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     pts_3d_cam = rotate(pts_3d_cam, getattr(calib,sensor+'_'+'cam2ego_rotation').T)
 
     # Take the actual picture (matrix multiplication with camera-matrix + renormalization).
+    depths = pts_3d_cam[:, 2]
     pts_2d_cam = utils.view_points(pts_3d_cam.T[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
-    return pts_2d_cam.T
+    pts_2d_cam = pts_2d_cam.T
+    pts_2d_cam[:,2] = depths
+    return pts_2d_cam
 
 def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
                            return_more=False, clip_distance=2.0):
@@ -306,7 +309,7 @@ def show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height):
     view = getattr(calib,sensor)
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         calib, sensor, 0, 0, img_width, img_height, True)
-    ipdb.set_trace()
+
     imgfov_pts_2d = pts_2d[fov_inds,:]
     imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
