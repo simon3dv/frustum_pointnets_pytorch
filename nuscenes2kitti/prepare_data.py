@@ -199,7 +199,7 @@ def vis_label():
             cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.jpg'),img1)
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'),img2)
 
-def demo(data_idx):
+def demo(data_idx=0,obj_idx=0):
     sensor = 'CAM_FRONT'
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple, draw_gt_boxes3d
@@ -207,10 +207,10 @@ def demo(data_idx):
 
     # Load data from dataset
     objects = dataset.get_label_objects(sensor, data_idx)  # objects = [Object3d(line) for line in lines]
-    objects[0].print_object()
+    objects[obj_idx].print_object()
 
     calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
-    box2d = objects[0].box2d
+    box2d = objects[obj_idx].box2d
     xmin, ymin, xmax, ymax = box2d
     box2d_center = np.array([(xmin + xmax) / 2.0, (ymin + ymax) / 2.0])
     uvdepth = np.zeros((1, 3))
@@ -266,7 +266,7 @@ def demo(data_idx):
 
     # Show LiDAR points that are in the 3d box
     print(' -------- LiDAR points in a 3D bounding box --------')
-    box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[0], np.eye(4))
+    box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[obj_idx], np.eye(4))
     box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
     box3d_pts_3d_velo = calib.project_global_to_lidar(box3d_pts_3d_global)  # (3,8)
     box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo.T)
@@ -312,7 +312,7 @@ def demo(data_idx):
     # Only display those points that fall into 2d box
     print(' -------- LiDAR points in a frustum from a 2D box --------')
     xmin,ymin,xmax,ymax = \
-        objects[0].xmin, objects[0].ymin, objects[0].xmax, objects[0].ymax
+        objects[obj_idx].xmin, objects[obj_idx].ymin, objects[obj_idx].xmax, objects[obj_idx].ymax
     boxfov_pc_velo = \
         get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax)
     print(('2d box FOV point num: ', boxfov_pc_velo.shape[0]))
@@ -488,6 +488,8 @@ if __name__ == '__main__':
                         help='Run demo.')
     parser.add_argument('--data_idx', type=int, default=0,
                         help='data_idx for demo.')
+    parser.add_argument('--obj_idx', type=int, default=0,
+                        help='obj_idx for demo.')
     parser.add_argument('--vis_label', action='store_true',
                         help='Run vis_label.')
     parser.add_argument('--gen_mini', action='store_true',
@@ -504,7 +506,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.demo:
-        demo(args.data_idx)
+        demo(args.data_idx,args.obj_idx)
         exit()
     if args.vis_label:
         vis_label()

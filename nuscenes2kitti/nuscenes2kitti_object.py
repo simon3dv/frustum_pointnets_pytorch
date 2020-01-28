@@ -248,7 +248,7 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     else:
         return imgfov_pc_velo
 
-def render_lidar_bev(pc_velo, objects, calib, sensor):
+def render_lidar_bev(pc_velo, objects, calib, sensor, saveto=None):
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print('pc_velo.shape:',pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
@@ -286,7 +286,10 @@ def render_lidar_bev(pc_velo, objects, calib, sensor):
         ax.plot([center_bottom[0], center_bottom_forward[0]],
                   [center_bottom[1], center_bottom_forward[1]],
                   color=colors[0], linewidth=linewidth)
-    plt.show()
+    if saveto:
+        plt.savefig(saveto)
+    else:
+        plt.show()
 
 def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
                           img_fov=False, img_width=None, img_height=None): 
