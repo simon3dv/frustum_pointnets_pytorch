@@ -184,10 +184,10 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     # Points live in the point sensor frame. So they need to be transformed via global to the image plane.
     # First step: transform the point-cloud to the ego vehicle frame for the timestamp of the sweep.
 
-
+    pts_3d_velo = pts_3d_velo.T
     pts_3d_ego = rotate(pts_3d_velo, getattr(calib,'lidar2ego_rotation'))
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
-    ipdb.set_trace()
+
     # Second step: transform to the global frame.
     pts_3d_global=rotate(pts_3d_ego,getattr(calib,'ego2global_rotation'))
     pts_3d_global=translate(pts_3d_global,getattr(calib,'ego2global_translation'))
@@ -201,10 +201,10 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     pts_3d_cam = rotate(pts_3d_cam, getattr(calib,sensor+'_'+'cam2ego_rotation').T)
 
     # Take the actual picture (matrix multiplication with camera-matrix + renormalization).
-    depths = pts_3d_cam[:, 2]
-    pts_2d_cam = utils.view_points(pts_3d_cam.T[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
+    depths = pts_3d_cam[2, :]
+    pts_2d_cam = utils.view_points(pts_3d_cam[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
     pts_2d_cam = pts_2d_cam.T
-    pts_2d_cam[:,2] = depths
+    pts_2d_cam[:,2] = depths.T
     return pts_2d_cam
 
 def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
