@@ -455,8 +455,7 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
 
-    if(all_cnt<1):
-        ipdb.set_trace()
+    ipdb.set_trace()
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(id_list)))
 
