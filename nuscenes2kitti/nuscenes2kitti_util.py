@@ -230,12 +230,12 @@ class Calibration(object):
         return pts_3d_ego_cam
 
     # ====lidar - global - cam====
-    def project_global_to_velo(self, pts_3d_global):
+    def project_global_to_lidar(self, pts_3d_global):
         pts_3d_ego = self.project_global_to_ego(pts_3d_global)
         pts_3d_velo = self.project_ego_to_lidar(pts_3d_ego)
         return pts_3d_velo
 
-    def project_velo_to_global(self, pts_3d_velo):
+    def project_lidar_to_global(self, pts_3d_velo):
         pts_3d_ego = self.project_lidar_to_ego(pts_3d_velo)
         pts_3d_global = self.project_ego_to_global(pts_3d_ego)
         return pts_3d_global

@@ -268,7 +268,7 @@ def demo(data_idx):
         # Draw 3d bounding box
         box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
         box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
-        box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global)#(3,8)
+        box3d_pts_3d_velo = calib.project_global_to_lidar(box3d_pts_3d_global)#(3,8)
         corners = box3d_pts_3d_velo#(3,8)
         def draw_rect(selected_corners, color):
             prev = selected_corners[-1]
@@ -305,7 +305,7 @@ def demo(data_idx):
     print(' -------- LiDAR points in a 3D bounding box --------')
     box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[0], np.eye(4))
     box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
-    box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global)  # (3,8)
+    box3d_pts_3d_velo = calib.project_global_to_lidar(box3d_pts_3d_global)  # (3,8)
     box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo.T)
     print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
@@ -322,7 +322,7 @@ def demo(data_idx):
         calib, sensor, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
     ipdb.set_trace()
-    imgfov_pc_global = calib.project_velo_to_global(imgfov_pc_velo)
+    imgfov_pc_global = calib.project_lidar_to_global(imgfov_pc_velo)
     imgfov_pc_cam = calib.project_global_to_cam(imgfov_pc_global, sensor)
 
     cameraUVDepth = np.zeros_like(imgfov_pc_cam)
@@ -331,7 +331,7 @@ def demo(data_idx):
 
     # Show that the points are exactly the same
     backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
-    backprojected_pc_velo = calib.project_global_to_velo(backprojected_pc_global)
+    backprojected_pc_velo = calib.project_global_to_lidar(backprojected_pc_global)
     print(imgfov_pc_velo[0:20])
     print(backprojected_pc_velo[0:20])
 
