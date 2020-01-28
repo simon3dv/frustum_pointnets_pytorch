@@ -317,7 +317,7 @@ def demo(data_idx):
 
 
     # UVDepth Image and its backprojection to point clouds
-    print(' -------- LiDAR points in a frustum from a 2D box --------')
+    print(' -------- LiDAR points in a frustum --------')
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         calib, sensor, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]#(3067, 3)
@@ -335,8 +335,10 @@ def demo(data_idx):
     # Show that the points are exactly the same
     backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
     backprojected_pc_velo = calib.project_global_to_lidar(backprojected_pc_global)
-    print(imgfov_pc_velo[0:20])
-    print(backprojected_pc_velo[0:20])
+    print('imgfov_pc_velo.shape:',imgfov_pc_velo)
+    print(imgfov_pc_velo[0:10])
+    print('backprojected_pc_velo.shape:', backprojected_pc_velo.shape)
+    print(backprojected_pc_velo[0:10])
 
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
