@@ -245,7 +245,7 @@ def demo():
     # 2.Draw frustum lidar with boxes in LIDAR_TOP coord
     print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
     #show_lidar_with_boxes(pc_velo, objects, calib)
-    show_lidar_with_boxes(pc_velo, objects, calib, sensor, True, img_width, img_height)
+    show_lidar_with_boxes(pc_velo.copy(), objects, calib, sensor, True, img_width, img_height)
     raw_input()
 
 
