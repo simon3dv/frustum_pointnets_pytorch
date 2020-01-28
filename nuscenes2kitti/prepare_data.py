@@ -200,12 +200,11 @@ def vis_label():
             cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.jpg'),img1)
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'),img2)
 
-def demo():
+def demo(data_idx):
     sensor = 'CAM_FRONT'
     import mayavi.mlab as mlab
     from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'))
-    data_idx = 0
 
     # Load data from dataset
     objects = dataset.get_label_objects(sensor, data_idx)  # objects = [Object3d(line) for line in lines]
@@ -466,6 +465,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true',
                         help='Run demo.')
+    parser.add_argument('--data_idx', type=int, default=0
+                        help='data_idx for demo.')
     parser.add_argument('--vis_label', action='store_true',
                         help='Run vis_label.')
     parser.add_argument('--gen_mini', action='store_true',
@@ -482,7 +483,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.demo:
-        demo()
+        demo(args.data_idx)
         exit()
     if args.vis_label:
         vis_label()
