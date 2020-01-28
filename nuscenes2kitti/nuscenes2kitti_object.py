@@ -87,6 +87,7 @@ class nuscenes2kitti_object(object):
 
     def get_top_down(self, idx):
         pass
+
 def render_objects(img, objects, view=np.eye(4), colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155)),linewidth=2):
     def draw_rect(selected_corners, color):
         prev = selected_corners[-1]
@@ -151,7 +152,7 @@ def show_image_with_boxes(img, objects, calib, sensor, show3d=True,linewidth=2,c
                          color, linewidth)
                 prev = corner
 
-        corners_2d = box3d_pts_2d
+        corners_2d = box3d_pts_2d.T
         # Draw the sides
         for i in range(4):
             cv2.line(img2,
