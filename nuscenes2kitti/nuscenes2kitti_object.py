@@ -252,7 +252,7 @@ def draw_nusc_lidar(pc, color=None, fig=None, bgcolor=(0, 0, 0), pts_scale=1, pt
                   scale_factor=pts_scale, figure=fig)
 
     # draw origin
-    mlab.points3d(0, 0, 0, color=(1, 1, 1), mode='sphere', scale_factor=1)
+    mlab.points3d(0, 0, 0, color=(1, 1, 1), mode='sphere', scale_factor=0.2)
 
     # draw axis
     axes = np.array([
@@ -314,7 +314,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     #draw_lidar(pc_velo, fig=fig)
-    fig = draw_nusc_lidar(pc_velo,pts_scale=10)
+    fig = draw_nusc_lidar(pc_velo,pts_scale=0.02,pts_mode='sphere')
     obj_mean = np.array([0.0,0.0,0.0])
     obj_count = 0
     for obj in objects:
