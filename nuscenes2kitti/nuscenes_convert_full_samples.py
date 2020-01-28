@@ -59,9 +59,13 @@ def write_array_to_file(output_f,name,array):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version',type=str,default='v1.0-mini')
+    parser.add_argument('--version',type=str,default='v1.0-mini',
+                        help='v1.0-mini/v1.0-trainval/v1.0-test')
     parser.add_argument('--start_index', type=int, default='0')
-    parser.add_argument('--numbers',type=int,default='-1')
+    parser.add_argument('--number',type=int,default='-1',
+                        help='number of frames to generate(-1 means all)')
+    parser.add_argument('--CAM_FRONT_only', action='store_true',
+                        help='Only generate CAM_FRONT; otherwise six cameras')
     args = parser.parse_args()
 
     split = args.version
