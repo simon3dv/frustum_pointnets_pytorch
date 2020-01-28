@@ -219,11 +219,11 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     ''' Filter lidar points, keep those in image FOV '''
     '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         view, 0, 0, img_width, img_height, True)'''
-    pts_2d,pt_time = project_velo_to_image(calib, sensor, pc_velo, return_time=True)#array([150.19827696, 740.45344083,  -1.66486715])
+    pts_2d = project_velo_to_image(calib, sensor, pc_velo)#array([150.19827696, 740.45344083,  -1.66486715])
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
     ipdb.set_trace()
-    fov_inds = fov_inds & (pc_velo[:,1]>clip_distance)
+    fov_inds = fov_inds & (pc_velo[:,2]>clip_distance)#Here is depth before projection
     imgfov_pc_velo = pc_velo[fov_inds,:]
     if return_more:
         return imgfov_pc_velo, pts_2d, fov_inds
