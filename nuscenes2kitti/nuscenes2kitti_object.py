@@ -226,16 +226,17 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     '''    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         view, 0, 0, img_width, img_height, True)
     '''
-    '''
-    pts_global = calib.project_lidar_to_global(pc_velo.T)
+
+    pts_global = calib.project_lidar_to_global(pc_velo.copy().T)
     pts_3d_cam = calib.project_global_to_cam(pts_global, sensor)
     depths = pts_3d_cam[2, :]
     pts_2d = utils.view_points(pts_3d_cam[:3, :], getattr(calib,sensor), normalize=True)#(3,n)
     pts_2d = pts_2d.T
     pts_2d[:,2] = depths.T
-    '''
-    pts_2d = project_velo_to_image(pc_velo.copy(), calib, sensor)
-    
+
+
+    #pts_2d = project_velo_to_image(pc_velo.copy(), calib, sensor)
+
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)#26414->7149
     # Use depth before projection
