@@ -299,6 +299,7 @@ def demo(data_idx=0,obj_idx=0):
     # backprojected_pc_cam = cameraUVDepth
 
     #consider intrinsic
+    print('imgfov_pc_cam.shape:',imgfov_pc_cam.shape)
     cameraUVDepth = calib.project_cam_to_image(imgfov_pc_cam, sensor)
     print('cameraUVDepth.shape:',cameraUVDepth.shape)
     backprojected_pc_cam = calib.project_image_to_cam(cameraUVDepth, sensor)
