@@ -325,7 +325,7 @@ def demo(data_idx):
     imgfov_pc_cam = calib.project_global_to_cam(imgfov_pc_global, sensor)
 
     cameraUVDepth = np.zeros_like(imgfov_pc_cam)
-    cameraUVDepth[:,0:2] = imgfov_pts_2d
+    cameraUVDepth[:,0:2] = imgfov_pts_2d[:, 0:2]
     cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
 
     # Show that the points are exactly the same
