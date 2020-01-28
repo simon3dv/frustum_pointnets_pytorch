@@ -276,10 +276,10 @@ def draw_nusc_lidar(pc, color=None, fig=None, bgcolor=(0, 0, 0), pts_scale=1, pt
                 figure=fig)
 
     # draw square region
-    TOP_Y_MIN = -20
-    TOP_Y_MAX = 20
-    TOP_X_MIN = 0
-    TOP_X_MAX = 40
+    TOP_Y_MIN = 0#-20
+    TOP_Y_MAX = 40#20
+    TOP_X_MIN = -20#0
+    TOP_X_MAX = 20#40
     TOP_Z_MIN = -2.0
     TOP_Z_MAX = 0.4
 
