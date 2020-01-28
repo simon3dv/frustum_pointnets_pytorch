@@ -381,8 +381,8 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
     box3d_size_list = []  # array of l,w,h
     frustum_angle_list = []  # angle of 2d box center from pos x-axis
 
-    pos_cnt = 0
-    all_cnt = 0
+    pos_cnt = 0.0
+    all_cnt = 0.0
     for data_idx in data_idx_list:
         print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx)
@@ -455,6 +455,8 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
 
+    if(all_cnt<1):
+        ipdb.set_trace()
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(id_list)))
 
