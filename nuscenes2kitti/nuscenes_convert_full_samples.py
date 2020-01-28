@@ -224,7 +224,7 @@ if __name__ == '__main__':
         chan = sd_record['channel']
         ref_chan = 'LIDAR_TOP'
         #pc, times = LidarPointCloud.from_file_multisweep(nusc,sample_rec,chan,ref_chan,nsweeps=10)
-        pc, times = LidarPointCloud.from_file_multisweep(nusc, sample_rec, chan, ref_chan, nsweeps=1)
+        pc, times = LidarPointCloud.from_file_multisweep(nusc, sample_rec, chan, ref_chan, nsweeps=10)
         #import matplotlib.pyplot as plt
         #fig, axes = plt.subplots(1, 2, figsize=(18, 9))
         #view = np.eye(4)
