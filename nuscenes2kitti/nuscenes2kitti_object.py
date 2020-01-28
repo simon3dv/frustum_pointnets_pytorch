@@ -227,7 +227,7 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
         view, 0, 0, img_width, img_height, True)
     '''
 
-    pts_global = calib.project_lidar_to_global(pc_velo.copy().T)
+    pts_global = calib.project_lidar_to_global(pc_velo.T)
     pts_3d_cam = calib.project_global_to_cam(pts_global, sensor)
     depths = pts_3d_cam[2, :]
     pts_2d = utils.view_points(pts_3d_cam[:3, :], getattr(calib,sensor), normalize=True)#(3,n)

@@ -171,6 +171,7 @@ class Calibration(object):
     # input:3xn
     # output:3xn
     # tips: not nx3!
+    '''
     def translate(self, points, x):
         """
         Applies a translation to the point cloud.
@@ -179,14 +180,23 @@ class Calibration(object):
         for i in range(3):
             points[i, :] = points[i, :] + x[i]
         return points
+    '''
+    def translate(self, points, x):
+        """
+        Applies a translation to the point cloud.
+        :param x: <np.float: 3, 1>. Translation in x, y, z.
+        """
+        pts = points.copy()
+        for i in range(3):
+            pts[i, :] = pts[i, :] + x[i]
+        return pts
 
     def rotate(self, points, rot_matrix):
         """
         Applies a rotation.
         :param rot_matrix: <np.float: 3, 3>. Rotation matrix.
         """
-        points[:3, :] = np.dot(rot_matrix, points[:3, :])
-        return points
+        return np.dot(rot_matrix, points[:, :])
 
     # ====lidar - ego(lidar) - global - ego_cam - cam====
     def project_lidar_to_ego(self, pts_3d_velo):
