@@ -124,8 +124,9 @@ def render_objects(img, objects, view=np.eye(4), colors = ((0, 0, 255), (255, 0,
                  (int(center_bottom_forward[0]), int(center_bottom_forward[1])),
                  colors[0][::-1], linewidth)
 
-def show_image_with_boxes(img, objects, view, show3d=True,linewidth=2,colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))):
+def show_image_with_boxes(img, objects, calib, sensor, show3d=True,linewidth=2,colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))):
     ''' Show image with 2D bounding boxes '''
+    view = getattr(calib, sensor)
     img1 = np.copy(img) # for 2d bbox
     img2 = np.copy(img) # for 3d bbox
     type2color = {'Pedestrian':0,
@@ -336,11 +337,12 @@ def dataset_viz():
         pc_velo = dataset.get_lidar(data_idx)[:,0:3]
         calib = dataset.get_calibration(data_idx)
 
+        sensor = 'CAM_FRONT'
         # Draw 2d and 3d boxes on image
-        show_image_with_boxes(img, objects, calib.CAM_FRONT, False)
+        show_image_with_boxes(img, objects, calib, sensor, False)
         raw_input()
         # Show all LiDAR points. Draw 3d box in LiDAR point cloud
-        show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
+        show_lidar_with_boxes(pc_velo, objects, calib, sensor, True, img_width, img_height)
         raw_input()
 
 if __name__=='__main__':

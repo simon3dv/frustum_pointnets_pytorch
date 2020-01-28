@@ -243,12 +243,12 @@ def demo():
     # 2.Draw lidar with boxes in LIDAR_TOP coord
     print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
     #show_lidar_with_boxes(pc_velo, objects, calib)
-    show_lidar_with_boxes(pc_velo, objects, calib, getattr(calib,sensor), False, img_width, img_height)
+    show_lidar_with_boxes(pc_velo, objects, calib, sensor, False, img_width, img_height)
     raw_input()
 
     # 3.Draw 2d and 3d boxes on CAM_FRONT image
     print(' -------- 2D bounding boxes in images --------')
-    show_image_with_boxes(img, objects, getattr(calib,sensor))
+    show_image_with_boxes(img, objects, calib, sensor)
     raw_input()
 
     print(' -------- render LiDAR points (and 3D boxes) in LIDAR_TOP coordinate --------')
@@ -292,7 +292,7 @@ def demo():
     plt.show()
 
     # Visualize LiDAR points on images
-    print(' -------- LiDAR points projected to image plane --------')
+    print(' -------- LiDAR points projected to image plane --------')f
     ipdb.set_trace()
     show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)
     raw_input()
