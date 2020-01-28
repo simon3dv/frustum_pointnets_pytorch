@@ -329,7 +329,8 @@ def demo(data_idx):
     cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
 
     # Show that the points are exactly the same
-    backprojected_pc_velo = calib.project_image_to_velo(cameraUVDepth)
+    backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
+    backprojected_pc_velo = calib.project_global_to_velo(backprojected_pc_global)
     print(imgfov_pc_velo[0:20])
     print(backprojected_pc_velo[0:20])
 

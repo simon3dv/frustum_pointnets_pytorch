@@ -280,28 +280,6 @@ class Calibration(object):
             Output: nx2 points in image2 coord.
         '''
         return view_points(pts_3d_velo[:, :3].T, view, normalize=False).T
-
-    # =========================== 
-    # ------- 2d to 3d ---------- 
-    # =========================== 
-    def project_image_to_rect(self, uv_depth):
-        ''' Input: nx3 first two channels are uv, 3rd channel
-                   is depth in rect camera coord.
-            Output: nx3 points in rect camera coord.
-        '''
-        n = uv_depth.shape[0]
-        x = ((uv_depth[:,0]-self.c_u)*uv_depth[:,2])/self.f_u + self.b_x
-        y = ((uv_depth[:,1]-self.c_v)*uv_depth[:,2])/self.f_v + self.b_y
-        pts_3d_rect = np.zeros((n,3))
-        pts_3d_rect[:,0] = x
-        pts_3d_rect[:,1] = y
-        pts_3d_rect[:,2] = uv_depth[:,2]
-        return pts_3d_rect
-
-    def project_image_to_velo(self, uv_depth):
-        pts_3d_rect = self.project_image_to_rect(uv_depth)
-        return self.project_rect_to_velo(pts_3d_rect)
-
  
 def rotx(t):
     ''' 3D Rotation about the x-axis. '''
