@@ -321,6 +321,7 @@ def demo(data_idx):
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         calib, sensor, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
+    ipdb.set_trace()
     imgfov_pc_global = calib.project_velo_to_global(imgfov_pc_velo)
     imgfov_pc_cam = calib.project_global_to_cam(imgfov_pc_global, sensor)
 
