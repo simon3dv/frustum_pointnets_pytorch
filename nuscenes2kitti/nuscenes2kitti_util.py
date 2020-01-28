@@ -279,6 +279,10 @@ class Calibration(object):
 
     #=========intrinsic=========#
     def project_image_to_cam(self, uv_depth, sensor):
+        ''' Input: nx3 first two channels are uv, 3rd channel
+                   is depth in rect camera coord.
+            Output: nx3 points in (rect) camera coord.
+        '''
         # Camera intrinsics and extrinsics
         c_u = getattr(self,sensor)[0,2]
         c_v = getattr(self,sensor)[1,2]

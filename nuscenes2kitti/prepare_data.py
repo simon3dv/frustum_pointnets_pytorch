@@ -422,10 +422,10 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 uvdepth = np.zeros((1, 3))
                 uvdepth[0, 0:2] = box2d_center
                 uvdepth[0, 2] = 20  # some random depth
-
+                box2d_center_cam = calib.project_image_to_cam(uvdepth, sensor)
                 #box2d_center_rect = calib.project_image_to_rect(uvdepth.T).T
-                frustum_angle = -1 * np.arctan2(box2d_center_rect[0, 2],
-                                                box2d_center_rect[0, 0])
+                frustum_angle = -1 * np.arctan2(box2d_center_cam[0, 2],
+                                                box2d_center_cam[0, 0])
                 # 3D BOX: Get pts velo in 3d box
                 obj = objects[obj_idx]
                 box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P)  # (8, 2)(8, 3)
