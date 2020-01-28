@@ -296,7 +296,7 @@ class Calibration(object):
         return pts_3d_rect
 
     def project_cam_to_image(self, pts_3d_cam, sensor):
-        pts_2d = view_points(pts_3d_cam[:3, :], getattr(self,sensor), normalize=True)#(3,n)
+        pts_2d = view_points(pts_3d_cam.T[:3, :], getattr(self,sensor), normalize=True).T#(n,3)
         return pts_2d
 
     """
