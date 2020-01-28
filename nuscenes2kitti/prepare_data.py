@@ -255,7 +255,7 @@ def demo(data_idx):
 
     print(' -------- render LiDAR points (and 3D boxes) in LIDAR_TOP coordinate --------')
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
-    print(pc_velo.shape)
+    print('pc_velo.shape:',pc_velo.shape)
     ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
     ax.set_xlim(-40,40)
     ax.set_ylim(-20,70)
@@ -292,13 +292,22 @@ def demo(data_idx):
                   [center_bottom[1], center_bottom_forward[1]],
                   color=colors[0], linewidth=linewidth)
 
+    plt.show()
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
     show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)#pc_velo:(n,3)
     raw_input()
 
-    plt.show()
+    # Show LiDAR points that are in the 3d box
+    print(' -------- LiDAR points in a 3D bounding box --------')
+    box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[0], np.eye(4))
+    box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
+    box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global)  # (3,8)
+    box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo.T)
+    print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
+
+
 
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
