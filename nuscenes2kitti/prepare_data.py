@@ -267,7 +267,7 @@ def demo():
         box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d.T)#(3,8)
         #box3d_pts_3d_ego = calib.project_global_to_ego(box3d_pts_3d)
         #box3d_pts_3d_velo = calib.project_ego_to_velo(box3d_pts_3d)
-        corners = box3d_pts_3d_velo.T#(8,3)
+        corners = box3d_pts_3d_velo#(3,8)
         def draw_rect(selected_corners, color):
             prev = selected_corners[-1]
             for corner in selected_corners:
