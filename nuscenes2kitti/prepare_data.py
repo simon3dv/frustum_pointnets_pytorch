@@ -299,8 +299,8 @@ def demo(data_idx=0,obj_idx=0):
     # backprojected_pc_cam = cameraUVDepth
 
     #consider intrinsic
-    cameraUVDepth = calib.project_cam_to_image(imgfov_pc_cam)
-    backprojected_pc_cam = calib.project_image_to_cam(cameraUVDepth)
+    cameraUVDepth = calib.project_cam_to_image(imgfov_pc_cam, sensor)
+    backprojected_pc_cam = calib.project_image_to_cam(cameraUVDepth, sensor)
 
     # Show that the points are exactly the same
     backprojected_pc_global = calib.project_cam_to_global(backprojected_pc_cam, sensor)
