@@ -252,7 +252,7 @@ def draw_nusc_lidar(pc, color=None, fig=None, bgcolor=(0, 0, 0), pts_scale=1, pt
                   scale_factor=pts_scale, figure=fig)
 
     # draw origin
-    mlab.points3d(0, 0, 0, color=(1, 1, 1), mode='sphere', scale_factor)
+    mlab.points3d(0, 0, 0, color=(1, 1, 1), mode='sphere', scale_factor=1)
 
     # draw axis
     axes = np.array([
