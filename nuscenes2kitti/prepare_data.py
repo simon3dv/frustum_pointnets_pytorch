@@ -293,10 +293,17 @@ def demo(data_idx=0,obj_idx=0):
     #cameraUVDepth = np.zeros_like(imgfov_pc_cam)
     #cameraUVDepth[:,0:2] = imgfov_pts_2d[:, 0:2]
     #cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
-    cameraUVDepth = imgfov_pc_cam
+
+    # miss intrisic
+    # cameraUVDepth = imgfov_pc_cam
+    # backprojected_pc_cam = cameraUVDepth
+
+    #consider intrinsic
+    cameraUVDepth = calib.project_cam_to_image(imgfov_pc_cam)
+    backprojected_pc_cam = calib.project_image_to_cam(cameraUVDepth)
 
     # Show that the points are exactly the same
-    backprojected_pc_global = calib.project_cam_to_global(cameraUVDepth, sensor)
+    backprojected_pc_global = calib.project_cam_to_global(backprojected_pc_cam, sensor)
     backprojected_pc_velo = calib.project_global_to_lidar(backprojected_pc_global).T
     print('imgfov_pc_velo.shape:',imgfov_pc_velo.shape)
     print(imgfov_pc_velo[0:5,:])
@@ -323,7 +330,22 @@ def demo(data_idx=0,obj_idx=0):
     mlab.show(1)
     raw_input()
 
-def extract_frustum_data(idx_filename, split, output_filename, viz=False,
+def random_shift_box2d(box2d, shift_ratio=0.1):
+    ''' Randomly shift box center, randomly scale width and height
+    '''
+    r = shift_ratio
+    xmin,ymin,xmax,ymax = box2d
+    h = ymax-ymin
+    w = xmax-xmin
+    cx = (xmin+xmax)/2.0
+    cy = (ymin+ymax)/2.0
+    cx2 = cx + w*r*(np.random.random()*2-1)
+    cy2 = cy + h*r*(np.random.random()*2-1)
+    h2 = h*(1+np.random.random()*2*r-r) # 0.9 to 1.1
+    w2 = w*(1+np.random.random()*2*r-r) # 0.9 to 1.1
+    return np.array([cx2-w2/2.0, cy2-h2/2.0, cx2+w2/2.0, cy2+h2/2.0])
+
+def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False,
                          perturb_box2d=False, augmentX=1, type_whitelist=['Car']):
     ''' Extract point clouds and corresponding annotations in frustums
         defined generated from 2D bounding boxes
@@ -343,7 +365,6 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         None (will write a .pickle file to the disk)
     '''
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split)
-    sensor = 'CAM_FRONT'
     data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
 
     id_list = []  # int number
@@ -361,16 +382,18 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
     all_cnt = 0
     for data_idx in data_idx_list:
         print('------------- ', data_idx)
-        calib = dataset.get_calibration(data_idx)  # 3 by 4 matrix
+        calib = dataset.get_calibration(data_idx)
         objects = dataset.get_label_objects(sensor, data_idx)
         pc_velo = dataset.get_lidar(data_idx)
-        pc_rect = np.zeros_like(pc_velo)
-        pc_rect[:, 0:3] = calib.project_velo_to_rect(pc_velo[:, 0:3])
-        pc_rect[:, 3] = pc_velo[:, 3]
+        pc_cam = np.zeros_like(pc_velo)
+        pc_global = calib.project_lidar_to_global(pc_velo.T[0:3, :])
+        pc_cam[:, 0:3] = calib.project_global_to_cam(pc_global, sensor).T
+        pc_cam[:, 3] = pc_velo[:, 3]
         img = dataset.get_image(sensor, data_idx)
         img_height, img_width, img_channel = img.shape
-        _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:, 0:3],calib,
-                                                                 sensor, 0, 0, img_width, img_height, True)
+        _, pc_image_coord, img_fov_inds = \
+            get_lidar_in_image_fov(pc_velo[:, 0:3],calib, sensor,
+                                   0, 0, img_width, img_height, True)
 
         for obj_idx in range(len(objects)):
             if objects[obj_idx].type not in type_whitelist: continue
@@ -390,13 +413,14 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                                (pc_image_coord[:, 1] < ymax) & \
                                (pc_image_coord[:, 1] >= ymin)
                 box_fov_inds = box_fov_inds & img_fov_inds
-                pc_in_box_fov = pc_rect[box_fov_inds, :]  # (1607, 4)
+                pc_in_box_fov = pc_cam[box_fov_inds, :]  # (1607, 4)
                 # Get frustum angle (according to center pixel in 2D BOX)
                 box2d_center = np.array([(xmin + xmax) / 2.0, (ymin + ymax) / 2.0])
                 uvdepth = np.zeros((1, 3))
                 uvdepth[0, 0:2] = box2d_center
                 uvdepth[0, 2] = 20  # some random depth
-                box2d_center_rect = calib.project_image_to_rect(uvdepth)
+
+                #box2d_center_rect = calib.project_image_to_rect(uvdepth.T).T
                 frustum_angle = -1 * np.arctan2(box2d_center_rect[0, 2],
                                                 box2d_center_rect[0, 0])
                 # 3D BOX: Get pts velo in 3d box
@@ -503,6 +527,8 @@ if __name__ == '__main__':
     #                    help='Generate val split frustum data with RGB detection 2D boxes')
     parser.add_argument('--car_only', action='store_true',
                         help='Only generate cars; otherwise cars, peds and cycs')
+    parser.add_argument('--CAM_FRONT_only', action='store_true',
+                        help='Only generate CAM_FRONT; otherwise six cameras')
     args = parser.parse_args()
 
     if args.demo:
@@ -519,11 +545,20 @@ if __name__ == '__main__':
         type_whitelist = ['Car', 'Pedestrian', 'Cyclist']
         output_prefix = 'frustum_carpedcyc_'
 
+    if args.CAM_FRONT_only:
+        sensor_list = ['CAM_FRONT']
+    else:
+        sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+
+
     if args.gen_mini:
-        extract_frustum_data(\
-            os.path.join(BASE_DIR, 'image_sets/v1.0-mini.txt'),
-            'v1.0-mini',
-            os.path.join(BASE_DIR, output_prefix+'v1.0-mini.pickle'),
-            viz=False, perturb_box2d=True, augmentX=5,
-            type_whitelist=type_whitelist)
+        for sensor in sensor_list:
+            sensor_prefix = sensor + '_'
+            extract_frustum_data(\
+                os.path.join(BASE_DIR, 'image_sets/v1.0-mini.txt'),
+                'v1.0-mini',
+                sensor,
+                os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'v1.0-mini.pickle'),
+                viz=False, perturb_box2d=True, augmentX=5,
+                type_whitelist=type_whitelist)
 

@@ -80,6 +80,22 @@ class Calibration(object):
         Ref (KITTI paper): http://www.cvlibs.net/publications/Geiger2013IJRR.pdf
 
         TODO(rqi): do matrix multiplication only once for each projection.
+
+
+            P^2_rect = [f^2_u,  0,      c^2_u,  -f^2_u b^2_x;
+                    0,      f^2_v,  c^2_v,  -f^2_v b^2_y;
+                    0,      0,      1,      0]
+                 = K * [1|t]
+            P2:
+            P2: 7.070493000000e+02 0               6.040814000000e+02 4.575831000000e+01
+            0            7.070493000000e+02 1.805066000000e+02 -3.454157000000e-01
+            0            0                  1                 4.981016000000e-03
+            cam_intrinsic(CAM_FRONT):
+            CAM_FRONT:
+            1266.417203046554 0.0 816.2670197447984
+            0.0 1266.417203046554 491.50706579294757
+            0.0 0.0 1.0
+
     '''
     def __init__(self, calib_filepath, from_video=False):
         if from_video:
@@ -259,6 +275,29 @@ class Calibration(object):
         pts_3d_ego_cam = self.project_global_to_ego_cam(pts_3d_global_cam, sensor)
         pts_3d_cam = self.project_ego_to_cam(pts_3d_ego_cam, sensor)
         return pts_3d_cam
+
+
+    #=========intrinsic=========#
+    def project_image_to_cam(self, uv_depth, sensor):
+        # Camera intrinsics and extrinsics
+        c_u = getattr(self,sensor)[0,2]
+        c_v = getattr(self,sensor)[1,2]
+        f_u = getattr(self,sensor)[0,0]
+        f_v = getattr(self,sensor)[1,1]
+        b_x = 0.0
+        b_y = 0.0
+        n = uv_depth.shape[0]
+        x = ((uv_depth[:,0]-c_u)*uv_depth[:,2])/f_u + b_x
+        y = ((uv_depth[:,1]-c_v)*uv_depth[:,2])/f_v + b_y
+        pts_3d_rect = np.zeros((n,3))
+        pts_3d_rect[:,0] = x
+        pts_3d_rect[:,1] = y
+        pts_3d_rect[:,2] = uv_depth[:,2]
+        return pts_3d_rect
+
+    def project_cam_to_image(self, pts_3d_cam, sensor):
+        pts_2d = view_points(pts_3d_cam[:3, :], getattr(self,sensor), normalize=True)#(3,n)
+        return pts_2d
 
     """
     def project_global_to_velo(self, pts_3d_global):
