@@ -97,8 +97,7 @@ def draw_gt_boxes3d(gt_boxes3d, fig, color=(1,1,1), line_width=1, draw_text=True
 
 def vis_label():
     import mayavi.mlab as mlab
-    from viz_util import draw_lidar, draw_lidar_simple# , draw_gt_boxes3d
-
+    from viz_util import  draw_lidar_simple# , draw_gt_boxes3d
     split = 'v1.0-mini'
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'),split=split)
     type2color = {'Pedestrian': 0,
@@ -356,7 +355,7 @@ def demo(data_idx):
 
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
-    draw_lidar(boxfov_pc_velo, fig=fig)
+    utils.draw_nusc_lidar(boxfov_pc_velo, fig=fig)
     mlab.show(1)
     raw_input()
 
