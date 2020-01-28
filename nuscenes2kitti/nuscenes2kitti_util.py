@@ -170,7 +170,7 @@ class Calibration(object):
     # input:3xn
     # output:3xn
     # tips: not nx3!
-    def translate(points, x: np.ndarray) -> None:
+    def translate(self, points, x):
         """
         Applies a translation to the point cloud.
         :param x: <np.float: 3, 1>. Translation in x, y, z.
@@ -179,7 +179,7 @@ class Calibration(object):
             points[i, :] = points[i, :] + x[i]
         return points
 
-    def rotate(points, rot_matrix: np.ndarray) -> None:
+    def rotate(self, points, rot_matrix):
         """
         Applies a rotation.
         :param rot_matrix: <np.float: 3, 3>. Rotation matrix.
