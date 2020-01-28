@@ -166,27 +166,64 @@ class Calibration(object):
  
     # =========================== 
     # ------- 3d to 3d ---------- 
-    # =========================== 
-    def project_velo_to_ref(self, pts_3d_velo):
-        #pts_3d_velo = self.cart2hom(pts_3d_velo) # nx4
-        #return np.dot(pts_3d_velo, np.transpose(self.V2C))
+    # ===========================
+    # input:3xn
+    # output:3xn
+    # tips: not nx3!
+    def translate(points, x: np.ndarray) -> None:
+        """
+        Applies a translation to the point cloud.
+        :param x: <np.float: 3, 1>. Translation in x, y, z.
+        """
+        for i in range(3):
+            points[i, :] = points[i, :] + x[i]
+        return points
+
+    def rotate(points, rot_matrix: np.ndarray) -> None:
+        """
+        Applies a rotation.
+        :param rot_matrix: <np.float: 3, 3>. Rotation matrix.
+        """
+        points[:3, :] = np.dot(rot_matrix, points[:3, :])
+        return points
+
+    def project_lidar_to_ego(self, pts_3d_velo):
+        pts_3d_ego = self.rotate(pts_3d_velo, getattr(self, 'lidar2ego_rotation'))
+        pts_3d_ego = self.translate(pts_3d_ego, getattr(self, 'lidar2ego_translation'))
         return pts_3d_velo
 
-    def project_ref_to_velo(self, pts_3d_ref):
-        #pts_3d_ref = self.cart2hom(pts_3d_ref) # nx4
-        #return np.dot(pts_3d_ref, np.transpose(self.C2V))
+    def project_ego_to_lidar(self, pts_3d_ego):
+        pts_3d_velo = self.translate(pts_3d_ego, -getattr(self, 'lidar2ego_translation'))
+        pts_3d_velo = self.rotate(pts_3d_velo, getattr(self, 'lidar2ego_rotation').T)
         return pts_3d_velo
 
-    def project_rect_to_ref(self, pts_3d_rect):
-        #''' Input and Output are nx3 points '''
-        #return np.transpose(np.dot(np.linalg.inv(self.R0), np.transpose(pts_3d_rect)))
-        return pts_3d_rect
+    def project_ego_to_global(self, pts_3d_ego):
+        pts_3d_global = self.rotate(pts_3d_ego, getattr(self, 'ego2global_rotation'))
+        pts_3d_global = self.translate(pts_3d_global, getattr(self, 'ego2global_translation'))
+        return pts_3d_global
 
-    def project_ref_to_rect(self, pts_3d_ref):
-        #''' Input and Output are nx3 points '''
-        #return np.transpose(np.dot(self.R0, np.transpose(pts_3d_ref)))
-        return pts_3d_ref
+    def project_global_to_ego(self, pts_3d_global):
+        pts_3d_ego = self.translate(pts_3d_global, -getattr(self, 'ego2global_translation'))
+        pts_3d_ego = self.rotate(pts_3d_ego, getattr(self, 'ego2global_rotation').T)
+        return pts_3d_global
 
+    def project_cam_to_ego(self, pts_3d_cam, sensor):
+        pts_3d_ego_cam = self.rotate(pts_3d_cam, getattr(calib, sensor + '_' + 'cam2ego_rotation'))
+        pts_3d_ego_cam = self.translate(pts_3d_ego_cam, getattr(calib,sensor+'_'+'cam2ego_translation'))
+
+    def project_ego_to_cam(self, pts_3d_ego_cam, sensor):
+        pts_3d_cam = self.translate(pts_3d_ego_cam, -getattr(calib,sensor+'_'+'cam2ego_translation'))
+        pts_3d_cam = self.rotate(pts_3d_cam, getattr(calib, sensor + '_' + 'cam2ego_rotation').T)
+
+    def project_ego_to_global_cam(self, pts_3d_ego_cam, sensor):
+        pts_3d_global_cam = self.rotate(pts_3d_ego_cam, getattr(calib, sensor + '_' + 'ego2global_rotation'))
+        pts_3d_global_cam = self.translate(pts_3d_global_cam, getattr(calib,sensor+'_'+'ego2global_translation'))
+
+    def project_global_to_ego_cam(self, pts_3d_global_cam, sensor):
+        pts_3d_ego_cam = self.translate(pts_3d_global_cam, -getattr(calib,sensor+'_'+'ego2global_translation'))
+        pts_3d_ego_cam = self.rotate(pts_3d_ego_cam, getattr(calib, sensor + '_' + 'ego2global_rotation').T)
+
+    """
     def project_global_to_velo(self, pts_3d_global):
         ''' Input: nx3 points in rect camera coord.
             Output: nx3 points in velodyne coord.
@@ -196,13 +233,9 @@ class Calibration(object):
         pts_3d_velo = pts_3d_global[:,[0,2,1]]
         pts_3d_velo[:,2] *= -1
         return pts_3d_velo
+    """
 
-    def project_velo_to_rect(self, pts_3d_velo):
-        #pts_3d_ref = self.project_velo_to_ref(pts_3d_velo)
-        #return self.project_ref_to_rect(pts_3d_ref)
-        return pts_3d_velo
-
-    # =========================== 
+    # ===========================
     # ------- 3d to 2d ---------- 
     # =========================== 
     def project_rect_to_image(self, pts_3d_rect):
