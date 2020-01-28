@@ -270,10 +270,10 @@ if __name__ == '__main__':
             write_array_to_file(output_f, 'ego2global_rotation', calib['ego2global_rotation'])
 
             for sensor in ['CAM_FRONT']:
-                write_array_to_file(output_f, sensor+'_'+'cam2ego_rotation', calib['cam2ego_rotation'])
-                write_array_to_file(output_f, sensor+'_'+'cam2ego_translation', calib['cam2ego_translation'])
-                write_array_to_file(output_f, sensor+'_'+'ego2global_rotation', calib['ego2global_rotation'])
-                write_array_to_file(output_f, sensor+'_'+'ego2global_translation', calib['ego2global_translation'])
+                write_array_to_file(output_f, sensor+'_'+'cam2ego_rotation', calib[sensor+'_'+'cam2ego_rotation'])
+                write_array_to_file(output_f, sensor+'_'+'cam2ego_translation', calib[sensor+'_'+'cam2ego_translation'])
+                write_array_to_file(output_f, sensor+'_'+'ego2global_rotation', calib[sensor+'_'+'ego2global_rotation'])
+                write_array_to_file(output_f, sensor+'_'+'ego2global_translation', calib[sensor+'_'+'ego2global_translation'])
 
         frame_counter += 1
         seqname_list.append(seqname)
