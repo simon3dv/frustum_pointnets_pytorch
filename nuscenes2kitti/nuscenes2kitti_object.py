@@ -179,7 +179,7 @@ def show_image_with_boxes(img, objects, calib, sensor, show3d=True,linewidth=2,c
 
 def project_velo_to_image(calib, sensor, pts_3d_velo):
     ''' Input: nx3 points in velodyne coord.
-        Output: nx2 points in image2 coord.
+        Output: nx3 points in image2 coord.
     '''
     # Points live in the point sensor frame. So they need to be transformed via global to the image plane.
     # First step: transform the point-cloud to the ego vehicle frame for the timestamp of the sweep.
