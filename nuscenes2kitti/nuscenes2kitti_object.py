@@ -18,6 +18,7 @@ import nuscenes2kitti_util as utils
 import ipdb
 from pyquaternion import Quaternion
 import mayavi.mlab as mlab
+import matplotlib.pyplot as plt
 try:
     raw_input          # Python 2
 except NameError:
@@ -247,7 +248,45 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     else:
         return imgfov_pc_velo
 
+def render_lidar_bev(pc_velo, objects, calib, sensor):
+    _, ax = plt.subplots(1, 1, figsize=(9, 9))
+    print('pc_velo.shape:',pc_velo.shape)
+    ax.scatter(pc_velo[:, 0], pc_velo[:, 1], c=pc_velo[:, 2], s=0.2)
+    ax.set_xlim(-40,40)
+    ax.set_ylim(-20,70)
 
+    linewidth = 2
+    colors=('b', 'r', 'k')
+    for obj in objects:
+        if obj.type=='DontCare':continue
+        # Draw 3d bounding box
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
+        box3d_pts_3d_global = calib.project_cam_to_global(box3d_pts_3d.T, sensor)  # (3,8)
+        box3d_pts_3d_velo = calib.project_global_to_lidar(box3d_pts_3d_global)#(3,8)
+        corners = box3d_pts_3d_velo#(3,8)
+        def draw_rect(selected_corners, color):
+            prev = selected_corners[-1]
+            for corner in selected_corners:
+                ax.plot([prev[0], corner[0]], [prev[1], corner[1]], color=color, linewidth=linewidth)
+                prev = corner
+
+        # Draw the sides
+        for i in range(4):
+            ax.plot([corners.T[i][0], corners.T[i + 4][0]],
+                      [corners.T[i][1], corners.T[i + 4][1]],
+                      color=colors[2], linewidth=linewidth)
+
+        # Draw front (first 4 corners) and rear (last 4 corners) rectangles(3d)/lines(2d)
+        draw_rect(corners.T[:4], colors[0])
+        draw_rect(corners.T[4:], colors[1])
+
+        # Draw line indicating the front
+        center_bottom_forward = np.mean(corners.T[2:4], axis=0)
+        center_bottom = np.mean(corners.T[[2, 3, 7, 6]], axis=0)
+        ax.plot([center_bottom[0], center_bottom_forward[0]],
+                  [center_bottom[1], center_bottom_forward[1]],
+                  color=colors[0], linewidth=linewidth)
+    plt.show()
 
 def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
                           img_fov=False, img_width=None, img_height=None): 
