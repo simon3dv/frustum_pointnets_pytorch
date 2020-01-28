@@ -208,10 +208,10 @@ def demo(data_idx):
 
     # Load data from dataset
     objects = dataset.get_label_objects(sensor, data_idx)  # objects = [Object3d(line) for line in lines]
-    objects[data_idx].print_object()
+    objects[0].print_object()
 
     calib = dataset.get_calibration(data_idx)  # utils.Calibration(calib_filename)
-    box2d = objects[data_idx].box2d
+    box2d = objects[0].box2d
     xmin, ymin, xmax, ymax = box2d
     box2d_center = np.array([(xmin + xmax) / 2.0, (ymin + ymax) / 2.0])
     uvdepth = np.zeros((1, 3))

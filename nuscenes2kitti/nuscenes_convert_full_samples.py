@@ -177,7 +177,7 @@ if __name__ == '__main__':
 
                             # save labels
                             line = "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {}\n".format(
-                                box_name, 0, -1, alpha, left_2d, top_2d, right_2d, bottom_2d, h, w, l, x, y+h/2, z, yaw)
+                                box_name, 0, -1, alpha, left_2d, top_2d, right_2d, bottom_2d, h, w, l, x, h/2, z, yaw)
                             output_f.write(line)
             # save images
             #if not os.path.getsize(output_label_file):

@@ -192,7 +192,7 @@ class Calibration(object):
     def project_lidar_to_ego(self, pts_3d_velo):
         pts_3d_ego = self.rotate(pts_3d_velo, getattr(self, 'lidar2ego_rotation'))
         pts_3d_ego = self.translate(pts_3d_ego, getattr(self, 'lidar2ego_translation'))
-        return pts_3d_velo
+        return pts_3d_ego
 
     def project_ego_to_lidar(self, pts_3d_ego):
         pts_3d_velo = self.translate(pts_3d_ego, -getattr(self, 'lidar2ego_translation'))
@@ -207,7 +207,7 @@ class Calibration(object):
     def project_global_to_ego(self, pts_3d_global):
         pts_3d_ego = self.translate(pts_3d_global, -getattr(self, 'ego2global_translation'))
         pts_3d_ego = self.rotate(pts_3d_ego, getattr(self, 'ego2global_rotation').T)
-        return pts_3d_global
+        return pts_3d_ego
 
     def project_cam_to_ego(self, pts_3d_cam, sensor):
         pts_3d_ego_cam = self.rotate(pts_3d_cam, getattr(self, sensor + '_' + 'cam2ego_rotation'))
