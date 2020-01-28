@@ -311,7 +311,7 @@ def demo(data_idx):
     fig = mlab.figure(figure=None, bgcolor=(0,0,0),
         fgcolor=None, engine=None, size=(1000, 500))
     draw_lidar(box3droi_pc_velo, fig=fig)
-    draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
+    draw_gt_boxes3d([box3d_pts_3d_velo.T], fig=fig)
     mlab.show(1)
     raw_input()
 
