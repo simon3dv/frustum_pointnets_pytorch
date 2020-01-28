@@ -465,7 +465,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true',
                         help='Run demo.')
-    parser.add_argument('--data_idx', type=int, default=0
+    parser.add_argument('--data_idx', type=int, default=0,
                         help='data_idx for demo.')
     parser.add_argument('--vis_label', action='store_true',
                         help='Run vis_label.')
