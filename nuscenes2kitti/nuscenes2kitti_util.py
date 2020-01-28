@@ -196,7 +196,9 @@ class Calibration(object):
         Applies a rotation.
         :param rot_matrix: <np.float: 3, 3>. Rotation matrix.
         """
-        return np.dot(rot_matrix, points[:, :])
+        pts = points.copy()
+        pts = np.dot(rot_matrix, pts[:, :])
+        return pts
 
     # ====lidar - ego(lidar) - global - ego_cam - cam====
     def project_lidar_to_ego(self, pts_3d_velo):
