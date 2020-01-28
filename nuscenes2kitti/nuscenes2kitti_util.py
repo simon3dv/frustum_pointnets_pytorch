@@ -436,15 +436,15 @@ def compute_box_3d(obj,view):
     # only draw 3d bounding box for objs in front of the camera
     if np.any(corners_3d[2,:]<0.1):
         corners_2d = None
-        return corners_2d, corners_3d
+        return corners_2d, np.transpose(corners_3d)
     
     # project the 3d bounding box into the image plane
     # corners_2d = project_to_image(np.transpose(corners_3d), P);
     #sensor = 'CAM_FRONT'
     #view = getattr(calib,sensor)# 3x3
-    corners_2d = view_points(corners_3d, view, normalize=True)[:2, :]#2x8, mean=590.067...
+    corners_2d = view_points(corners_3d, view, normalize=True)[:2, :].T#2x8, mean=590.067...
     #print 'corners_2d: ', corners_2d
-    return corners_2d, corners_3d
+    return corners_2d, np.transpose(corners_3d)
 
 
 def compute_orientation_3d(obj, view):

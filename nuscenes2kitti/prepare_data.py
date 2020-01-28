@@ -263,11 +263,11 @@ def demo():
     for obj in objects:
         if obj.type=='DontCare':continue
         # Draw 3d bounding box
-        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(2,8),(3,8)
-        box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d)#(3,8)
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, np.eye(4))#(8,2),(8,3)
+        box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d.T)#(3,8)
         #box3d_pts_3d_ego = calib.project_global_to_ego(box3d_pts_3d)
         #box3d_pts_3d_velo = calib.project_ego_to_velo(box3d_pts_3d)
-        corners = box3d_pts_3d_velo
+        corners = box3d_pts_3d_velo.T#(8,3)
         def draw_rect(selected_corners, color):
             prev = selected_corners[-1]
             for corner in selected_corners:
