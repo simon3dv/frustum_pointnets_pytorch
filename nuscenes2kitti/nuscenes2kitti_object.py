@@ -184,10 +184,10 @@ def project_velo_to_image(calib, sensor, pts_3d_velo):
     # Points live in the point sensor frame. So they need to be transformed via global to the image plane.
     # First step: transform the point-cloud to the ego vehicle frame for the timestamp of the sweep.
 
-    ipdb.set_trace()
+
     pts_3d_ego = rotate(pts_3d_velo, getattr(calib,'lidar2ego_rotation'))
     pts_3d_ego = translate(pts_3d_ego, getattr(calib,'lidar2ego_translation'))
-
+    ipdb.set_trace()
     # Second step: transform to the global frame.
     pts_3d_global=rotate(pts_3d_ego,getattr(calib,'ego2global_rotation'))
     pts_3d_global=translate(pts_3d_global,getattr(calib,'ego2global_translation'))
@@ -215,7 +215,6 @@ def get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax,
     pts_2d = project_velo_to_image(calib, sensor, pc_velo)#mean:array([1.11870802e+05, 2.31304646e+05, 1.00000000e+00])
     fov_inds = (pts_2d[:,0]<xmax) & (pts_2d[:,0]>=xmin) & \
         (pts_2d[:,1]<ymax) & (pts_2d[:,1]>=ymin)
-    ipdb.set_trace()
     fov_inds = fov_inds & (pc_velo[:,1]>clip_distance)
     imgfov_pc_velo = pc_velo[fov_inds,:]
     if return_more:
