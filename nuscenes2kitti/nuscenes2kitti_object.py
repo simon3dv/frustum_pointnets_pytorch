@@ -314,7 +314,7 @@ def show_lidar_with_boxes(pc_velo, objects, calib, sensor,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     #draw_lidar(pc_velo, fig=fig)
-    fig = draw_nusc_lidar(pc_velo,pts_scale=3)
+    fig = draw_nusc_lidar(pc_velo,pts_scale=10)
     obj_mean = np.array([0.0,0.0,0.0])
     obj_count = 0
     for obj in objects:
