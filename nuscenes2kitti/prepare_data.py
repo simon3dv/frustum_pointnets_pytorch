@@ -293,8 +293,7 @@ def demo():
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
-    ipdb.set_trace()
-    show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)
+    show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)#pc_velo:(n,3)
     raw_input()
 
 
