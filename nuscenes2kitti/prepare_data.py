@@ -253,6 +253,7 @@ def demo(data_idx):
     show_image_with_boxes(img, objects, calib, sensor)
     raw_input()
 
+
     print(' -------- render LiDAR points (and 3D boxes) in LIDAR_TOP coordinate --------')
     _, ax = plt.subplots(1, 1, figsize=(9, 9))
     print('pc_velo.shape:',pc_velo.shape)
@@ -291,13 +292,14 @@ def demo(data_idx):
         ax.plot([center_bottom[0], center_bottom_forward[0]],
                   [center_bottom[1], center_bottom_forward[1]],
                   color=colors[0], linewidth=linewidth)
-
     plt.show()
+
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
     show_lidar_on_image(pc_velo, img, calib, sensor, img_width, img_height)#pc_velo:(n,3)
     raw_input()
+
 
     # Show LiDAR points that are in the 3d box
     print(' -------- LiDAR points in a 3D bounding box --------')
@@ -306,9 +308,50 @@ def demo(data_idx):
     box3d_pts_3d_velo = calib.project_global_to_velo(box3d_pts_3d_global)  # (3,8)
     box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo.T)
     print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
+    draw_lidar(box3droi_pc_velo, fig=fig)
+    draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
+    mlab.show(1)
+    raw_input()
 
 
+    # UVDepth Image and its backprojection to point clouds
+    print(' -------- LiDAR points in a frustum from a 2D box --------')
+    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
+        calib, sensor, 0, 0, img_width, img_height, True)
+    imgfov_pts_2d = pts_2d[fov_inds,:]
+    imgfov_pc_global = calib.project_velo_to_global(imgfov_pc_velo)
+    imgfov_pc_cam = calib.project_global_to_cam(imgfov_pc_global, sensor)
 
+    cameraUVDepth = np.zeros_like(imgfov_pc_cam)
+    cameraUVDepth[:,0:2] = imgfov_pts_2d
+    cameraUVDepth[:,2] = imgfov_pc_cam[:,2]
+
+    # Show that the points are exactly the same
+    backprojected_pc_velo = calib.project_image_to_velo(cameraUVDepth)
+    print(imgfov_pc_velo[0:20])
+    print(backprojected_pc_velo[0:20])
+
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
+    draw_lidar(backprojected_pc_velo, fig=fig)
+    raw_input()
+
+
+    # Only display those points that fall into 2d box
+    print(' -------- LiDAR points in a frustum from a 2D box --------')
+    xmin,ymin,xmax,ymax = \
+        objects[0].xmin, objects[0].ymin, objects[0].xmax, objects[0].ymax
+    boxfov_pc_velo = \
+        get_lidar_in_image_fov(pc_velo, calib, sensor, xmin, ymin, xmax, ymax)
+    print(('2d box FOV point num: ', boxfov_pc_velo.shape[0]))
+
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
+    draw_lidar(boxfov_pc_velo, fig=fig)
+    mlab.show(1)
+    raw_input()
 
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                          perturb_box2d=False, augmentX=1, type_whitelist=['Car']):
