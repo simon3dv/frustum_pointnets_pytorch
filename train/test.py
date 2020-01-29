@@ -289,25 +289,25 @@ def test_one_epoch(model, loader):
 
     # 6. Compute and write Results
     # batch_output:(32, 1024)
-    batch_output = batch_mask
+    batch_output = mask
     # batch_center_pred:(32, 3)
-    batch_center_pred = batch_center_boxnet
+    batch_center_pred = center_boxnet
     # heading_cls,heading_res
-    batch_hclass_pred = np.argmax(batch_heading_scores, 1)  # bs
-    batch_hres_pred = np.array([batch_heading_residuals[j, batch_hclass_pred[j]] \
-                                for j in range(batch_data.shape[0])])
+    batch_hclass_pred = np.argmax(heading_scores, 1)  # bs
+    batch_hres_pred = np.array([heading_residuals[j, batch_hclass_pred[j]] \
+                                for j in range(data.shape[0])])
     # batch_size_cls,batch_size_res
-    batch_sclass_pred = np.argmax(batch_size_scores, 1)  # bs
-    batch_sres_pred = np.vstack([batch_size_residuals[j, batch_sclass_pred[j], :] \
-                                 for j in range(batch_data.shape[0])])  # (32,3)
+    batch_sclass_pred = np.argmax(size_scores, 1)  # bs
+    batch_sres_pred = np.vstack([size_residuals[j, batch_sclass_pred[j], :] \
+                                 for j in range(data.shape[0])])  # (32,3)
 
     # batch_scores
-    batch_seg_prob = softmax(batch_logits)[:, :, 1]  # BxN
-    batch_seg_mask = np.argmax(batch_logits, 2)  # BxN
+    batch_seg_prob = softmax(logits)[:, :, 1]  # BxN
+    batch_seg_mask = np.argmax(logits, 2)  # BxN
     mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1)  # B,
     mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
-    heading_prob = np.max(softmax(batch_heading_scores), 1)  # B
-    size_prob = np.max(softmax(batch_size_scores), 1)  # B,
+    heading_prob = np.max(softmax(heading_scores), 1)  # B
+    size_prob = np.max(softmax(size_scores), 1)  # B,
     batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
     for j in range(batch_output.shape[0]):
@@ -418,12 +418,7 @@ if __name__=='__main__':
     --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
     --data_path kitti/frustum_caronly_val.pickle 
     --idx_path kitti/image_sets/val.txt 
-    --output kitti_caronly_v1
-    [1] test loss: 0.102615
-    test segmentation accuracy: 0.902856
-    test box IoU(ground/3D): 0.801254/0.749424
-    test box estimation accuracy (IoU=0.7): 0.776838
-
+    --output train/kitti_caronly_v1
 
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/kitti_caronly_v1
 
