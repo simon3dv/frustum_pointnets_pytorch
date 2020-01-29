@@ -427,6 +427,7 @@ def test_one_epoch(model, loader):
         size_scores, size_residuals_normalized, size_residuals, center = \
             model(batch_data, batch_one_hot_vec)
 
+        '''
         # 3. Detach
         logits = logits.detach()
         stage1_center = stage1_center.detach()
@@ -438,7 +439,7 @@ def test_one_epoch(model, loader):
         size_residuals_normalized = size_residuals_normalized.detach()
         size_residuals = size_residuals.detach()
         center = center.detach()
-
+        '''
         # 4. Compute Loss
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
