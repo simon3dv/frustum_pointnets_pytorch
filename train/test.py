@@ -270,11 +270,12 @@ def test_one_epoch(model, loader):
         size_scores = size_scores.cpu().detach().numpy()
         size_residuals = size_residuals.cpu().detach().numpy()
         #size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
-        batch_center = batch_center.cpu().detach().numpy()
-        batch_hclass = batch_hclass.cpu().detach().numpy()
-        batch_hres = batch_hres.cpu().detach().numpy()
-        batch_sclass = batch_sclass.cpu().detach().numpy()
-        batch_sres = batch_sres.cpu().detach().numpy()
+
+        batch_center = batch_center.cpu()#.detach().numpy()
+        batch_hclass = batch_hclass.cpu()#.detach().numpy()
+        batch_hres = batch_hres.cpu()#.detach().numpy()
+        batch_sclass = batch_sclass.cpu()#.detach().numpy()
+        batch_sres = batch_sres.cpu()#.detach().numpy()
 
         iou2ds, iou3ds = provider.compute_box3d_iou(
             center,
@@ -292,8 +293,8 @@ def test_one_epoch(model, loader):
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
         # 5. Compute and write all Results
-        batch_output = mask#torch.Size([32, 1024])
-        batch_center_pred = center_boxnet#torch.Size([32, 3])
+        batch_output = np.argmax(logits, 2)#mask#torch.Size([32, 1024])
+        batch_center_pred = center#_boxnet#torch.Size([32, 3])
         batch_hclass_pred = np.argmax(heading_scores, 1)  # (32,)
         batch_hres_pred = np.array([heading_residuals[j, batch_hclass_pred[j]] \
                                     for j in range(batch_data.shape[0])]) # (32,)
@@ -322,7 +323,16 @@ def test_one_epoch(model, loader):
             size_res_list.append(batch_sres_pred[j, :])
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
-
+    '''
+    return np.argmax(logits, 2), centers, heading_cls, heading_res, \
+        size_cls, size_res, scores
+        
+	batch_output, batch_center_pred, \
+        batch_hclass_pred, batch_hres_pred, \
+        batch_sclass_pred, batch_sres_pred, batch_scores = \
+            inference(sess, ops, batch_data,
+                batch_one_hot_vec, batch_size=batch_size)
+    '''
     if FLAGS.dump_result:
         print('dumping...')
         with open(output_filename, 'wp') as fp:
@@ -420,6 +430,15 @@ if __name__=='__main__':
     --data_path kitti/frustum_caronly_val.pickle 
     --idx_path kitti/image_sets/val.txt 
     --output train/kitti_caronly_v1
+
+    train/test.py:309: RuntimeWarning: invalid value encountered in true_divide
+      mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
+    100%|████████████████████████████████████████████████████████████████████████████████████████████████| 392/392 [00:23<00:00, 16.86it/s]
+    Number of point clouds: 12538
+    [1] test loss: 0.102771
+    test segmentation accuracy: 0.902924
+    test box IoU(ground/3D): 0.801252/0.749438
+    test box estimation accuracy (IoU=0.7): 0.777397
 
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/kitti_caronly_v1
 
