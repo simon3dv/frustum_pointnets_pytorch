@@ -293,11 +293,11 @@ def test_one_epoch(model, loader):
         # heading_cls,heading_res
         batch_hclass_pred = np.argmax(heading_scores, 1)  # bs
         batch_hres_pred = np.array([heading_residuals[j, batch_hclass_pred[j]] \
-                                    for j in range(data.shape[0])])
+                                    for j in range(batch_data.shape[0])])
         # batch_size_cls,batch_size_res
         batch_sclass_pred = np.argmax(size_scores, 1)  # bs
         batch_sres_pred = np.vstack([size_residuals[j, batch_sclass_pred[j], :] \
-                                     for j in range(data.shape[0])])  # (32,3)
+                                     for j in range(batch_data.shape[0])])  # (32,3)
 
         # batch_scores
         batch_seg_prob = softmax(logits)[:, :, 1]  # BxN
