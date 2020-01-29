@@ -222,6 +222,15 @@ def test(output_filename, result_dir=None):
 
         # total_loss
         test_total_loss += total_loss.item()
+        if FLAGS.return_all_loss:
+            test_mask_loss += mask_loss.item()
+            test_center_loss += center_loss.item()
+            test_heading_class_loss += heading_class_loss.item()
+            test_size_class_loss += size_class_loss.item()
+            test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
+            test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
+            test_stage1_center_loss += stage1_center_loss.item()
+            test_corners_loss += corners_loss.item()
         # Segmentation acc
         # # correct_cnt += np.sum(batch_output == batch_label)
         correct = torch.argmax(batch_logits, 2).eq(batch_label.long()).detach().cpu().numpy()
@@ -305,15 +314,6 @@ def test(output_filename, result_dir=None):
     test_iou3d_acc /= n_samples
 
     if FLAGS.return_all_loss:
-        test_mask_loss += mask_loss.item()
-        test_center_loss += center_loss.item()
-        test_heading_class_loss += heading_class_loss.item()
-        test_size_class_loss += size_class_loss.item()
-        test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
-        test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
-        test_stage1_center_loss += stage1_center_loss.item()
-        test_corners_loss += corners_loss.item()
-
         test_mask_loss /= n_samples
         test_center_loss /= n_samples
         test_heading_class_loss /= n_samples
