@@ -429,7 +429,6 @@ def test_one_epoch(model, loader):
 
 
         # 3. Detach
-        '''
         logits = logits.detach()
         stage1_center = stage1_center.detach()
         center_boxnet = center_boxnet.detach()
@@ -440,7 +439,7 @@ def test_one_epoch(model, loader):
         size_residuals_normalized = size_residuals_normalized.detach()
         size_residuals = size_residuals.detach()
         center = center.detach()
-        '''
+
         # 4. Compute Loss
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
@@ -478,7 +477,6 @@ def test_one_epoch(model, loader):
             test_corners_loss += corners_loss.item()
 
         # 5. Detach, to numpy, compute IoU and acc
-        '''
         iou2ds, iou3ds = provider.compute_box3d_iou( \
             center.cpu().detach().numpy(), \
             heading_scores.cpu().detach().numpy(), \
@@ -490,19 +488,6 @@ def test_one_epoch(model, loader):
             batch_hres.cpu().detach().numpy(), \
             batch_sclass.cpu().detach().numpy(), \
             batch_sres.cpu().detach().numpy())
-        '''
-
-        iou2ds, iou3ds = provider.compute_box3d_iou( \
-            center.detach().cpu().numpy(), \
-            heading_scores.detach().cpu().numpy(), \
-            heading_residuals.detach().cpu().numpy(), \
-            size_scores.detach().cpu().numpy(), \
-            size_residuals.detach().cpu().numpy(), \
-            batch_center.detach().cpu().numpy(), \
-            batch_hclass.detach().cpu().numpy(), \
-            batch_hres.detach().cpu().numpy(), \
-            batch_sclass.detach().cpu().numpy(), \
-            batch_sres.detach().cpu().numpy())
         test_iou2d += np.sum(iou2ds)
         test_iou3d += np.sum(iou3ds)
 
