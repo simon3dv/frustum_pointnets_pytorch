@@ -111,7 +111,7 @@ def log_string(out_str):
     LOG_FOUT.flush()
     print(out_str)
 def test_one_epoch(model, loader):
-    n_samples = 0
+    test_n_samples = 0
     test_total_loss = 0.0
     test_iou2d = 0.0
     test_iou3d = 0.0
@@ -134,7 +134,7 @@ def test_one_epoch(model, loader):
         if FLAGS.debug == True:
             if i == 1:
                 break
-        n_samples += data[0].shape[0]
+        test_n_samples += data[0].shape[0]
         '''
         batch_data:[32, 2048, 4], pts in frustum
         batch_label:[32, 2048], pts ins seg label in frustum
@@ -236,19 +236,25 @@ def test_one_epoch(model, loader):
             test_corners_loss += corners_loss.item()
 
     if FLAGS.return_all_loss:
-        return test_total_loss / n_samples, test_iou2d / n_samples, test_iou3d / n_samples, \
-                test_acc / n_samples, test_iou3d_acc / n_samples,\
-                test_mask_loss / n_samples, \
-                test_center_loss / n_samples, \
-                test_heading_class_loss / n_samples, \
-                test_size_class_loss / n_samples, \
-                test_heading_residuals_normalized_loss / n_samples, \
-                test_size_residuals_normalized_loss / n_samples, \
-                test_stage1_center_loss / n_samples, \
-                test_corners_loss / n_samples
+        return test_total_loss / test_n_samples, \
+               test_iou2d / test_n_samples, \
+               test_iou3d / test_n_samples, \
+               test_acc / test_n_samples, \
+               test_iou3d_acc / test_n_samples,\
+               test_mask_loss / test_n_samples, \
+               test_center_loss / test_n_samples, \
+               test_heading_class_loss / test_n_samples, \
+               test_size_class_loss / test_n_samples, \
+               test_heading_residuals_normalized_loss / test_n_samples, \
+               test_size_residuals_normalized_loss / test_n_samples, \
+               test_stage1_center_loss / test_n_samples, \
+               test_corners_loss / test_n_samples
     else:
-        return test_total_loss/n_samples,  test_iou2d/n_samples, test_iou3d/n_samples, \
-               test_acc/n_samples, test_iou3d_acc/n_samples
+        return test_total_loss/test_n_samples,  \
+               test_iou2d/test_n_samples, \
+               test_iou3d/test_n_samples, \
+               test_acc/test_n_samples, \
+               test_iou3d_acc/test_n_samples
 
 def train():
 

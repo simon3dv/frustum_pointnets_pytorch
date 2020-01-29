@@ -367,13 +367,39 @@ if __name__=='__main__':
     --data_path kitti/frustum_carpedcyc_val.pickle 
     --idx_path kitti/image_sets/val.txt 
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/detection_results_v1
-'''
+    '''
 
-
+    '''
     if FLAGS.from_rgb_detection:
         test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
     else:
         test(FLAGS.output+'.pickle', FLAGS.output)
+    '''
+    from train import test_one_epoch
+
+    test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
+                                 num_workers=8, pin_memory=True)
+    if FLAGS.model == 'frustum_pointnets_v1':
+        from frustum_pointnets_v1 import FrustumPointNetv1
+        FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
+    Loss = FrustumPointNetLoss(return_all=FLAGS.return_all_loss)
+    # test one epoch
+    if FLAGS.return_all_loss:
+        test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
+        test_mask_loss, \
+        test_center_loss, \
+        test_heading_class_loss, \
+        test_size_class_loss, \
+        test_heading_residuals_normalized_loss, \
+        test_size_residuals_normalized_loss, \
+        test_stage1_center_loss, \
+        test_corners_loss \
+            = \
+            test_one_epoch(FrustumPointNet, test_dataloader)
+    else:
+        test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
+            = \
+            test_one_epoch(FrustumPointNet, test_dataloader)
 '''
 CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 
