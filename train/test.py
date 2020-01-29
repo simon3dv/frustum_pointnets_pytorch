@@ -118,6 +118,7 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
         results[idx].append(output_str)
 
     # Write TXT files
+    ipdb.set_trace()
     if not os.path.exists(result_dir): os.makedirs(result_dir)
     output_dir = os.path.join(result_dir, 'data')
     if not os.path.exists(output_dir): os.makedirs(result_dir)
