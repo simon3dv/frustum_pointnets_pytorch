@@ -359,6 +359,152 @@ def test(output_filename, result_dir=None):
         heading_cls_list, heading_res_list,
         size_cls_list, size_res_list, rot_angle_list, score_list)
 
+def test_one_epoch(model, loader):
+    test_n_samples = 0
+    test_total_loss = 0.0
+    test_iou2d = 0.0
+    test_iou3d = 0.0
+    test_acc = 0.0
+    test_iou3d_acc = 0.0
+
+    if FLAGS.return_all_loss:
+        test_mask_loss = 0.0
+        test_center_loss = 0.0
+        test_heading_class_loss = 0.0
+        test_size_class_loss = 0.0
+        test_heading_residuals_normalized_loss = 0.0
+        test_size_residuals_normalized_loss = 0.0
+        test_stage1_center_loss = 0.0
+        test_corners_loss = 0.0
+
+    for i, data in tqdm(enumerate(loader), \
+                        total=len(loader), smoothing=0.9):
+        # for debug
+        if FLAGS.debug == True:
+            if i == 1:
+                break
+        test_n_samples += data[0].shape[0]
+        '''
+        batch_data:[32, 2048, 4], pts in frustum
+        batch_label:[32, 2048], pts ins seg label in frustum
+        batch_center:[32, 3],
+        batch_hclass:[32],
+        batch_hres:[32],
+        batch_sclass:[32],
+        batch_sres:[32,3],
+        batch_rot_angle:[32],
+        batch_one_hot_vec:[32,3],
+        '''
+        batch_data, batch_label, batch_center, \
+        batch_hclass, batch_hres, \
+        batch_sclass, batch_sres, \
+        batch_rot_angle, batch_one_hot_vec = data
+
+        batch_data = batch_data.transpose(2, 1).float().cuda()
+        batch_label = batch_label.float().cuda()
+        batch_center = batch_center.float().cuda()
+        batch_hclass = batch_hclass.float().cuda()
+        batch_hres = batch_hres.float().cuda()
+        batch_sclass = batch_sclass.float().cuda()
+        batch_sres = batch_sres.float().cuda()
+        batch_rot_angle = batch_rot_angle.float().cuda()
+        batch_one_hot_vec = batch_one_hot_vec.float().cuda()
+
+        model = model.eval()
+
+        logits, mask, stage1_center, center_boxnet, \
+        heading_scores, heading_residuals_normalized, heading_residuals, \
+        size_scores, size_residuals_normalized, size_residuals, center = \
+            model(batch_data, batch_one_hot_vec)
+
+        logits = logits.detach()
+        stage1_center = stage1_center.detach()
+        center_boxnet = center_boxnet.detach()
+        heading_scores = heading_scores.detach()
+        heading_residuals_normalized = heading_residuals_normalized.detach()
+        heading_residuals = heading_residuals.detach()
+        size_scores = size_scores.detach()
+        size_residuals_normalized = size_residuals_normalized.detach()
+        size_residuals = size_residuals.detach()
+        center = center.detach()
+
+        if FLAGS.return_all_loss:
+            total_loss, mask_loss, center_loss, heading_class_loss, \
+                size_class_loss, heading_residuals_normalized_loss, \
+                size_residuals_normalized_loss, stage1_center_loss, \
+                corners_loss = \
+                Loss(logits, batch_label, \
+                     center, batch_center, stage1_center, \
+                     heading_scores, heading_residuals_normalized, \
+                     heading_residuals, \
+                     batch_hclass, batch_hres, \
+                     size_scores, size_residuals_normalized, \
+                     size_residuals, \
+                     batch_sclass, batch_sres)
+        else:
+            total_loss = \
+                Loss(logits, batch_label, \
+                     center, batch_center, stage1_center, \
+                     heading_scores, heading_residuals_normalized, \
+                     heading_residuals, \
+                     batch_hclass, batch_hres, \
+                     size_scores, size_residuals_normalized, \
+                     size_residuals, \
+                     batch_sclass, batch_sres)
+
+        test_total_loss += total_loss.item()
+
+        iou2ds, iou3ds = provider.compute_box3d_iou( \
+            center.cpu().detach().numpy(), \
+            heading_scores.cpu().detach().numpy(), \
+            heading_residuals.cpu().detach().numpy(), \
+            size_scores.cpu().detach().numpy(), \
+            size_residuals.cpu().detach().numpy(), \
+            batch_center.cpu().detach().numpy(), \
+            batch_hclass.cpu().detach().numpy(), \
+            batch_hres.cpu().detach().numpy(), \
+            batch_sclass.cpu().detach().numpy(), \
+            batch_sres.cpu().detach().numpy())
+        test_iou2d += np.sum(iou2ds)
+        test_iou3d += np.sum(iou3ds)
+
+        correct = torch.argmax(logits, 2).eq(batch_label.detach().long()).cpu().numpy()
+        accuracy = np.sum(correct) / float(NUM_POINT)
+        test_acc += accuracy
+
+        test_iou3d_acc += np.sum(iou3ds >= 0.7)
+
+        if FLAGS.return_all_loss:
+            test_mask_loss += mask_loss.item()
+            test_center_loss += center_loss.item()
+            test_heading_class_loss += heading_class_loss.item()
+            test_size_class_loss += size_class_loss.item()
+            test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
+            test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
+            test_stage1_center_loss += stage1_center_loss.item()
+            test_corners_loss += corners_loss.item()
+
+    if FLAGS.return_all_loss:
+        return test_total_loss / test_n_samples, \
+               test_iou2d / test_n_samples, \
+               test_iou3d / test_n_samples, \
+               test_acc / test_n_samples, \
+               test_iou3d_acc / test_n_samples,\
+               test_mask_loss / test_n_samples, \
+               test_center_loss / test_n_samples, \
+               test_heading_class_loss / test_n_samples, \
+               test_size_class_loss / test_n_samples, \
+               test_heading_residuals_normalized_loss / test_n_samples, \
+               test_size_residuals_normalized_loss / test_n_samples, \
+               test_stage1_center_loss / test_n_samples, \
+               test_corners_loss / test_n_samples
+    else:
+        return test_total_loss/test_n_samples,  \
+               test_iou2d/test_n_samples, \
+               test_iou3d/test_n_samples, \
+               test_acc/test_n_samples, \
+               test_iou3d_acc/test_n_samples
+
 if __name__=='__main__':
     '''
     python train/test.py 
@@ -375,8 +521,6 @@ if __name__=='__main__':
     else:
         test(FLAGS.output+'.pickle', FLAGS.output)
     '''
-    from train import test_one_epoch
-
     test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
                                  num_workers=8, pin_memory=True)
     if FLAGS.model == 'frustum_pointnets_v1':
