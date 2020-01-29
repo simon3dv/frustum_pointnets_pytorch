@@ -93,41 +93,15 @@ def fill_files(output_dir, to_fill_filename_list):
             fout = open(filepath, 'w')
             fout.close()
 
-def test(output_filename, result_dir=None):
+def test(model, TEST_DATASET, loader, output_filename, result_dir=None):
     ''' Test frustum pointnets with GT 2D boxes.
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
     '''
 
-    # Load Frustum Datasets.
-    if FLAGS.dataset == 'kitti':
-        if FLAGS.data_path == None:
-            overwritten_data_path = 'kitti/frustum_' + FLAGS.objtype + '_' + FLAGS.split + '.pickle'
-        else:
-            overwritten_data_path = FLAGS.data_path
-        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
-                                               rotate_to_center=True, one_hot=True,
-                                               overwritten_data_path=overwritten_data_path)
-    elif FLAGS.dataset == 'nuscenes2kitti':
-        SENSOR = FLAGS.sensor
-        overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' + FLAGS.objtype + '_' + SENSOR + '_'
-        if FLAGS.data_path == None:
-            overwritten_data_path = overwritten_data_path_prefix + FLAGS.split + '.pickle'
-        else:
-            overwritten_data_path = FLAGS.data_path
-        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
-                                               rotate_to_center=True, one_hot=True,
-                                               overwritten_data_path=overwritten_data_path)
-    else:
-        print('Unknown dataset: %s' % (FLAGS.dataset))
-        exit(-1)
-
-    loader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
-                    num_workers=8, pin_memory=True)
     Loss = FrustumPointNetLoss(return_all=FLAGS.return_all_loss)
-    if FLAGS.model == 'frustum_pointnets_v1':
-        from frustum_pointnets_v1 import FrustumPointNetv1
-        FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
+
+    FrustumPointNet = model
     pth = torch.load(FLAGS.model_path)
     FrustumPointNet.load_state_dict(pth['model_state_dict'])
 
@@ -515,18 +489,35 @@ if __name__=='__main__':
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/detection_results_v1
     '''
 
-    '''
-    if FLAGS.from_rgb_detection:
-        test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
+    # Load Frustum Datasets.
+    if FLAGS.dataset == 'kitti':
+        if FLAGS.data_path == None:
+            overwritten_data_path = 'kitti/frustum_' + FLAGS.objtype + '_' + FLAGS.split + '.pickle'
+        else:
+            overwritten_data_path = FLAGS.data_path
+        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+                                               rotate_to_center=True, one_hot=True,
+                                               overwritten_data_path=overwritten_data_path)
+    elif FLAGS.dataset == 'nuscenes2kitti':
+        SENSOR = FLAGS.sensor
+        overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' + FLAGS.objtype + '_' + SENSOR + '_'
+        if FLAGS.data_path == None:
+            overwritten_data_path = overwritten_data_path_prefix + FLAGS.split + '.pickle'
+        else:
+            overwritten_data_path = FLAGS.data_path
+        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+                                               rotate_to_center=True, one_hot=True,
+                                               overwritten_data_path=overwritten_data_path)
     else:
-        test(FLAGS.output+'.pickle', FLAGS.output)
-    '''
+        print('Unknown dataset: %s' % (FLAGS.dataset))
+        exit(-1)
+
     test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
                                  num_workers=8, pin_memory=True)
     if FLAGS.model == 'frustum_pointnets_v1':
         from frustum_pointnets_v1 import FrustumPointNetv1
         FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
-    Loss = FrustumPointNetLoss(return_all=FLAGS.return_all_loss)
+
     # test one epoch
     if FLAGS.return_all_loss:
         test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
@@ -551,6 +542,13 @@ if __name__=='__main__':
     print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
     print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
     print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
+
+    '''
+    if FLAGS.from_rgb_detection:
+        test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
+    else:
+        test(FrustumPointNet, TEST_DATASET, test_dataloader, FLAGS.output+'.pickle', FLAGS.output)
+    '''
 '''
 CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 
