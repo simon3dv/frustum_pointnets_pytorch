@@ -518,6 +518,7 @@ if __name__=='__main__':
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/detection_results_v1
     '''
 
+    '''
     # test one epoch
     if FLAGS.return_all_loss:
         test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
@@ -542,14 +543,15 @@ if __name__=='__main__':
     print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
     print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
     print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
-
     '''
+
+
     if FLAGS.from_rgb_detection:
         test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
     else:
         test(FLAGS.output+'.pickle', FLAGS.output)
-    '''
-'''
-CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
+    
 
+'''
+CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth --return_all_loss
 '''
