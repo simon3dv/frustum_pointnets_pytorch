@@ -581,7 +581,7 @@ if __name__ == '__main__':
                 type_whitelist=type_whitelist)
 
 
-    if args.gen_train:
+    if args.gen_val:
         for sensor in sensor_list:
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
