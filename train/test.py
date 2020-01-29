@@ -300,6 +300,7 @@ def test_one_epoch(model, loader):
                                      for j in range(batch_data.shape[0])])  # (32,3)
 
         # batch_scores
+        ipdb.set_trace()
         batch_seg_prob = softmax(logits)[:, :, 1]  # BxN
         batch_seg_mask = np.argmax(logits, 2)  # BxN
         mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1)  # B,
