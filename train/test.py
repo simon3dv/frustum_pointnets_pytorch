@@ -240,11 +240,10 @@ def test(output_filename, result_dir=None):
         batch_size_residuals = batch_size_residuals.detach().cpu().numpy()
         batch_center = batch_center.detach().cpu().numpy()
 
-
-
-
-
-
+        batch_hclass = batch_hclass.detach().cpu().numpy()
+        batch_hres = batch_hres.detach().cpu().numpy()
+        batch_sclass = batch_sclass.detach().cpu().numpy()
+        batch_sres = batch_sres.detach().cpu().numpy()
 
         #batch_output:(32, 1024)
         batch_output = batch_mask
