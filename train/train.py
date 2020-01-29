@@ -46,9 +46,9 @@ FLAGS = parser.parse_args()
 
 strtime = time.strftime('%Y-%m-%d-%H:%M:%S',time.localtime(time.time()))
 if 'nuscenes' in FLAGS.dataset:
-    NAME = FLAGS.name  + '_' + FLAGS.objtype + FLAGS.dataset + '_' + FLAGS.sensor + '_' + strtime
+    NAME = strtime + '_' + FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + FLAGS.sensor + '_'
 else:
-    NAME = FLAGS.name  + '_' + FLAGS.objtype + FLAGS.dataset + '_' + strtime
+    NAME = strtime + '_' + FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + strtime
 EPOCH_CNT = 0
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point

@@ -14,12 +14,14 @@ import provider
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import ipdb
-
+from model_util import FrustumPointNetLoss
+import time
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
 parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
 parser.add_argument('--model_path', default='log/model.ckpt', help='model checkpoint file path [default: log/model.ckpt]')
+#ex. log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
 parser.add_argument('--output', default='test_results', help='output file/folder name [default: test_results]')
 parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
@@ -95,6 +97,7 @@ def test(output_filename, result_dir=None):
                                            from_rgb_detection=FLAGS.from_rgb_detection, one_hot=True)
     loader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
                     num_workers=8, pin_memory=True)
+    Loss = FrustumPointNetLoss(return_all=FLAGS.return_all_loss)
     if FLAGS.model == 'frustum_pointnets_v1':
         from frustum_pointnets_v1 import FrustumPointNetv1
         FrustumPointNet = FrustumPointNetv1().cuda()
@@ -116,15 +119,30 @@ def test(output_filename, result_dir=None):
     batch_size = BATCH_SIZE
     num_batches = len(TEST_DATASET)//batch_size
 
-    correct_cnt = 0
+
     n_samples = 0
-
-
+    test_total_loss = 0.0
+    test_acc = 0.0
+    #correct_cnt = 0
+    test_iou2d = 0.0
+    test_iou3d = 0.0
+    test_iou3d_acc = 0.0
+    eval_time = 0.0
+    if FLAGS.return_all_loss:
+        test_mask_loss = 0.0
+        test_center_loss = 0.0
+        test_heading_class_loss = 0.0
+        test_size_class_loss = 0.0
+        test_heading_residuals_normalized_loss = 0.0
+        test_size_residuals_normalized_loss = 0.0
+        test_stage1_center_loss = 0.0
+        test_corners_loss = 0.0
 
     for i, data in tqdm(enumerate(loader), \
                         total=len(loader), smoothing=0.9):
         n_samples += data[0].shape[0]
 
+        # Load train data
         batch_data, batch_label, batch_center, \
         batch_hclass, batch_hres, \
         batch_sclass, batch_sres, \
@@ -139,8 +157,12 @@ def test(output_filename, result_dir=None):
         batch_sres = batch_sres.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
+        eval_t1 = time.perf_counter()
         FrustumPointNet = FrustumPointNet.eval()
+        eval_t2 = time.perf_counter()
+        eval_time += eval_t2 - eval_t1
 
+        # eval one batch
         batch_logits, batch_mask, batch_stage1_center, batch_center_boxnet, \
         batch_heading_scores, batch_heading_residuals_normalized, batch_heading_residuals, \
         batch_size_scores, batch_size_residuals_normalized, batch_size_residuals, batch_center = \
@@ -159,6 +181,32 @@ def test(output_filename, result_dir=None):
         batch_size_residuals = batch_size_residuals.detach().cpu().numpy()
         batch_center = batch_center.detach().cpu().numpy()
 
+        # Loss
+        if FLAGS.return_all_loss:
+            total_loss, mask_loss, center_loss, heading_class_loss, \
+            size_class_loss, heading_residuals_normalized_loss, \
+            size_residuals_normalized_loss, stage1_center_loss, \
+            corners_loss = \
+                Loss(batch_logits, batch_label, \
+                     batch_center, batch_center, batch_stage1_center, \
+                     batch_heading_scores, batch_heading_residuals_normalized, \
+                     batch_heading_residuals, \
+                     batch_hclass, batch_hres, \
+                     batch_size_scores, batch_size_residuals_normalized, \
+                     batch_size_residuals, \
+                     batch_sclass, batch_sres)
+        else:
+            total_loss = \
+                Loss(batch_logits, batch_label, \
+                     batch_center, batch_center, batch_stage1_center, \
+                     batch_heading_scores, batch_heading_residuals_normalized, \
+                     batch_heading_residuals, \
+                     batch_hclass, batch_hres, \
+                     batch_size_scores, batch_size_residuals_normalized, \
+                     batch_size_residuals, \
+                     batch_sclass, batch_sres)
+
+        test_total_loss += total_loss.item()
 
 
 
@@ -184,7 +232,27 @@ def test(output_filename, result_dir=None):
         size_prob = np.max(softmax(batch_size_scores),1) # B,
         batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
-        correct_cnt += np.sum(batch_output == batch_label)
+        # Segmentation acc
+        # correct_cnt += np.sum(batch_output == batch_label)
+        correct = torch.argmax(batch_logits, 2).eq(batch_label.long()).detach().cpu().numpy()
+        accuracy = np.sum(correct)
+        test_acc += accuracy
+        # IoU
+        iou2ds, iou3ds = provider.compute_box3d_iou( \
+            batch_center, \
+            batch_heading_scores, \
+            batch_heading_residuals, \
+            batch_size_scores, \
+            batch_size_residuals, \
+            batch_center, \
+            batch_hclass, \
+            batch_hres, \
+            batch_sclass, \
+            batch_sres)
+        test_iou2d += np.sum(iou2ds)
+        test_iou3d += np.sum(iou3ds)
+        test_iou3d_acc += np.sum(iou3ds >= 0.7)
+
 
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j,...])
@@ -198,8 +266,48 @@ def test(output_filename, result_dir=None):
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
 
-    print("Segmentation accuracy: %f" % \
-        (correct_cnt / float(batch_size*num_batches*NUM_POINT)))
+    total_loss /= n_samples
+    test_acc /= n_samples * float(NUM_POINT)
+    test_iou2d /= n_samples
+    test_iou3d /= n_samples
+    test_iou3d_acc /= n_samples
+
+    if FLAGS.return_all_loss:
+        test_mask_loss += mask_loss.item()
+        test_center_loss += center_loss.item()
+        test_heading_class_loss += heading_class_loss.item()
+        test_size_class_loss += size_class_loss.item()
+        test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
+        test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
+        test_stage1_center_loss += stage1_center_loss.item()
+        test_corners_loss += corners_loss.item()
+
+        test_mask_loss /= n_samples
+        test_center_loss /= n_samples
+        test_heading_class_loss /= n_samples
+        test_size_class_loss /= n_samples
+        test_heading_residuals_normalized_loss /= n_samples
+        test_size_residuals_normalized_loss /= n_samples
+        test_stage1_center_loss /= n_samples
+        test_corners_loss /= n_samples
+
+    #print("Segmentation accuracy: %f" % \
+    #    (correct_cnt / float(batch_size*num_batches*NUM_POINT)))
+    print('loss: %.6f' % (test_total_loss))
+    print('segmentation accuracy: %.6f' % (test_acc))
+    print('box IoU(ground/3D): %.6f/%.6f' % (test_iou2d, test_iou3d))
+    print('box estimation accuracy (IoU=0.7): %.6f' % (test_iou3d_acc))
+    print('eval time:'%(eval_time/len(TEST_DATASET)))
+
+    if FLAGS.return_all_loss:
+        print('train_mask_loss:%.6f' % (test_mask_loss / n_samples))
+        print('train_stage1_center_loss:%.6f' % (test_stage1_center_loss / n_samples))
+        print('train_heading_class_loss:%.6f' % (test_heading_class_loss / n_samples))
+        print('train_size_class_loss:%.6f' % (test_size_class_loss / n_samples))
+        print('train_heading_residuals_normalized_loss:%.6f' % (test_heading_residuals_normalized_loss / n_samples))
+        print('train_size_residuals_normalized_loss:%.6f' % (test_size_residuals_normalized_loss / n_samples))
+        print('train_stage1_center_loss:%.6f' % (test_stage1_center_loss / n_samples))
+        print('train_corners_loss:%.6f' % (test_corners_loss / n_samples))
 
     if FLAGS.dump_result:
         with open(output_filename, 'wp') as fp:
