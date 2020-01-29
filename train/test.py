@@ -49,7 +49,9 @@ if FLAGS.objtype == 'carpedcyc':
 elif FLAGS.objtype == 'caronly':
     n_classes = 1
 
+# Loss
 Loss = FrustumPointNetLoss(return_all = FLAGS.return_all_loss)
+
 # Load Frustum Datasets.
 if FLAGS.dataset == 'kitti':
     if FLAGS.data_path == None:
@@ -75,9 +77,14 @@ else:
 
 test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
                              num_workers=8, pin_memory=True)
+# Model
 if FLAGS.model == 'frustum_pointnets_v1':
     from frustum_pointnets_v1 import FrustumPointNetv1
     FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
+
+# Pre-trained Model
+pth = torch.load(FLAGS.model_path)
+FrustumPointNet.load_state_dict(pth['model_state_dict'])
 
 def softmax(x):
     ''' Numpy function for softmax'''
@@ -130,8 +137,6 @@ def test(FrustumPointNet, output_filename, result_dir=None):
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
     '''
-    pth = torch.load(FLAGS.model_path)
-    FrustumPointNet.load_state_dict(pth['model_state_dict'])
 
     ps_list = []
     seg_list = []
