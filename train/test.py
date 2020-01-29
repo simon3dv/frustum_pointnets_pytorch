@@ -255,7 +255,6 @@ def test_one_epoch(model, loader):
             test_corners_loss += corners_loss.item()
 
         # 4. Detach, to numpy, compute IoU and acc
-
         center = center.cpu().detach().numpy()
         heading_scores = heading_scores.cpu().detach().numpy()
         heading_residuals = heading_residuals.cpu().detach().numpy()
@@ -286,7 +285,7 @@ def test_one_epoch(model, loader):
 
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
-        # 5. Compute and write Results
+        # 5. Compute and write all Results
         # batch_output:(32, 1024)
         batch_output = mask
         # batch_center_pred:(32, 3)
