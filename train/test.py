@@ -23,7 +23,7 @@ parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name 
 parser.add_argument('--model_path', default='log/model.ckpt', help='model checkpoint file path [default: log/model.ckpt]')
 #ex. log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
-parser.add_argument('--output', default='test_results', help='output file/folder name [default: test_results]')
+parser.add_argument('--output', default='train/test_results', help='output file/folder name [default: test_results]')
 parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
 parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
 parser.add_argument('--idx_path', default=None, help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
