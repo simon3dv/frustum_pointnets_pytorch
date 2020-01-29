@@ -36,11 +36,16 @@ parser.add_argument('--weight_decay', type=float, default=0.0, help='Weight Deca
 parser.add_argument('--name', type=str, default='Default', help='tensorboard writer name')
 parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
 parser.add_argument('--debug', default=False, action='store_true',help='debug mode')
-parser.add_argument('--datatype', type=str, default='carpedcyc', help='caronly or carpedcyc')
-parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes')
+parser.add_argument('--objtype', type=str, default='carpedcyc', help='caronly or carpedcyc')
+parser.add_argument('--sensor', type=str, default='CAM_FRONT', help='only consider CAM_FRONT')
+parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes or nuscenes2kitti')
 FLAGS = parser.parse_args()
 
 # Set training configurations
+if 'nuscenes' in FLAGS.dataset:
+    NAME = FLAGS.name+'-' + '_' + FLAGS.objtype + FLAGS.dataset + '_' + FLAGS.sensor
+else:
+    NAME = FLAGS.name+'-' + '_' + FLAGS.objtype + FLAGS.dataset
 EPOCH_CNT = 0
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
@@ -53,15 +58,15 @@ DECAY_STEP = FLAGS.decay_step
 DECAY_RATE = FLAGS.decay_rate
 NUM_CHANNEL = 3 if FLAGS.no_intensity else 4 # point feature channel
 NUM_CLASSES = 2 # segmentation has two classes
-if FLAGS.datatype == 'carpedcyc':
+if FLAGS.objtype == 'carpedcyc':
     n_classes = 3
-elif FLAGS.datatype == 'caronly':
+elif FLAGS.objtype == 'caronly':
     n_classes = 1
 MODEL = importlib.import_module(FLAGS.model) # import network module
 MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
 LOG_DIR = FLAGS.log_dir
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
-if not os.path.exists(LOG_DIR + '/' + FLAGS.name): os.mkdir(LOG_DIR + '/' + FLAGS.name)
+if not os.path.exists(LOG_DIR + '/' + NAME): os.mkdir(LOG_DIR + '/' + NAME)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
 os.system('cp %s %s' % (os.path.join(BASE_DIR, 'train.py'), LOG_DIR))
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
@@ -73,16 +78,29 @@ BN_DECAY_DECAY_STEP = float(DECAY_STEP)
 BN_DECAY_CLIP = 0.99
 '''
 # Load Frustum Datasets. Use default data paths.
-TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='train',
-    rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-    overwritten_data_path='kitti/frustum_'+FLAGS.datatype+'_train.pickle')
-TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
-    rotate_to_center=True, one_hot=True,
-    overwritten_data_path='kitti/frustum_'+FLAGS.datatype+'_val.pickle')
+if FLAGS.dataset == 'kitti':
+    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='train',
+        rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
+        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_train.pickle')
+    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+        rotate_to_center=True, one_hot=True,
+        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_val.pickle')
+elif FLAGS.dataset == 'nuscenes2kitti':
+    SENSOR = FLAGS.sensor
+    overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' +FLAGS.objtype + '_' + SENSOR + '_'
+    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='train',
+        rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
+        overwritten_data_path=overwritten_data_path_prefix + 'train.pickle')
+    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+        rotate_to_center=True, one_hot=True,
+        overwritten_data_path=overwritten_data_path_prefix + 'val.pickle')
+else:
+    print('Unknown dataset: %s' % (FLAGS.dataset))
+    exit(-1)
 train_dataloader = DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True,\
-                              num_workers=8,pin_memory=True)
+                                num_workers=8,pin_memory=True)
 test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False,\
-                             num_workers=8,pin_memory=True)
+                                num_workers=8,pin_memory=True)
 Loss = FrustumPointNetLoss(return_all = FLAGS.return_all_loss)
 
 def log_string(out_str):
@@ -266,11 +284,11 @@ def train():
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lr_func)
 
     # train
-    if os.path.exists('runs/' + FLAGS.name):
+    if os.path.exists('runs/' + NAME):
         print('name has been existed')
-        shutil.rmtree('runs/' + FLAGS.name)
+        shutil.rmtree('runs/' + NAME)
 
-    writer = SummaryWriter('runs/' + FLAGS.name)
+    writer = SummaryWriter('runs/' + NAME)
     num_batch = len(TRAIN_DATASET) / BATCH_SIZE
     best_iou3d_acc = 0.0
     best_epoch = 1
@@ -510,8 +528,8 @@ def train():
             best_iou3d_acc = test_iou3d_acc
             best_epoch = epoch + 1
             if epoch > MAX_EPOCH / 5:
-                savepath = LOG_DIR + '/' + FLAGS.name + '/%s-acc%04f-epoch%03d.pth' % \
-                           (FLAGS.name, test_iou3d_acc, epoch)
+                savepath = LOG_DIR + '/' + NAME + '/%s-acc%04f-epoch%03d.pth' % \
+                           (NAME, test_iou3d_acc, epoch)
                 print('save to:',savepath)
                 if os.path.exists(best_file):
                     os.remove(best_file)# update to newest best epoch
