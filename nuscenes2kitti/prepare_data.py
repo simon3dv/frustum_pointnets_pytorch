@@ -589,6 +589,6 @@ if __name__ == '__main__':
                 'v1.0-trainval',
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'val.pickle'),
-                viz=False, perturb_box2d=True, augmentX=5,
+                viz=False, perturb_box2d=False, augmentX=1,
                 type_whitelist=type_whitelist)
 
