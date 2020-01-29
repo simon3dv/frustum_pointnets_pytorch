@@ -86,6 +86,10 @@ if FLAGS.model == 'frustum_pointnets_v1':
 pth = torch.load(FLAGS.model_path)
 FrustumPointNet.load_state_dict(pth['model_state_dict'])
 
+# output
+output_filename = FLAGS.output+'.pickle'
+result_dir = FLAGS.output
+
 def softmax(x):
     ''' Numpy function for softmax'''
     shape = x.shape
