@@ -36,10 +36,12 @@ class nuscenes2kitti_object(object):
 
         if split == 'v1.0-mini':
             self.num_samples = 404
-        elif split == 'v1.0-training':
-            self.num_samples = 10000
-        elif split == 'v1.0-test':
-            self.num_samples = 10000
+        elif split == 'training':
+            self.num_samples = 7481
+        elif split == 'testing':
+            self.num_samples = 7518
+        elif split == 'v1.0-trainval':
+            self.num_samples = 34149
         else:
             print('Unknown split: %s' % (split))
             exit(-1)

@@ -574,7 +574,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets/train.txt'),
-                'v1.0-trainval',
+                'training',
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'train.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
@@ -586,7 +586,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets/val.txt'),
-                'v1.0-trainval',
+                'training',
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'val.pickle'),
                 viz=False, perturb_box2d=False, augmentX=1,
