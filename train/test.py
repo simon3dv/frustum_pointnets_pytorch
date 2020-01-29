@@ -400,6 +400,13 @@ if __name__=='__main__':
         test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
             = \
             test_one_epoch(FrustumPointNet, test_dataloader)
+    epoch = 0
+    blue = lambda x: '\033[94m' + x + '\033[0m'
+    print('[%d] %s loss: %.6f' % \
+          (epoch + 1, blue('test'), test_total_loss))
+    print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
+    print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
+    print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
 '''
 CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 
