@@ -26,7 +26,7 @@ parser.add_argument('--batch_size', type=int, default=32, help='batch size for i
 parser.add_argument('--output', default='train/test_results', help='output file/folder name [default: test_results]')
 parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
 parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
-parser.add_argument('--idx_path', default=None, help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
+parser.add_argument('--idx_path', default='idx_path kitti/image_sets/val.txt', help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
 parser.add_argument('--dump_result', action='store_true', help='If true, also dump results to .pickle file')
 parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
 parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
@@ -282,8 +282,6 @@ def test_one_epoch(model, loader):
 
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
-
-
     if FLAGS.return_all_loss:
         return test_total_loss / test_n_samples, \
                test_iou2d / test_n_samples, \
@@ -353,10 +351,22 @@ def test_one_epoch(model, loader):
             pickle.dump(rot_angle_list, fp)
             pickle.dump(score_list, fp)
 
+    # Write detection results for KITTI evaluation
+    print('Number of point clouds: %d' % (len(ps_list)))
     write_detection_results(result_dir, TEST_DATASET.id_list,
-        TEST_DATASET.type_list, TEST_DATASET.box2d_list, center_list,
-        heading_cls_list, heading_res_list,
+        TEST_DATASET.type_list, TEST_DATASET.box2d_list,
+        center_list, heading_cls_list, heading_res_list,
         size_cls_list, size_res_list, rot_angle_list, score_list)
+    # Make sure for each frame (no matter if we have measurment for that frame),
+    # there is a TXT file
+    output_dir = os.path.join(result_dir, 'data')
+    if FLAGS.idx_path is not None:
+        to_fill_filename_list = [line.rstrip()+'.txt' \
+            for line in open(FLAGS.idx_path)]
+        fill_files(output_dir, to_fill_filename_list)
+
+
+
 if __name__=='__main__':
     '''
     python train/test.py 
