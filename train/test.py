@@ -329,7 +329,7 @@ def test(output_filename, result_dir=None):
     print('segmentation accuracy: %.6f' % (test_acc))
     print('box IoU(ground/3D): %.6f/%.6f' % (test_iou2d, test_iou3d))
     print('box estimation accuracy (IoU=0.7): %.6f' % (test_iou3d_acc))
-    print('eval time:'%(eval_time/len(TEST_DATASET)))
+    print('eval time: %.6f'%(eval_time/len(TEST_DATASET)))
 
     if FLAGS.return_all_loss:
         print('train_mask_loss:%.6f' % (test_mask_loss / n_samples))
