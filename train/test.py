@@ -215,6 +215,7 @@ def test_one_epoch(model, loader):
         heading_scores, heading_residuals_normalized, heading_residuals, \
         size_scores, size_residuals_normalized, size_residuals, center = \
             model(batch_data, batch_one_hot_vec)
+        #logits:[32, 1024, 2] , mask:[32, 1024]
         eval_t2 = time.perf_counter()
         eval_time += (eval_t2 - eval_t1)
 
@@ -255,6 +256,7 @@ def test_one_epoch(model, loader):
             test_corners_loss += corners_loss.item()
 
         # 4. Detach, to numpy, compute IoU and acc
+        logits = logits.cpu().detach().numpy()
         center = center.cpu().detach().numpy()
         heading_scores = heading_scores.cpu().detach().numpy()
         heading_residuals = heading_residuals.cpu().detach().numpy()
@@ -286,22 +288,19 @@ def test_one_epoch(model, loader):
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
         # 5. Compute and write all Results
-        # batch_output:(32, 1024)
-        batch_output = mask
-        # batch_center_pred:(32, 3)
-        batch_center_pred = center_boxnet
-        # heading_cls,heading_res
-        batch_hclass_pred = np.argmax(heading_scores, 1)  # bs
+        batch_output = mask#torch.Size([32, 1024])
+        batch_center_pred = center_boxnet#torch.Size([32, 3])
+        batch_hclass_pred = np.argmax(heading_scores, 1)  # (32,)
         batch_hres_pred = np.array([heading_residuals[j, batch_hclass_pred[j]] \
-                                    for j in range(batch_data.shape[0])])
+                                    for j in range(batch_data.shape[0])]) # (32,)
         # batch_size_cls,batch_size_res
-        batch_sclass_pred = np.argmax(size_scores, 1)  # bs
+        batch_sclass_pred = np.argmax(size_scores, 1)  # (32,)
         batch_sres_pred = np.vstack([size_residuals[j, batch_sclass_pred[j], :] \
-                                     for j in range(batch_data.shape[0])])  # (32,3)
+                                     for j in range(batch_data.shape[0])]) # (32,3)
 
         # batch_scores
         ipdb.set_trace()
-        batch_seg_prob = softmax(logits)[:, :, 1]  # BxN
+        batch_seg_prob = softmax(logits)[:, :, 1]  # (32, 1024, 2) ->(32, 1024)
         batch_seg_mask = np.argmax(logits, 2)  # BxN
         mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1)  # B,
         mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
