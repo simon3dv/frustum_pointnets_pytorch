@@ -271,11 +271,11 @@ def test_one_epoch(model, loader):
         size_residuals = size_residuals.cpu().detach().numpy()
         #size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
 
-        batch_center = batch_center.cpu()#.detach().numpy()
-        batch_hclass = batch_hclass.cpu()#.detach().numpy()
-        batch_hres = batch_hres.cpu()#.detach().numpy()
-        batch_sclass = batch_sclass.cpu()#.detach().numpy()
-        batch_sres = batch_sres.cpu()#.detach().numpy()
+        batch_center = batch_center.cpu().detach().numpy()
+        batch_hclass = batch_hclass.cpu().detach().numpy()
+        batch_hres = batch_hres.cpu().detach().numpy()
+        batch_sclass = batch_sclass.cpu().detach().numpy()
+        batch_sres = batch_sres.cpu().detach().numpy()
 
         iou2ds, iou3ds = provider.compute_box3d_iou(
             center,
