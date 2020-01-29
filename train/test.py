@@ -32,7 +32,7 @@ parser.add_argument('--return_all_loss', default=False, action='store_true',help
 parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
 parser.add_argument('--sensor', type=str, default='CAM_FRONT', help='only consider CAM_FRONT')
 parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes or nuscenes2kitti')
-parser.add_argument('--split', type=str, default='v1.0-mini', help='v1.0-mini or val')
+parser.add_argument('--split', type=str, default='val', help='v1.0-mini or val')
 FLAGS = parser.parse_args()
 
 # Set training configurations
