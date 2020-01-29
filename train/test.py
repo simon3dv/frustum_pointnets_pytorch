@@ -77,7 +77,6 @@ test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False,
                              num_workers=8, pin_memory=True)
 if FLAGS.model == 'frustum_pointnets_v1':
     from frustum_pointnets_v1 import FrustumPointNetv1
-
     FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
 
 def softmax(x):
@@ -126,7 +125,7 @@ def fill_files(output_dir, to_fill_filename_list):
             fout = open(filepath, 'w')
             fout.close()
 
-def test(output_filename, result_dir=None):
+def test(FrustumPointNet, output_filename, result_dir=None):
     ''' Test frustum pointnets with GT 2D boxes.
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
@@ -549,8 +548,8 @@ if __name__=='__main__':
     if FLAGS.from_rgb_detection:
         test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
     else:
-        test(FLAGS.output+'.pickle', FLAGS.output)
-    
+        test(FrustumPointNet, FLAGS.output+'.pickle', FLAGS.output)
+
 
 '''
 CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth --return_all_loss
