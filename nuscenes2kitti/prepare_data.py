@@ -520,7 +520,11 @@ if __name__ == '__main__':
     parser.add_argument('--vis_label', action='store_true',
                         help='Run vis_label.')
     parser.add_argument('--gen_mini', action='store_true',
+                        help='Generate v1.0-mini split frustum data with perturbed GT 2D boxes')
+    parser.add_argument('--gen_train', action='store_true',
                         help='Generate train split frustum data with perturbed GT 2D boxes')
+    parser.add_argument('--gen_val', action='store_true',
+                        help='Generate val split frustum data with perturbed GT 2D boxes')
     #parser.add_argument('--gen_trainval', action='store_true',
     #                    help='Generate trainval split frustum data with GT 2D boxes')
     #parser.add_argument('--gen_test', action='store_true',
@@ -562,6 +566,29 @@ if __name__ == '__main__':
                 'v1.0-mini',
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'v1.0-mini.pickle'),
+                viz=False, perturb_box2d=True, augmentX=5,
+                type_whitelist=type_whitelist)
+
+    if args.gen_train:
+        for sensor in sensor_list:
+            sensor_prefix = sensor + '_'
+            extract_frustum_data(\
+                os.path.join(BASE_DIR, 'image_sets/train.txt'),
+                'v1.0-trainval',
+                sensor,
+                os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'train.pickle'),
+                viz=False, perturb_box2d=True, augmentX=5,
+                type_whitelist=type_whitelist)
+
+
+    if args.gen_train:
+        for sensor in sensor_list:
+            sensor_prefix = sensor + '_'
+            extract_frustum_data(\
+                os.path.join(BASE_DIR, 'image_sets/val.txt'),
+                'v1.0-trainval',
+                sensor,
+                os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'val.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
                 type_whitelist=type_whitelist)
 
