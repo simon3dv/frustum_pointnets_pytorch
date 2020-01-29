@@ -368,13 +368,13 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         size_cls_list, size_res_list, rot_angle_list, score_list)
 
 def test_one_epoch(model, loader):
+
     test_n_samples = 0
     test_total_loss = 0.0
     test_iou2d = 0.0
     test_iou3d = 0.0
     test_acc = 0.0
     test_iou3d_acc = 0.0
-
     if FLAGS.return_all_loss:
         test_mask_loss = 0.0
         test_center_loss = 0.0
@@ -416,7 +416,7 @@ def test_one_epoch(model, loader):
         batch_hres = batch_hres.float().cuda()
         batch_sclass = batch_sclass.float().cuda()
         batch_sres = batch_sres.float().cuda()
-        batch_rot_angle = batch_rot_angle.float().cuda()
+        # batch_rot_angle = batch_rot_angle.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
         # 2. Eval one batch
@@ -427,8 +427,9 @@ def test_one_epoch(model, loader):
         size_scores, size_residuals_normalized, size_residuals, center = \
             model(batch_data, batch_one_hot_vec)
 
-        '''
+
         # 3. Detach
+        '''
         logits = logits.detach()
         stage1_center = stage1_center.detach()
         center_boxnet = center_boxnet.detach()
@@ -466,8 +467,18 @@ def test_one_epoch(model, loader):
                      batch_sclass, batch_sres)
 
         test_total_loss += total_loss.item()
+        if FLAGS.return_all_loss:
+            test_mask_loss += mask_loss.item()
+            test_center_loss += center_loss.item()
+            test_heading_class_loss += heading_class_loss.item()
+            test_size_class_loss += size_class_loss.item()
+            test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
+            test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
+            test_stage1_center_loss += stage1_center_loss.item()
+            test_corners_loss += corners_loss.item()
 
-        # 5. Compute IoU and acc
+        # 5. Detach, to numpy, compute IoU and acc
+        '''
         iou2ds, iou3ds = provider.compute_box3d_iou( \
             center.cpu().detach().numpy(), \
             heading_scores.cpu().detach().numpy(), \
@@ -479,6 +490,19 @@ def test_one_epoch(model, loader):
             batch_hres.cpu().detach().numpy(), \
             batch_sclass.cpu().detach().numpy(), \
             batch_sres.cpu().detach().numpy())
+        '''
+
+        iou2ds, iou3ds = provider.compute_box3d_iou( \
+            center.detach().cpu().numpy(), \
+            heading_scores.detach().cpu().numpy(), \
+            heading_residuals.detach().cpu().numpy(), \
+            size_scores.detach().cpu().numpy(), \
+            size_residuals.detach().cpu().numpy(), \
+            batch_center.detach().cpu().numpy(), \
+            batch_hclass.detach().cpu().numpy(), \
+            batch_hres.detach().cpu().numpy(), \
+            batch_sclass.detach().cpu().numpy(), \
+            batch_sres.detach().cpu().numpy())
         test_iou2d += np.sum(iou2ds)
         test_iou3d += np.sum(iou3ds)
 
@@ -488,15 +512,7 @@ def test_one_epoch(model, loader):
 
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
-        if FLAGS.return_all_loss:
-            test_mask_loss += mask_loss.item()
-            test_center_loss += center_loss.item()
-            test_heading_class_loss += heading_class_loss.item()
-            test_size_class_loss += size_class_loss.item()
-            test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
-            test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
-            test_stage1_center_loss += stage1_center_loss.item()
-            test_corners_loss += corners_loss.item()
+
 
     if FLAGS.return_all_loss:
         return test_total_loss / test_n_samples, \
