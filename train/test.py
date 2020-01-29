@@ -171,7 +171,7 @@ def test(FrustumPointNet, output_filename, result_dir=None):
                         total=len(test_dataloader), smoothing=0.9):
         n_samples += data[0].shape[0]
 
-        # Load train data
+        # 1.Load train data
         batch_data, batch_label, batch_center, \
         batch_hclass, batch_hres, \
         batch_sclass, batch_sres, \
@@ -186,9 +186,9 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         batch_sres = batch_sres.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
+        # 2. Eval one batch
         FrustumPointNet = FrustumPointNet.eval()
 
-        # eval one batch
         eval_t1 = time.perf_counter()
         batch_logits, batch_mask, batch_stage1_center, batch_center_boxnet, \
         batch_heading_scores, batch_heading_residuals_normalized, batch_heading_residuals, \
@@ -197,7 +197,7 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         eval_t2 = time.perf_counter()
         eval_time += (eval_t2 - eval_t1)
 
-        # Loss
+        # 3. Compute Loss and seg acc
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
             size_class_loss, heading_residuals_normalized_loss, \
@@ -239,6 +239,7 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         accuracy = np.sum(correct)
         test_acc += accuracy
 
+        # 4. Detach and to numpy
         batch_label = batch_label.detach().cpu().numpy()
         batch_logits = batch_logits.detach().cpu().numpy()
         batch_mask = batch_mask.detach().cpu().numpy()
@@ -257,20 +258,21 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         batch_sclass = batch_sclass.detach().cpu().numpy()
         batch_sres = batch_sres.detach().cpu().numpy()
 
-        #batch_output:(32, 1024)
+        # 5. Compute results
+        # batch_output:(32, 1024)
         batch_output = batch_mask
-        #batch_center_pred:(32, 3)
+        # batch_center_pred:(32, 3)
         batch_center_pred = batch_center_boxnet
-        #heading_cls,heading_res
+        # heading_cls,heading_res
         batch_hclass_pred = np.argmax(batch_heading_scores, 1)# bs
         batch_hres_pred = np.array([batch_heading_residuals[j,batch_hclass_pred[j]] \
             for j in range(batch_data.shape[0])])
-        #batch_size_cls,batch_size_res
+        # batch_size_cls,batch_size_res
         batch_sclass_pred = np.argmax(batch_size_scores, 1)# bs
         batch_sres_pred = np.vstack([batch_size_residuals[j,batch_sclass_pred[j],:] \
             for j in range(batch_data.shape[0])])#(32,3)
 
-        #batch_scores
+        # batch_scores
         batch_seg_prob = softmax(batch_logits)[:,:,1] # BxN
         batch_seg_mask = np.argmax(batch_logits, 2) # BxN
         mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1) # B,
@@ -279,8 +281,19 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         size_prob = np.max(softmax(batch_size_scores),1) # B,
         batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
+        for j in range(batch_output.shape[0]):
+            ps_list.append(batch_data[j,...])
+            seg_list.append(batch_label[j,...])
+            segp_list.append(batch_output[j,...])
+            center_list.append(batch_center_pred[j,:])
+            heading_cls_list.append(batch_hclass_pred[j])
+            heading_res_list.append(batch_hres_pred[j])
+            size_cls_list.append(batch_sclass_pred[j])
+            size_res_list.append(batch_sres_pred[j,:])
+            rot_angle_list.append(batch_rot_angle[j])
+            score_list.append(batch_scores[j])
 
-        # IoU
+        # 6.Compute IoU
         iou2ds, iou3ds = provider.compute_box3d_iou( \
             batch_center, \
             batch_heading_scores, \
@@ -297,19 +310,7 @@ def test(FrustumPointNet, output_filename, result_dir=None):
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
 
-        for j in range(batch_output.shape[0]):
-            ps_list.append(batch_data[j,...])
-            seg_list.append(batch_label[j,...])
-            segp_list.append(batch_output[j,...])
-            center_list.append(batch_center_pred[j,:])
-            heading_cls_list.append(batch_hclass_pred[j])
-            heading_res_list.append(batch_hres_pred[j])
-            size_cls_list.append(batch_sclass_pred[j])
-            size_res_list.append(batch_sres_pred[j,:])
-            rot_angle_list.append(batch_rot_angle[j])
-            score_list.append(batch_scores[j])
-
-    total_loss /= n_samples
+    test_total_loss /= n_samples
     test_acc /= n_samples * float(NUM_POINT)
     test_iou2d /= n_samples
     test_iou3d /= n_samples
@@ -397,6 +398,7 @@ def test_one_epoch(model, loader):
         batch_rot_angle:[32],
         batch_one_hot_vec:[32,3],
         '''
+        # 1. Load data
         batch_data, batch_label, batch_center, \
         batch_hclass, batch_hres, \
         batch_sclass, batch_sres, \
@@ -412,6 +414,7 @@ def test_one_epoch(model, loader):
         batch_rot_angle = batch_rot_angle.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
+        # 2. Eval one batch
         model = model.eval()
 
         logits, mask, stage1_center, center_boxnet, \
@@ -419,6 +422,7 @@ def test_one_epoch(model, loader):
         size_scores, size_residuals_normalized, size_residuals, center = \
             model(batch_data, batch_one_hot_vec)
 
+        # 3. Detach
         logits = logits.detach()
         stage1_center = stage1_center.detach()
         center_boxnet = center_boxnet.detach()
@@ -430,6 +434,7 @@ def test_one_epoch(model, loader):
         size_residuals = size_residuals.detach()
         center = center.detach()
 
+        # 4. Compute Loss
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
                 size_class_loss, heading_residuals_normalized_loss, \
@@ -456,6 +461,7 @@ def test_one_epoch(model, loader):
 
         test_total_loss += total_loss.item()
 
+        # 5. Compute IoU and acc
         iou2ds, iou3ds = provider.compute_box3d_iou( \
             center.cpu().detach().numpy(), \
             heading_scores.cpu().detach().numpy(), \
@@ -517,7 +523,7 @@ if __name__=='__main__':
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/detection_results_v1
     '''
 
-    '''
+
     # test one epoch
     if FLAGS.return_all_loss:
         test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
@@ -542,14 +548,14 @@ if __name__=='__main__':
     print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
     print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
     print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
+
+
     '''
-
-
     if FLAGS.from_rgb_detection:
         test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
     else:
         test(FrustumPointNet, FLAGS.output+'.pickle', FLAGS.output)
-
+    '''
 
 '''
 CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth --return_all_loss
