@@ -184,16 +184,16 @@ def test(output_filename, result_dir=None):
         batch_sres = batch_sres.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
-        eval_t1 = time.perf_counter()
         FrustumPointNet = FrustumPointNet.eval()
-        eval_t2 = time.perf_counter()
-        eval_time += eval_t2 - eval_t1
 
         # eval one batch
+        eval_t1 = time.perf_counter()
         batch_logits, batch_mask, batch_stage1_center, batch_center_boxnet, \
         batch_heading_scores, batch_heading_residuals_normalized, batch_heading_residuals, \
         batch_size_scores, batch_size_residuals_normalized, batch_size_residuals, batch_center = \
             FrustumPointNet(batch_data, batch_one_hot_vec)
+        eval_t2 = time.perf_counter()
+        eval_time += (eval_t2 - eval_t1)
 
         # Loss
         if FLAGS.return_all_loss:
