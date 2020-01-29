@@ -369,6 +369,7 @@ def test_one_epoch(model, loader):
 
 if __name__=='__main__':
     '''
+    example:
     python train/test.py 
     --model_path log/20190113_decay_rate0.7/20190113_decay_rate0.7-acc0000-epoch156.pth
     --output train/detection_results_v1 
@@ -405,6 +406,16 @@ if __name__=='__main__':
     print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
     print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
 
-'''
-CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth --return_all_loss
-'''
+
+    '''
+    log:
+    CUDA_VISIBLE_DEVICES=0 python train/test.py 
+    --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
+    [1] test loss: 0.102720
+    test segmentation accuracy: 0.902932
+    test box IoU(ground/3D): 0.801011/0.749250
+    test box estimation accuracy (IoU=0.7): 0.776519
+    
+    train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/kitti_caronly_v1
+
+    '''
