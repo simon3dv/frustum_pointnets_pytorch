@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import provider
+
 parser = argparse.ArgumentParser()
 ###parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
@@ -42,10 +43,12 @@ parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nusce
 FLAGS = parser.parse_args()
 
 # Set training configurations
+
+strtime = time.strftime('%Y-%m-%d-%H:%M:%S',time.localtime(time.time()))
 if 'nuscenes' in FLAGS.dataset:
-    NAME = FLAGS.name+'-' + '_' + FLAGS.objtype + FLAGS.dataset + '_' + FLAGS.sensor
+    NAME = FLAGS.name+'-' + '_' + FLAGS.objtype + FLAGS.dataset + '_' + FLAGS.sensor + '_' + strtime
 else:
-    NAME = FLAGS.name+'-' + '_' + FLAGS.objtype + FLAGS.dataset
+    NAME = FLAGS.name+'-' + '_' + FLAGS.objtype + FLAGS.dataset + '_' + strtime
 EPOCH_CNT = 0
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
