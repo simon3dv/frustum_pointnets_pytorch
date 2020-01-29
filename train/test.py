@@ -100,20 +100,20 @@ def test(output_filename, result_dir=None):
 
     # Load Frustum Datasets.
     if FLAGS.dataset == 'kitti':
-        if FLAGS.overwritten_data_path == None:
+        if FLAGS.data_path == None:
             overwritten_data_path = 'kitti/frustum_' + FLAGS.objtype + '_val.pickle'
         else:
-            overwritten_data_path = FLAGS.overwritten_data_path
+            overwritten_data_path = FLAGS.data_path
         TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
                                                rotate_to_center=True, one_hot=True,
                                                overwritten_data_path=overwritten_data_path)
     elif FLAGS.dataset == 'nuscenes2kitti':
         SENSOR = FLAGS.sensor
         overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' + FLAGS.objtype + '_' + SENSOR + '_'
-        if FLAGS.overwritten_data_path == None:
+        if FLAGS.data_path == None:
             overwritten_data_path = overwritten_data_path_prefix + 'val.pickle'
         else:
-            overwritten_data_path = FLAGS.overwritten_data_path
+            overwritten_data_path = FLAGS.data_path
         TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
                                                rotate_to_center=True, one_hot=True,
                                                overwritten_data_path=overwritten_data_path)
