@@ -255,12 +255,13 @@ def test_one_epoch(model, loader):
             test_corners_loss += corners_loss.item()
 
         # 4. compute seg acc, IoU and acc(IoU)
-
         correct = torch.argmax(logits, 2).eq(batch_label.detach().long()).cpu().numpy()
         accuracy = np.sum(correct) / float(NUM_POINT)
         test_acc += accuracy
 
         logits = logits.cpu().detach().numpy()
+        mask = mask.cpu().detach().numpy()
+        center_boxnet = center_boxnet.cpu().detach().numpy()
         center = center.cpu().detach().numpy()
         heading_scores = heading_scores.cpu().detach().numpy()
         heading_residuals = heading_residuals.cpu().detach().numpy()
