@@ -28,6 +28,10 @@ parser.add_argument('--data_path', default=None, help='frustum dataset pickle fi
 parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
 parser.add_argument('--idx_path', default=None, help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
 parser.add_argument('--dump_result', action='store_true', help='If true, also dump results to .pickle file')
+parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
+parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
+parser.add_argument('--sensor', type=str, default='CAM_FRONT', help='only consider CAM_FRONT')
+parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes or nuscenes2kitti')
 FLAGS = parser.parse_args()
 
 # Set training configurations
@@ -38,7 +42,10 @@ NUM_POINT = FLAGS.num_point
 MODEL = importlib.import_module(FLAGS.model)
 NUM_CLASSES = 2
 NUM_CHANNEL = 4
-
+if FLAGS.objtype == 'carpedcyc':
+    n_classes = 3
+elif FLAGS.objtype == 'caronly':
+    n_classes = 1
 def softmax(x):
     ''' Numpy function for softmax'''
     shape = x.shape
@@ -92,15 +99,34 @@ def test(output_filename, result_dir=None):
     '''
 
     # Load Frustum Datasets.
-    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
-                                           rotate_to_center=True, overwritten_data_path=FLAGS.data_path,
-                                           from_rgb_detection=FLAGS.from_rgb_detection, one_hot=True)
+    if FLAGS.dataset == 'kitti':
+        if FLAGS.overwritten_data_path == None:
+            overwritten_data_path = 'kitti/frustum_' + FLAGS.objtype + '_val.pickle'
+        else:
+            overwritten_data_path = FLAGS.overwritten_data_path
+        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+                                               rotate_to_center=True, one_hot=True,
+                                               overwritten_data_path=overwritten_data_path)
+    elif FLAGS.dataset == 'nuscenes2kitti':
+        SENSOR = FLAGS.sensor
+        overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' + FLAGS.objtype + '_' + SENSOR + '_'
+        if FLAGS.overwritten_data_path == None:
+            overwritten_data_path = overwritten_data_path_prefix + 'val.pickle'
+        else:
+            overwritten_data_path = FLAGS.overwritten_data_path
+        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+                                               rotate_to_center=True, one_hot=True,
+                                               overwritten_data_path=overwritten_data_path)
+    else:
+        print('Unknown dataset: %s' % (FLAGS.dataset))
+        exit(-1)
+
     loader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, \
                     num_workers=8, pin_memory=True)
     Loss = FrustumPointNetLoss(return_all=FLAGS.return_all_loss)
     if FLAGS.model == 'frustum_pointnets_v1':
         from frustum_pointnets_v1 import FrustumPointNetv1
-        FrustumPointNet = FrustumPointNetv1().cuda()
+        FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
     pth = torch.load(FLAGS.model_path)
     FrustumPointNet.load_state_dict(pth['model_state_dict'])
 
