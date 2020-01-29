@@ -262,14 +262,14 @@ def test_one_epoch(model, loader):
         logits = logits.cpu().detach().numpy()
         mask = mask.cpu().detach().numpy()
         center_boxnet = center_boxnet.cpu().detach().numpy()
-        stage1_center = stage1_center.cpu().detach().numpy()###
+        #stage1_center = stage1_center.cpu().detach().numpy()#
         center = center.cpu().detach().numpy()
         heading_scores = heading_scores.cpu().detach().numpy()
-        heading_residuals_normalized = heading_residuals_normalized.cpu().detach().numpy()#
+        #heading_residuals_normalized = heading_residuals_normalized.cpu().detach().numpy()
         heading_residuals = heading_residuals.cpu().detach().numpy()
         size_scores = size_scores.cpu().detach().numpy()
         size_residuals = size_residuals.cpu().detach().numpy()
-        size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
+        #size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
         batch_center = batch_center.cpu().detach().numpy()
         batch_hclass = batch_hclass.cpu().detach().numpy()
         batch_hres = batch_hres.cpu().detach().numpy()
