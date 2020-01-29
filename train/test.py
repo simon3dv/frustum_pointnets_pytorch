@@ -194,19 +194,6 @@ def test(output_filename, result_dir=None):
         batch_size_scores, batch_size_residuals_normalized, batch_size_residuals, batch_center = \
             FrustumPointNet(batch_data, batch_one_hot_vec)
 
-        batch_label = batch_label.detach().cpu().numpy()
-        batch_logits = batch_logits.detach().cpu().numpy()
-        batch_mask = batch_mask.detach().cpu().numpy()
-        batch_stage1_center = batch_stage1_center.detach().cpu().numpy()
-        batch_center_boxnet = batch_center_boxnet.detach().cpu().numpy()
-        batch_heading_scores = batch_heading_scores.detach().cpu().numpy()
-        batch_heading_residuals_normalized = batch_heading_residuals_normalized.detach().cpu().numpy()
-        batch_heading_residuals = batch_heading_residuals.detach().cpu().numpy()
-        batch_size_scores = batch_size_scores.detach().cpu().numpy()
-        batch_size_residuals_normalized = batch_size_residuals_normalized.detach().cpu().numpy()
-        batch_size_residuals = batch_size_residuals.detach().cpu().numpy()
-        batch_center = batch_center.detach().cpu().numpy()
-
         # Loss
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
@@ -231,6 +218,21 @@ def test(output_filename, result_dir=None):
                      batch_size_scores, batch_size_residuals_normalized, \
                      batch_size_residuals, \
                      batch_sclass, batch_sres)
+
+        batch_label = batch_label.detach().cpu().numpy()
+        batch_logits = batch_logits.detach().cpu().numpy()
+        batch_mask = batch_mask.detach().cpu().numpy()
+        batch_stage1_center = batch_stage1_center.detach().cpu().numpy()
+        batch_center_boxnet = batch_center_boxnet.detach().cpu().numpy()
+        batch_heading_scores = batch_heading_scores.detach().cpu().numpy()
+        batch_heading_residuals_normalized = batch_heading_residuals_normalized.detach().cpu().numpy()
+        batch_heading_residuals = batch_heading_residuals.detach().cpu().numpy()
+        batch_size_scores = batch_size_scores.detach().cpu().numpy()
+        batch_size_residuals_normalized = batch_size_residuals_normalized.detach().cpu().numpy()
+        batch_size_residuals = batch_size_residuals.detach().cpu().numpy()
+        batch_center = batch_center.detach().cpu().numpy()
+
+
 
         test_total_loss += total_loss.item()
 
@@ -368,3 +370,7 @@ if __name__=='__main__':
         test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
     else:
         test(FLAGS.output+'.pickle', FLAGS.output)
+'''
+CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
+
+'''
