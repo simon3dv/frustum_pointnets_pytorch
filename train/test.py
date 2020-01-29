@@ -218,19 +218,7 @@ def test_one_epoch(model, loader):
         eval_t2 = time.perf_counter()
         eval_time += (eval_t2 - eval_t1)
 
-        # 3. Detach
-        logits = logits.detach()
-        stage1_center = stage1_center.detach()
-        center_boxnet = center_boxnet.detach()
-        heading_scores = heading_scores.detach()
-        heading_residuals_normalized = heading_residuals_normalized.detach()
-        heading_residuals = heading_residuals.detach()
-        size_scores = size_scores.detach()
-        size_residuals_normalized = size_residuals_normalized.detach()
-        size_residuals = size_residuals.detach()
-        center = center.detach()
-
-        # 4. Compute Loss
+        # 3. Compute Loss
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
                 size_class_loss, heading_residuals_normalized_loss, \
@@ -266,18 +254,29 @@ def test_one_epoch(model, loader):
             test_stage1_center_loss += stage1_center_loss.item()
             test_corners_loss += corners_loss.item()
 
-        # 5. Detach, to numpy, compute IoU and acc
-        iou2ds, iou3ds = provider.compute_box3d_iou( \
-            center.cpu().detach().numpy(), \
-            heading_scores.cpu().detach().numpy(), \
-            heading_residuals.cpu().detach().numpy(), \
-            size_scores.cpu().detach().numpy(), \
-            size_residuals.cpu().detach().numpy(), \
-            batch_center.cpu().detach().numpy(), \
-            batch_hclass.cpu().detach().numpy(), \
-            batch_hres.cpu().detach().numpy(), \
-            batch_sclass.cpu().detach().numpy(), \
-            batch_sres.cpu().detach().numpy())
+        # 4. Detach, to numpy, compute IoU and acc
+
+        center = center.cpu().detach().numpy()
+        heading_scores = heading_scores.cpu().detach().numpy()
+        heading_residuals = heading_residuals.cpu().detach().numpy()
+        size_scores = size_scores.cpu().detach().numpy()
+        size_residuals = size_residuals.cpu().detach().numpy()
+        batch_center = batch_center.cpu().detach().numpy()
+        batch_hclass = batch_hclass.cpu().detach().numpy()
+        batch_hres = batch_hres.cpu().detach().numpy()
+        batch_sclass = batch_sclass.cpu().detach().numpy()
+        batch_sres = batch_sres.cpu().detach().numpy()
+        iou2ds, iou3ds = provider.compute_box3d_iou(
+            center,
+            heading_scores,
+            heading_residuals,
+            size_scores,
+            size_residuals,
+            batch_center,
+            batch_hclass,
+            batch_hres,
+            batch_sclass,
+            batch_sres)
         test_iou2d += np.sum(iou2ds)
         test_iou3d += np.sum(iou3ds)
 
@@ -287,40 +286,40 @@ def test_one_epoch(model, loader):
 
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
-    # 6. Compute and write Results
-    # batch_output:(32, 1024)
-    batch_output = mask
-    # batch_center_pred:(32, 3)
-    batch_center_pred = center_boxnet
-    # heading_cls,heading_res
-    batch_hclass_pred = np.argmax(heading_scores, 1)  # bs
-    batch_hres_pred = np.array([heading_residuals[j, batch_hclass_pred[j]] \
-                                for j in range(data.shape[0])])
-    # batch_size_cls,batch_size_res
-    batch_sclass_pred = np.argmax(size_scores, 1)  # bs
-    batch_sres_pred = np.vstack([size_residuals[j, batch_sclass_pred[j], :] \
-                                 for j in range(data.shape[0])])  # (32,3)
+        # 5. Compute and write Results
+        # batch_output:(32, 1024)
+        batch_output = mask
+        # batch_center_pred:(32, 3)
+        batch_center_pred = center_boxnet
+        # heading_cls,heading_res
+        batch_hclass_pred = np.argmax(heading_scores, 1)  # bs
+        batch_hres_pred = np.array([heading_residuals[j, batch_hclass_pred[j]] \
+                                    for j in range(data.shape[0])])
+        # batch_size_cls,batch_size_res
+        batch_sclass_pred = np.argmax(size_scores, 1)  # bs
+        batch_sres_pred = np.vstack([size_residuals[j, batch_sclass_pred[j], :] \
+                                     for j in range(data.shape[0])])  # (32,3)
 
-    # batch_scores
-    batch_seg_prob = softmax(logits)[:, :, 1]  # BxN
-    batch_seg_mask = np.argmax(logits, 2)  # BxN
-    mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1)  # B,
-    mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
-    heading_prob = np.max(softmax(heading_scores), 1)  # B
-    size_prob = np.max(softmax(size_scores), 1)  # B,
-    batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
+        # batch_scores
+        batch_seg_prob = softmax(logits)[:, :, 1]  # BxN
+        batch_seg_mask = np.argmax(logits, 2)  # BxN
+        mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1)  # B,
+        mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
+        heading_prob = np.max(softmax(heading_scores), 1)  # B
+        size_prob = np.max(softmax(size_scores), 1)  # B,
+        batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
-    for j in range(batch_output.shape[0]):
-        ps_list.append(batch_data[j, ...])
-        seg_list.append(batch_label[j, ...])
-        segp_list.append(batch_output[j, ...])
-        center_list.append(batch_center_pred[j, :])
-        heading_cls_list.append(batch_hclass_pred[j])
-        heading_res_list.append(batch_hres_pred[j])
-        size_cls_list.append(batch_sclass_pred[j])
-        size_res_list.append(batch_sres_pred[j, :])
-        rot_angle_list.append(batch_rot_angle[j])
-        score_list.append(batch_scores[j])
+        for j in range(batch_output.shape[0]):
+            ps_list.append(batch_data[j, ...])
+            seg_list.append(batch_label[j, ...])
+            segp_list.append(batch_output[j, ...])
+            center_list.append(batch_center_pred[j, :])
+            heading_cls_list.append(batch_hclass_pred[j])
+            heading_res_list.append(batch_hres_pred[j])
+            size_cls_list.append(batch_sclass_pred[j])
+            size_res_list.append(batch_sres_pred[j, :])
+            rot_angle_list.append(batch_rot_angle[j])
+            score_list.append(batch_scores[j])
 
     if FLAGS.dump_result:
         print('dumping...')
