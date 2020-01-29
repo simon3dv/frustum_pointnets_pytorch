@@ -204,7 +204,7 @@ def test_one_epoch(model, loader):
         batch_hres = batch_hres.float().cuda()
         batch_sclass = batch_sclass.float().cuda()
         batch_sres = batch_sres.float().cuda()
-        # batch_rot_angle = batch_rot_angle.float().cuda()
+        batch_rot_angle = batch_rot_angle.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
         # 2. Eval one batch
@@ -307,6 +307,7 @@ def test_one_epoch(model, loader):
         batch_seg_prob = softmax(logits)[:, :, 1]  # (32, 1024, 2) ->(32, 1024)
         batch_seg_mask = np.argmax(logits, 2)  # BxN
         mask_mean_prob = np.sum(batch_seg_prob * batch_seg_mask, 1)  # B,
+        #ipdb.set_trace()
         mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
