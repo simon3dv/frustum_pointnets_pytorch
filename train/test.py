@@ -88,7 +88,7 @@ FrustumPointNet.load_state_dict(pth['model_state_dict'])
 
 # output file dir and name
 output_filename = FLAGS.output+'.pickle'
-result_dir = FLAGS.output
+result_dir = 'train/' + FLAGS.output
 
 def softmax(x):
     ''' Numpy function for softmax'''
@@ -413,7 +413,7 @@ if __name__=='__main__':
 
     '''
     log:
-    CUDA_VISIBLE_DEVICES=0 python test.py 
+    CUDA_VISIBLE_DEVICES=0 python train/test.py 
     --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
     --data_path kitti/frustum_caronly_val.pickle 
     --idx_path kitti/image_sets/val.txt 
