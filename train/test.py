@@ -219,6 +219,14 @@ def test(output_filename, result_dir=None):
                      batch_size_residuals, \
                      batch_sclass, batch_sres)
 
+        # total_loss
+        test_total_loss += total_loss.item()
+        # Segmentation acc
+        # # correct_cnt += np.sum(batch_output == batch_label)
+        correct = torch.argmax(batch_logits, 2).eq(batch_label.long()).detach().cpu().numpy()
+        accuracy = np.sum(correct)
+        test_acc += accuracy
+
         batch_label = batch_label.detach().cpu().numpy()
         batch_logits = batch_logits.detach().cpu().numpy()
         batch_mask = batch_mask.detach().cpu().numpy()
@@ -234,7 +242,7 @@ def test(output_filename, result_dir=None):
 
 
 
-        test_total_loss += total_loss.item()
+
 
 
 
@@ -260,11 +268,7 @@ def test(output_filename, result_dir=None):
         size_prob = np.max(softmax(batch_size_scores),1) # B,
         batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
-        # Segmentation acc
-        # correct_cnt += np.sum(batch_output == batch_label)
-        correct = torch.argmax(batch_logits, 2).eq(batch_label.long()).detach().cpu().numpy()
-        accuracy = np.sum(correct)
-        test_acc += accuracy
+
         # IoU
         iou2ds, iou3ds = provider.compute_box3d_iou( \
             batch_center, \
