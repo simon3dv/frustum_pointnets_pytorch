@@ -142,6 +142,7 @@ def test_one_epoch(model, loader):
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
     '''
+    ipdb.set_trace()
     ps_list = []
     seg_list = []
     segp_list = []
