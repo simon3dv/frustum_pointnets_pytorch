@@ -120,7 +120,7 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
     # Write TXT files
     if not os.path.exists(result_dir): os.makedirs(result_dir)
     output_dir = os.path.join(result_dir, 'data')
-    if not os.path.exists(output_dir): os.makedirs(result_dir)
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
     for idx in results:
         pred_filename = os.path.join(output_dir, '%06d.txt'%(idx))
         fout = open(pred_filename, 'w')
