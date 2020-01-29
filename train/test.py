@@ -287,27 +287,6 @@ def test_one_epoch(model, loader):
 
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
 
-    if FLAGS.return_all_loss:
-        return test_total_loss / test_n_samples, \
-               test_iou2d / test_n_samples, \
-               test_iou3d / test_n_samples, \
-               test_acc / test_n_samples, \
-               test_iou3d_acc / test_n_samples,\
-               test_mask_loss / test_n_samples, \
-               test_center_loss / test_n_samples, \
-               test_heading_class_loss / test_n_samples, \
-               test_size_class_loss / test_n_samples, \
-               test_heading_residuals_normalized_loss / test_n_samples, \
-               test_size_residuals_normalized_loss / test_n_samples, \
-               test_stage1_center_loss / test_n_samples, \
-               test_corners_loss / test_n_samples
-    else:
-        return test_total_loss/test_n_samples,  \
-               test_iou2d/test_n_samples, \
-               test_iou3d/test_n_samples, \
-               test_acc/test_n_samples, \
-               test_iou3d_acc/test_n_samples
-
     # 6. Compute and write Results
     # batch_output:(32, 1024)
     batch_output = batch_mask
@@ -344,6 +323,7 @@ def test_one_epoch(model, loader):
         score_list.append(batch_scores[j])
 
     if FLAGS.dump_result:
+        print('dumping...')
         with open(output_filename, 'wp') as fp:
             pickle.dump(ps_list, fp)
             pickle.dump(seg_list, fp)
@@ -370,6 +350,26 @@ def test_one_epoch(model, loader):
             for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
 
+    if FLAGS.return_all_loss:
+        return test_total_loss / test_n_samples, \
+               test_iou2d / test_n_samples, \
+               test_iou3d / test_n_samples, \
+               test_acc / test_n_samples, \
+               test_iou3d_acc / test_n_samples,\
+               test_mask_loss / test_n_samples, \
+               test_center_loss / test_n_samples, \
+               test_heading_class_loss / test_n_samples, \
+               test_size_class_loss / test_n_samples, \
+               test_heading_residuals_normalized_loss / test_n_samples, \
+               test_size_residuals_normalized_loss / test_n_samples, \
+               test_stage1_center_loss / test_n_samples, \
+               test_corners_loss / test_n_samples
+    else:
+        return test_total_loss/test_n_samples,  \
+               test_iou2d/test_n_samples, \
+               test_iou3d/test_n_samples, \
+               test_acc/test_n_samples, \
+               test_iou3d_acc/test_n_samples
 
 
 if __name__=='__main__':
