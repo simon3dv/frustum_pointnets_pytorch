@@ -23,7 +23,7 @@ parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name 
 parser.add_argument('--model_path', default='log/model.ckpt', help='model checkpoint file path [default: log/model.ckpt]')
 #ex. log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
-parser.add_argument('--output', default='train/test_results', help='output file/folder name [default: test_results]')
+parser.add_argument('--output', default='test_results', help='output file/folder name [default: test_results]')
 parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
 parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
 parser.add_argument('--idx_path', default='idx_path kitti/image_sets/val.txt', help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
@@ -413,13 +413,17 @@ if __name__=='__main__':
 
     '''
     log:
-    CUDA_VISIBLE_DEVICES=0 python train/test.py 
-    --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
-    [1] test loss: 0.102720
-    test segmentation accuracy: 0.902932
-    test box IoU(ground/3D): 0.801011/0.749250
-    test box estimation accuracy (IoU=0.7): 0.776519
-    
+    CUDA_VISIBLE_DEVICES=0 python test.py 
+    --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
+    --data_path kitti/frustum_caronly_val.pickle 
+    --idx_path kitti/image_sets/val.txt 
+    --output kitti_caronly_v1
+    [1] test loss: 0.102615
+    test segmentation accuracy: 0.902856
+    test box IoU(ground/3D): 0.801254/0.749424
+    test box estimation accuracy (IoU=0.7): 0.776838
+
+
     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/kitti_caronly_v1
 
     '''
