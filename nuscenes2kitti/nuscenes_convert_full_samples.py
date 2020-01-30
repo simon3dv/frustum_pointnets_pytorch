@@ -288,8 +288,8 @@ if __name__ == '__main__':
         for seqname in seqname_list:
             f.write(seqname+'\n')
     if args.version == 'v1.0-trainval':
-        f_train = open('train.txt','w')
-        f_val = open('val.txt','w')
+        f_train = open(sets_root + 'train.txt','w')
+        f_val = open(sets_root + 'val.txt','w')
         for i,seqname in enumerate(seqname_list):
             if i < args.number/2:
                 f_train.write(seqname+'\n')
