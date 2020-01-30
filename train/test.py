@@ -521,7 +521,8 @@ def test_from_rgb_detection(model, loader):
         size_scores = size_scores.cpu().detach().numpy()
         size_residuals = size_residuals.cpu().detach().numpy()
         # size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
-        
+        batch_rot_angle = batch_rot_angle.cpu().detach().numpy()
+
         #batch_center = batch_center.cpu().detach().numpy()
         #batch_hclass = batch_hclass.cpu().detach().numpy()
         #batch_hres = batch_hres.cpu().detach().numpy()
