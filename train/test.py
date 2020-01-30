@@ -423,7 +423,6 @@ def test_from_rgb_detection(model, loader):
         test_stage1_center_loss = 0.0
         test_corners_loss = 0.0
     '''
-    ipdb.set_trace()
     for i, data in tqdm(enumerate(loader), \
                         total=len(loader), smoothing=0.9):
         # for debug
