@@ -315,16 +315,9 @@ def test_one_epoch(model, loader):
         size_prob = np.max(softmax(size_scores), 1)  # B,
         #batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
         # batch_scores = mask_mean_prob/3 + heading_prob/3 + size_prob/3
-        # batch_scores = 1.0
-        batch_scores = heading_prob/2 + size_prob/2
-        if(batch_scores < 0).any():
-            ipdb.set_trace()
-        if(size_prob < 0).any():
-            ipdb.set_trace()
-        if(heading_prob < 0).any():
-            ipdb.set_trace()
-        if(mask_mean_prob < 0).any():
-            ipdb.set_trace()
+        batch_scores = 1.0
+        # batch_scores = heading_prob/2 + size_prob/2
+
         #ipdb.set_trace()
         # batch_scores = heading_prob
         for j in range(batch_output.shape[0]):
