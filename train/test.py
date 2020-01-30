@@ -573,7 +573,7 @@ def test_from_rgb_detection(model, loader):
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
             onehot_list.append(batch_one_hot_vec[i])
-        
+
     '''
     return np.argmax(logits, 2), centers, heading_cls, heading_res, \
         size_cls, size_res, scores

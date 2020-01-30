@@ -40,6 +40,8 @@ parser.add_argument('--debug', default=False, action='store_true',help='debug mo
 parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
 parser.add_argument('--sensor', type=str, default='CAM_FRONT', help='only consider CAM_FRONT')
 parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes or nuscenes2kitti')
+parser.add_argument('--train_sets', type=str, default='train')
+parser.add_argument('--val_sets', type=str, default='val')
 FLAGS = parser.parse_args()
 
 # Set training configurations
@@ -54,7 +56,7 @@ BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
 MAX_EPOCH = FLAGS.max_epoch
 BASE_LEARNING_RATE = FLAGS.learning_rate
-###GPU_INDEX = FLAGS.gpu
+# GPU_INDEX = FLAGS.gpu
 MOMENTUM = FLAGS.momentum
 OPTIMIZER = FLAGS.optimizer
 DECAY_STEP = FLAGS.decay_step
@@ -74,29 +76,28 @@ os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
 os.system('cp %s %s' % (os.path.join(BASE_DIR, 'train.py'), LOG_DIR))
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(FLAGS)+'\n')
-'''
-BN_INIT_DECAY = 0.5
-BN_DECAY_DECAY_RATE = 0.5
-BN_DECAY_DECAY_STEP = float(DECAY_STEP)
-BN_DECAY_CLIP = 0.99
-'''
+# BN_INIT_DECAY = 0.5
+# BN_DECAY_DECAY_RATE = 0.5
+# BN_DECAY_DECAY_STEP = float(DECAY_STEP)
+# BN_DECAY_CLIP = 0.99
+
 # Load Frustum Datasets. Use default data paths.
 if FLAGS.dataset == 'kitti':
-    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='train',
+    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.train_sets,
         rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_train.pickle')
-    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_'+FLAGS.train_sets+'.pickle')
+    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.val_sets,
         rotate_to_center=True, one_hot=True,
-        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_val.pickle')
+        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_'+FLAGS.val_sets+'.pickle')
 elif FLAGS.dataset == 'nuscenes2kitti':
     SENSOR = FLAGS.sensor
     overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' +FLAGS.objtype + '_' + SENSOR + '_'
-    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='train',
+    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.train_sets,
         rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-        overwritten_data_path=overwritten_data_path_prefix + 'train.pickle')
-    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+        overwritten_data_path=overwritten_data_path_prefix + '_'+FLAGS.train_sets+'.pickle')
+    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.val_sets,
         rotate_to_center=True, one_hot=True,
-        overwritten_data_path=overwritten_data_path_prefix + 'val.pickle')
+        overwritten_data_path=overwritten_data_path_prefix + '_'+FLAGS.val_sets+'.pickle')
 else:
     print('Unknown dataset: %s' % (FLAGS.dataset))
     exit(-1)
