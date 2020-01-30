@@ -315,8 +315,8 @@ def test_one_epoch(model, loader):
         #batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
         # batch_scores = mask_mean_prob
         center_prob = softmax(batch_center_pred)
-        batch_scores = mask_mean_prob/4 + mask_mean_prob/4 + size_prob/4 + center_prob/4
-
+        # batch_scores = mask_mean_prob/4 + mask_mean_prob/4 + size_prob/4 + center_prob/4
+        batch_scores = 1.0
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j, ...])
             seg_list.append(batch_label[j, ...])
