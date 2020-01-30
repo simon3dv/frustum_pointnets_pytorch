@@ -272,7 +272,7 @@ def test_one_epoch(model, loader):
         size_scores = size_scores.cpu().detach().numpy()
         size_residuals = size_residuals.cpu().detach().numpy()
         #size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
-
+        batch_rot_angle = batch_rot_angle.cpu().detach().numpy()
         batch_center = batch_center.cpu().detach().numpy()
         batch_hclass = batch_hclass.cpu().detach().numpy()
         batch_hres = batch_hres.cpu().detach().numpy()
@@ -694,7 +694,8 @@ if __name__=='__main__':
      --from_rgb_detection
     '''
 
-    '''from 2d gt, caronly
+
+    '''from 2d gt, caronly(batch_scores = mask_mean_prob)
     log:
     CUDA_VISIBLE_DEVICES=0 python train/test.py 
     --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
