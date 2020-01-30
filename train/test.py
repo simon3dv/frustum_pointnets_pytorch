@@ -647,7 +647,7 @@ if __name__=='__main__':
     '''
 
     if FLAGS.from_rgb_detection:
-        test_from_rgb_detection(FLAGS.output+'.pickle', FLAGS.output)
+        test_from_rgb_detection(FrustumPointNet, test_dataloader)
     else:
         # test one epoch from 2d gt
         if FLAGS.return_all_loss:
