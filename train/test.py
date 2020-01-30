@@ -313,9 +313,9 @@ def test_one_epoch(model, loader):
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
         #batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
-        batch_scores = mask_mean_prob
-        # center_prob = softmax(batch_center_pred)
-        # batch_scores = mask_mean_prob/4 + mask_mean_prob/4 + size_prob/4 + center_prob/4
+        # batch_scores = mask_mean_prob
+        center_prob = softmax(batch_center_pred)
+        batch_scores = mask_mean_prob/4 + mask_mean_prob/4 + size_prob/4 + center_prob/4
 
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j, ...])
@@ -682,8 +682,8 @@ if __name__=='__main__':
         print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
     else:
         print('test from rgb detection: Done')
+    #1.from rgb(score_list.append(batch_rgb_prob[j]))
     '''
-    #score_list.append(batch_rgb_prob[j])
     # from rgb_detection, caronly
      CUDA_VISIBLE_DEVICES=0 
      python train/test.py 
@@ -692,6 +692,28 @@ if __name__=='__main__':
      --idx_path kitti/image_sets/val.txt 
      --output train/kitti_caronly_v1_fromrgb 
      --from_rgb_detection
+     
+     train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/kitti_caronly_v1_fromrgb 
+
+     car_detection AP: 96.482544 90.305161 87.626389
+    PDFCROP 1.38, 2012/11/02 - Copyright (c) 2002-2012 by Heiko Oberdiek.
+    ==> 1 page written on `car_detection.pdf'.
+    Finished 2D bounding box eval.
+    Going to eval ground for class: car
+    save train/kitti_caronly_v1_fromrgb/plot/car_detection_ground.txt
+    car_detection_ground AP: 88.573669 84.784851 76.794235
+    PDFCROP 1.38, 2012/11/02 - Copyright (c) 2002-2012 by Heiko Oberdiek.
+    ==> 1 page written on `car_detection_ground.pdf'.
+    Finished Birdeye eval.
+    Going to eval 3D box for class: car
+    save train/kitti_caronly_v1_fromrgb/plot/car_detection_3d.txt
+    car_detection_3d AP: 85.088257 72.119308 64.253876
+    PDFCROP 1.38, 2012/11/02 - Copyright (c) 2002-2012 by Heiko Oberdiek.
+    ==> 1 page written on `car_detection_3d.pdf'.
+    Finished 3D bounding box eval.
+    Your evaluation results are available at:
+    train/kitti_caronly_v1_fromrgb
+
     '''
 
 
