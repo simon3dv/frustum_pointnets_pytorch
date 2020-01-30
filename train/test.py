@@ -670,13 +670,14 @@ if __name__=='__main__':
                 test_one_epoch(FrustumPointNet, test_dataloader)
     blue = lambda x: '\033[94m' + x + '\033[0m'
     if(not FLAGS.from_rgb_detection):
-        print('test from 2d gt')
+        print('test from 2d gt: Done')
         print('%s loss: %.6f' % (blue('test'), test_total_loss))
+        print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
+        print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
+        print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
     else:
-        print('test from rgb detection')
-    print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
-    print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
-    print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
+        print('test from rgb detection: Done')
+
 
 
     '''from rgb_detection, caronly
