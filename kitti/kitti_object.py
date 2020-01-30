@@ -268,6 +268,14 @@ def dataset_viz_pred(pred_label_dir):
         print('previous save3ddir found. deleting...')
         shutil.rmtree(save3ddir)
     os.makedirs(save3ddir)
+    if os.path.isdir(save2ddir_pred) == True:
+        print('previous save2ddir_pred found. deleting...')
+        shutil.rmtree(save2ddir_pred)
+    os.makedirs(save2ddir_pred)
+    if os.path.isdir(save3ddir_pred) == True:
+        print('previous save3ddir_pred found. deleting...')
+        shutil.rmtree(save3ddir_pred)
+    os.makedirs(save3ddir_pred)
 
     for data_idx in range(len(dataset)):
         # Load data from dataset
