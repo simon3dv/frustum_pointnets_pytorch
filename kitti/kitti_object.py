@@ -281,9 +281,9 @@ def dataset_viz_pred(pred_label_dir):
         # Load data from dataset
         objects = dataset.get_label_objects(data_idx)
         objects_pred_label_filename = os.path.join(pred_label_dir, '%06d.txt'%(data_idx))
-        objects_pred = utils.read_label(objects_pred_label_filename)
+        if os.path.exists(objects_pred_label_filename):
+            objects_pred = utils.read_label(objects_pred_label_filename)
         objects[0].print_object()
-        objects_pred[0].print_object()
         img = dataset.get_image(data_idx)
         #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_height, img_width, img_channel = img.shape
@@ -297,9 +297,10 @@ def dataset_viz_pred(pred_label_dir):
         cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
         cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
 
-        img1_pred,img2_pred= return_image_with_boxes(img, objects_pred, calib, True)
-        cv2.imwrite(os.path.join(save2ddir_pred, str(data_idx).zfill(6) + '.png'),img1_pred)
-        cv2.imwrite(os.path.join(save3ddir_pred, str(data_idx).zfill(6) + '.png'),img2_pred)
+        if os.path.exists(objects_pred_label_filename):
+            img1_pred,img2_pred= return_image_with_boxes(img, objects_pred, calib, True)
+            cv2.imwrite(os.path.join(save2ddir_pred, str(data_idx).zfill(6) + '.png'),img1_pred)
+            cv2.imwrite(os.path.join(save3ddir_pred, str(data_idx).zfill(6) + '.png'),img2_pred)
         # raw_input()
         # Show all LiDAR points. Draw 3d box in LiDAR point cloud
         # show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
