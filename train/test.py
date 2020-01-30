@@ -509,7 +509,7 @@ def test_from_rgb_detection(model, loader):
         correct = torch.argmax(logits, 2).eq(batch_label.detach().long()).cpu().numpy()
         accuracy = np.sum(correct) / float(NUM_POINT)
         test_acc += accuracy
-        
+        '''
         logits = logits.cpu().detach().numpy()
         mask = mask.cpu().detach().numpy()
         center_boxnet = center_boxnet.cpu().detach().numpy()
@@ -527,7 +527,7 @@ def test_from_rgb_detection(model, loader):
         #batch_hres = batch_hres.cpu().detach().numpy()
         #batch_sclass = batch_sclass.cpu().detach().numpy()
         #batch_sres = batch_sres.cpu().detach().numpy()
-        
+        '''
         iou2ds, iou3ds = provider.compute_box3d_iou(
             center,
             heading_scores,
