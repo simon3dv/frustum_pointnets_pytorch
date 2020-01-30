@@ -317,6 +317,8 @@ def test_one_epoch(model, loader):
         # batch_scores = mask_mean_prob/3 + heading_prob/3 + size_prob/3
         # batch_scores = 1.0
         batch_scores = heading_prob/2 + size_prob/2
+        if(batch_scores < 0):
+            ipdb.set_trace()
         #ipdb.set_trace()
         # batch_scores = heading_prob
         for j in range(batch_output.shape[0]):
