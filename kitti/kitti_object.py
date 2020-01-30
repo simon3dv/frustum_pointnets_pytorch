@@ -311,4 +311,4 @@ if __name__=='__main__':
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
     #dataset_viz()
-    dataset_viz_pred('train/kitti_caronly_v1_from/data')
+    dataset_viz_pred('train/kitti_caronly_v1_fromrgb/data')
