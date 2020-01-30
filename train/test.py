@@ -406,12 +406,13 @@ def test_from_rgb_detection(model, loader):
     num_batches = len(TEST_DATASET) // batch_size
 
     test_n_samples = 0
-    test_total_loss = 0.0
+    #test_total_loss = 0.0
     test_iou2d = 0.0
     test_iou3d = 0.0
     test_acc = 0.0
     test_iou3d_acc = 0.0
     eval_time = 0.0
+    '''
     if FLAGS.return_all_loss:
         test_mask_loss = 0.0
         test_center_loss = 0.0
@@ -421,7 +422,7 @@ def test_from_rgb_detection(model, loader):
         test_size_residuals_normalized_loss = 0.0
         test_stage1_center_loss = 0.0
         test_corners_loss = 0.0
-
+    '''
     for i, data in tqdm(enumerate(loader), \
                         total=len(loader), smoothing=0.9):
         # for debug
@@ -441,19 +442,24 @@ def test_from_rgb_detection(model, loader):
         batch_one_hot_vec:[32,3],
         '''
         # 1. Load data
-        batch_data, batch_label, batch_center, \
-        batch_hclass, batch_hres, \
-        batch_sclass, batch_sres, \
-        batch_rot_angle, batch_one_hot_vec = data
+        batch_data, \
+        #batch_label, batch_center, \
+        #batch_hclass, batch_hres, \
+        #batch_sclass, batch_sres, \
+        batch_rot_angle, \
+        batch_rgb_prob, \
+        batch_one_hot_vec = data
 
+        #return point_set, rot_angle, self.prob_list[index], one_hot_vec
         batch_data = batch_data.transpose(2, 1).float().cuda()
-        batch_label = batch_label.float().cuda()
-        batch_center = batch_center.float().cuda()
-        batch_hclass = batch_hclass.float().cuda()
-        batch_hres = batch_hres.float().cuda()
-        batch_sclass = batch_sclass.float().cuda()
-        batch_sres = batch_sres.float().cuda()
+        #batch_label = batch_label.float().cuda()
+        #batch_center = batch_center.float().cuda()
+        #batch_hclass = batch_hclass.float().cuda()
+        #batch_hres = batch_hres.float().cuda()
+        #batch_sclass = batch_sclass.float().cuda()
+        #batch_sres = batch_sres.float().cuda()
         batch_rot_angle = batch_rot_angle.float().cuda()
+        batch_rgb_prob = batch_rgb_prob.float().cuda()
         batch_one_hot_vec = batch_one_hot_vec.float().cuda()
 
         # 2. Eval one batch
@@ -467,6 +473,7 @@ def test_from_rgb_detection(model, loader):
         eval_t2 = time.perf_counter()
         eval_time += (eval_t2 - eval_t1)
 
+        '''missing batch_label
         # 3. Compute Loss
         if FLAGS.return_all_loss:
             total_loss, mask_loss, center_loss, heading_class_loss, \
@@ -491,7 +498,6 @@ def test_from_rgb_detection(model, loader):
                      size_scores, size_residuals_normalized, \
                      size_residuals, \
                      batch_sclass, batch_sres)
-
         test_total_loss += total_loss.item()
         if FLAGS.return_all_loss:
             test_mask_loss += mask_loss.item()
@@ -502,12 +508,11 @@ def test_from_rgb_detection(model, loader):
             test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
             test_stage1_center_loss += stage1_center_loss.item()
             test_corners_loss += corners_loss.item()
-
         # 4. compute seg acc, IoU and acc(IoU)
         correct = torch.argmax(logits, 2).eq(batch_label.detach().long()).cpu().numpy()
         accuracy = np.sum(correct) / float(NUM_POINT)
         test_acc += accuracy
-
+        '''
         logits = logits.cpu().detach().numpy()
         mask = mask.cpu().detach().numpy()
         center_boxnet = center_boxnet.cpu().detach().numpy()
@@ -563,7 +568,7 @@ def test_from_rgb_detection(model, loader):
 
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j, ...])
-            seg_list.append(batch_label[j, ...])
+            #seg_list.append(batch_label[j, ...])
             segp_list.append(batch_output[j, ...])
             center_list.append(batch_center_pred[j, :])
             heading_cls_list.append(batch_hclass_pred[j])
@@ -588,7 +593,7 @@ def test_from_rgb_detection(model, loader):
         print('dumping...')
         with open(output_filename, 'wp') as fp:
             pickle.dump(ps_list, fp)
-            pickle.dump(seg_list, fp)
+            #pickle.dump(seg_list, fp)
             pickle.dump(segp_list, fp)
             pickle.dump(center_list, fp)
             pickle.dump(heading_cls_list, fp)
@@ -613,6 +618,7 @@ def test_from_rgb_detection(model, loader):
                                  for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
 
+    '''
     if FLAGS.return_all_loss:
         return test_total_loss / test_n_samples, \
                test_iou2d / test_n_samples, \
@@ -633,7 +639,11 @@ def test_from_rgb_detection(model, loader):
                test_iou3d / test_n_samples, \
                test_acc / test_n_samples, \
                test_iou3d_acc / test_n_samples
-
+    '''
+    return test_iou2d / test_n_samples, \
+           test_iou3d / test_n_samples, \
+           test_acc / test_n_samples, \
+           test_iou3d_acc / test_n_samples
 
 if __name__=='__main__':
     '''
@@ -647,7 +657,7 @@ if __name__=='__main__':
     '''
 
     if FLAGS.from_rgb_detection:
-        test_from_rgb_detection(FrustumPointNet, test_dataloader)
+        test_iou2d, test_iou3d, test_acc, test_iou3d_acc = test_from_rgb_detection(FrustumPointNet, test_dataloader)
     else:
         # test one epoch from 2d gt
         if FLAGS.return_all_loss:
@@ -663,13 +673,14 @@ if __name__=='__main__':
                 = \
                 test_one_epoch(FrustumPointNet, test_dataloader)
         else:
-            test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
-                = \
+            test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc = \
                 test_one_epoch(FrustumPointNet, test_dataloader)
-    epoch = 0
     blue = lambda x: '\033[94m' + x + '\033[0m'
-    print('[%d] %s loss: %.6f' % \
-          (epoch + 1, blue('test'), test_total_loss))
+    if(not FLAGS.from_rgb_detection):
+        print('test from 2d gt')
+        print('%s loss: %.6f' % (blue('test'), test_total_loss))
+    else:
+        print('test from rgb detection')
     print('%s segmentation accuracy: %.6f' % (blue('test'), test_acc))
     print('%s box IoU(ground/3D): %.6f/%.6f' % (blue('test'), test_iou2d, test_iou3d))
     print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
