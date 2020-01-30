@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     split = args.version
     start_index = 0
-    end_index = start_index + args.number
+    end_index = start_index + NUMBER
     data_root = 'dataset/nuScenes/'+split+'/'
     sets_root = 'dataset/nuScenes2KITTI/image_sets/'
     out_root = 'dataset/nuScenes2KITTI/'
@@ -124,7 +124,10 @@ if __name__ == '__main__':
 
     print('Running...(saving to {})'.format(os.path.dirname(img_output_root)))
     seqname_list = []
-    print('Number:',args.number)
+    NUMBER = args.number
+    if args.number == -1:
+        NUMBER = len(nusc.sample)
+    print('Number:',NUMBER)
     for present_sample in tqdm(nusc.sample):
         calib = {}
         # converting image data from 6 cameras (in the sensor list)
@@ -291,7 +294,7 @@ if __name__ == '__main__':
         f_train = open(sets_root + 'train.txt','w')
         f_val = open(sets_root + 'val.txt','w')
         for i,seqname in enumerate(seqname_list):
-            if i < args.number/2:
+            if i < NUMBER/2:
                 f_train.write(seqname+'\n')
             else:
                 f_val.write(seqname+'\n')
