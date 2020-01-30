@@ -562,7 +562,6 @@ def test_from_rgb_detection(model, loader):
         mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
-        ipdb.set_trace()
         #np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
         batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
