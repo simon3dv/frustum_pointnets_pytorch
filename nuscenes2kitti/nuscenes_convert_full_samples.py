@@ -70,7 +70,6 @@ if __name__ == '__main__':
 
     split = args.version
     start_index = 0
-    end_index = start_index + NUMBER
     data_root = 'dataset/nuScenes/'+split+'/'
     sets_root = 'dataset/nuScenes2KITTI/image_sets/'
     out_root = 'dataset/nuScenes2KITTI/'
@@ -89,6 +88,11 @@ if __name__ == '__main__':
     delete_dontcare_objects = True
 
     nusc = NuScenes(version=split, dataroot=data_root, verbose=True)
+    NUMBER = args.number
+    if args.number == -1:
+        NUMBER = len(nusc.sample)
+    print('Number:',NUMBER)
+    end_index = start_index + NUMBER
     if args.CAM_FRONT_only:
         sensor_list = ['CAM_FRONT']
     else:
@@ -124,10 +128,7 @@ if __name__ == '__main__':
 
     print('Running...(saving to {})'.format(os.path.dirname(img_output_root)))
     seqname_list = []
-    NUMBER = args.number
-    if args.number == -1:
-        NUMBER = len(nusc.sample)
-    print('Number:',NUMBER)
+
     for present_sample in tqdm(nusc.sample):
         calib = {}
         # converting image data from 6 cameras (in the sensor list)
