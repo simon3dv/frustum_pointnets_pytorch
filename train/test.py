@@ -16,6 +16,7 @@ from tqdm import tqdm
 import ipdb
 from model_util import FrustumPointNetLoss
 import time
+import torch.nn.functional as F
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
@@ -313,10 +314,10 @@ def test_one_epoch(model, loader):
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
         #batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
-        # batch_scores = mask_mean_prob
+        ipdb.set_trace()
         center_prob = softmax(batch_center_pred)
         # batch_scores = mask_mean_prob/4 + mask_mean_prob/4 + size_prob/4 + center_prob/4
-        batch_scores = 1.0
+        # batch_scores = 1.0
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j, ...])
             seg_list.append(batch_label[j, ...])
