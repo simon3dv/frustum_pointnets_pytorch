@@ -563,6 +563,7 @@ def test_from_rgb_detection(model, loader):
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
         ipdb.set_trace()
+        #np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
         batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
         for j in range(batch_output.shape[0]):
@@ -575,7 +576,8 @@ def test_from_rgb_detection(model, loader):
             size_cls_list.append(batch_sclass_pred[j])
             size_res_list.append(batch_sres_pred[j, :])
             rot_angle_list.append(batch_rot_angle[j])
-            score_list.append(batch_scores[j])
+            #score_list.append(batch_scores[j])
+            score_list.append(batch_rgb_prob[j])
             onehot_list.append(batch_one_hot_vec[j])
 
     '''
