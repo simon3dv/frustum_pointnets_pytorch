@@ -293,9 +293,9 @@ def dataset_viz_pred(pred_label_dir):
 
         # Draw 2d and 3d boxes on image
         # show_image_with_boxes(img, objects, calib, False)
-        #img1,img2= return_image_with_boxes(img, objects, calib, True)
-        #cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
-        #cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
+        img1,img2= return_image_with_boxes(img, objects, calib, True)
+        cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
+        cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
 
         if os.path.exists(objects_pred_label_filename):
             img1_pred,img2_pred= return_image_with_boxes(img, objects_pred, calib, True)
