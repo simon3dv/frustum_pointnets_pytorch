@@ -443,9 +443,6 @@ def test_from_rgb_detection(model, loader):
         '''
         # 1. Load data
         batch_data, \
-        #batch_label, batch_center, \
-        #batch_hclass, batch_hres, \
-        #batch_sclass, batch_sres, \
         batch_rot_angle, \
         batch_rgb_prob, \
         batch_one_hot_vec = data
@@ -686,7 +683,19 @@ if __name__=='__main__':
     print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
 
 
+    '''from rgb_detection, caronly
+     CUDA_VISIBLE_DEVICES=0 
+     python train/test.py 
+     --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
+     --data_path kitti/frustum_caronly_val_rgb_detection.pickle 
+     --idx_path kitti/image_sets/val.txt 
+     --output train/kitti_caronly_v1 
+     --from_rgb_detection
+     
+
     '''
+
+    '''from 2d gt, caronly
     log:
     CUDA_VISIBLE_DEVICES=0 python train/test.py 
     --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
