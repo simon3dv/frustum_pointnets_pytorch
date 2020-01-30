@@ -312,6 +312,7 @@ def test_one_epoch(model, loader):
         mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
+        ipdb.set_trace()
         batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
 
         for j in range(batch_output.shape[0]):
@@ -679,10 +680,9 @@ if __name__=='__main__':
         print('%s box estimation accuracy (IoU=0.7): %.6f' % (blue('test'), test_iou3d_acc))
     else:
         print('test from rgb detection: Done')
-
-
-
-    '''from rgb_detection, caronly
+    '''
+    #score_list.append(batch_rgb_prob[j])
+    # from rgb_detection, caronly
      CUDA_VISIBLE_DEVICES=0 
      python train/test.py 
      --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth 
@@ -690,39 +690,6 @@ if __name__=='__main__':
      --idx_path kitti/image_sets/val.txt 
      --output train/kitti_caronly_v1_fromrgb 
      --from_rgb_detection
-     
-    train/test.py:562: RuntimeWarning: invalid value encountered in true_divide
-    mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
-    100%|████████████████████████████████████████████████████████████████████████████████████████████████| 510/510 [00:27<00:00, 18.27it/s]
-    Number of point clouds: 16314
-    test from rgb detection: Done
-
-    train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/kitti_caronly_v1_fromrgb 
-    Thank you for participating in our evaluation!
-    Loading detections...
-    number of files for evaluation: 3769
-      done.
-    save train/kitti_caronly_v1_fromrgb/plot/car_detection.txt
-    car_detection AP: 80.064323 77.700676 78.342094
-    PDFCROP 1.38, 2012/11/02 - Copyright (c) 2002-2012 by Heiko Oberdiek.
-    ==> 1 page written on `car_detection.pdf'.
-    Finished 2D bounding box eval.
-    Going to eval ground for class: car
-    save train/kitti_caronly_v1_fromrgb/plot/car_detection_ground.txt
-    car_detection_ground AP: 71.134987 72.429375 68.050896
-    PDFCROP 1.38, 2012/11/02 - Copyright (c) 2002-2012 by Heiko Oberdiek.
-    ==> 1 page written on `car_detection_ground.pdf'.
-    Finished Birdeye eval.
-    Going to eval 3D box for class: car
-    save train/kitti_caronly_v1_fromrgb/plot/car_detection_3d.txt
-    car_detection_3d AP: 61.311871 57.856030 54.618866
-    PDFCROP 1.38, 2012/11/02 - Copyright (c) 2002-2012 by Heiko Oberdiek.
-    ==> 1 page written on `car_detection_3d.pdf'.
-    Finished 3D bounding box eval.
-    Your evaluation results are available at:
-    train/kitti_caronly_v1_fromrgb
-
-
     '''
 
     '''from 2d gt, caronly
@@ -732,6 +699,7 @@ if __name__=='__main__':
     --data_path kitti/frustum_caronly_val.pickle 
     --idx_path kitti/image_sets/val.txt 
     --output train/kitti_caronly_v1
+    
 
     train/test.py:309: RuntimeWarning: invalid value encountered in true_divide
       mask_mean_prob = mask_mean_prob / np.sum(batch_seg_mask, 1)  # B,
