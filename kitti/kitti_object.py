@@ -283,7 +283,7 @@ def dataset_viz_pred(pred_label_dir):
         objects_pred_label_filename = os.path.join(pred_label_dir, '%06d.txt'%(data_idx))
         if os.path.exists(objects_pred_label_filename):
             objects_pred = utils.read_label(objects_pred_label_filename)
-        objects[0].print_object()
+        #objects[0].print_object()
         img = dataset.get_image(data_idx)
         #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_height, img_width, img_channel = img.shape
@@ -293,9 +293,9 @@ def dataset_viz_pred(pred_label_dir):
 
         # Draw 2d and 3d boxes on image
         # show_image_with_boxes(img, objects, calib, False)
-        #img1,img2= return_image_with_boxes(img, objects, calib, True)
-        #cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
-        #cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
+        img1,img2= return_image_with_boxes(img, objects, calib, True)
+        cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
+        cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
 
         if os.path.exists(objects_pred_label_filename):
             img1_pred,img2_pred= return_image_with_boxes(img, objects_pred, calib, True)
