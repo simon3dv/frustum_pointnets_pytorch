@@ -253,7 +253,52 @@ def dataset_viz():
         # show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
         # raw_input()
 
+def dataset_viz_pred(pred_label_dir):
+    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
+    split = 'training'
+    save2ddir = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis2d')
+    save3ddir = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis3d')
+    save2ddir_pred = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis2d_pred')
+    save3ddir_pred = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis3d_pred')
+    if os.path.isdir(save2ddir) == True:
+        print('previous save2ddir found. deleting...')
+        shutil.rmtree(save2ddir)
+    os.makedirs(save2ddir)
+    if os.path.isdir(save3ddir) == True:
+        print('previous save3ddir found. deleting...')
+        shutil.rmtree(save3ddir)
+    os.makedirs(save3ddir)
+
+    for data_idx in range(len(dataset)):
+        # Load data from dataset
+        objects = dataset.get_label_objects(data_idx)
+        objects_pred_label_filename = os.path.join(pred_label_dir, '%06d.txt'%(data_idx))
+        objects_pred = utils.read_label(objects_pred_label_filename)
+        objects[0].print_object()
+        objects_pred[0].print_object()
+        img = dataset.get_image(data_idx)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_height, img_width, img_channel = img.shape
+        print(('Image shape: ', img.shape))
+        #pc_velo = dataset.get_lidar(data_idx)[:,0:3]
+        calib = dataset.get_calibration(data_idx)
+
+        # Draw 2d and 3d boxes on image
+        # show_image_with_boxes(img, objects, calib, False)
+        img1,img2= return_image_with_boxes(img, objects, calib, True)
+        cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.png'),img1)
+        cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
+
+        img1_pred,img2_pred= return_image_with_boxes(img, objects_pred, calib, True)
+        cv2.imwrite(os.path.join(save2ddir_pred, str(data_idx).zfill(6) + '.png'),img1_pred)
+        cv2.imwrite(os.path.join(save3ddir_pred, str(data_idx).zfill(6) + '.png'),img2_pred)
+        # raw_input()
+        # Show all LiDAR points. Draw 3d box in LiDAR point cloud
+        # show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
+        # raw_input()
+
 if __name__=='__main__':
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
-    dataset_viz()
+    #dataset_viz()
+    dataset_viz_pred('train/kitti_caronly_v1_fromgt_11/data')
