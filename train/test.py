@@ -316,6 +316,7 @@ def test_one_epoch(model, loader):
         #batch_scores = np.log(mask_mean_prob) + np.log(heading_prob) + np.log(size_prob)
         # batch_scores = mask_mean_prob/3 + heading_prob/3 + size_prob/3
         # batch_scores = 1.0
+        ipdb.set_trace()
         batch_scores = heading_prob
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j, ...])
