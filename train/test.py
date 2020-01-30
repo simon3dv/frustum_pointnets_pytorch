@@ -509,7 +509,7 @@ def test_from_rgb_detection(model, loader):
         correct = torch.argmax(logits, 2).eq(batch_label.detach().long()).cpu().numpy()
         accuracy = np.sum(correct) / float(NUM_POINT)
         test_acc += accuracy
-        '''
+        
         logits = logits.cpu().detach().numpy()
         mask = mask.cpu().detach().numpy()
         center_boxnet = center_boxnet.cpu().detach().numpy()
@@ -521,13 +521,13 @@ def test_from_rgb_detection(model, loader):
         size_scores = size_scores.cpu().detach().numpy()
         size_residuals = size_residuals.cpu().detach().numpy()
         # size_residuals_normalized = size_residuals_normalized.cpu().detach().numpy()#
-
-        batch_center = batch_center.cpu().detach().numpy()
-        batch_hclass = batch_hclass.cpu().detach().numpy()
-        batch_hres = batch_hres.cpu().detach().numpy()
-        batch_sclass = batch_sclass.cpu().detach().numpy()
-        batch_sres = batch_sres.cpu().detach().numpy()
-
+        
+        #batch_center = batch_center.cpu().detach().numpy()
+        #batch_hclass = batch_hclass.cpu().detach().numpy()
+        #batch_hres = batch_hres.cpu().detach().numpy()
+        #batch_sclass = batch_sclass.cpu().detach().numpy()
+        #batch_sres = batch_sres.cpu().detach().numpy()
+        
         iou2ds, iou3ds = provider.compute_box3d_iou(
             center,
             heading_scores,
@@ -542,7 +542,7 @@ def test_from_rgb_detection(model, loader):
         test_iou2d += np.sum(iou2ds)
         test_iou3d += np.sum(iou3ds)
         test_iou3d_acc += np.sum(iou3ds >= 0.7)
-
+        '''
         # 5. Compute and write all Results
         batch_output = np.argmax(logits, 2)  # mask#torch.Size([32, 1024])
         batch_center_pred = center  # _boxnet#torch.Size([32, 3])
@@ -637,11 +637,6 @@ def test_from_rgb_detection(model, loader):
                test_acc / test_n_samples, \
                test_iou3d_acc / test_n_samples
     '''
-    return test_iou2d / test_n_samples, \
-           test_iou3d / test_n_samples, \
-           test_acc / test_n_samples, \
-           test_iou3d_acc / test_n_samples
-
 if __name__=='__main__':
     '''
     example:
@@ -654,7 +649,7 @@ if __name__=='__main__':
     '''
 
     if FLAGS.from_rgb_detection:
-        test_iou2d, test_iou3d, test_acc, test_iou3d_acc = test_from_rgb_detection(FrustumPointNet, test_dataloader)
+        test_from_rgb_detection(FrustumPointNet, test_dataloader)
     else:
         # test one epoch from 2d gt
         if FLAGS.return_all_loss:
