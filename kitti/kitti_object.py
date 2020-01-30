@@ -258,8 +258,8 @@ def dataset_viz_pred(pred_label_dir):
     split = 'training'
     save2ddir = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis2d')
     save3ddir = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis3d')
-    save2ddir_pred = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis2d_pred')
-    save3ddir_pred = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis3d_pred')
+    save2ddir_pred = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis2d_pred_1')
+    save3ddir_pred = os.path.join(ROOT_DIR, 'dataset/KITTI/object',split,'vis3d_pred_1')
     '''
     if os.path.isdir(save2ddir) == True:
         print('previous save2ddir found. deleting...')
