@@ -94,10 +94,10 @@ elif FLAGS.dataset == 'nuscenes2kitti':
     overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' +FLAGS.objtype + '_' + SENSOR + '_'
     TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.train_sets,
         rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-        overwritten_data_path=overwritten_data_path_prefix + '_'+FLAGS.train_sets+'.pickle')
+        overwritten_data_path=overwritten_data_path_prefix + FLAGS.train_sets+'.pickle')
     TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.val_sets,
         rotate_to_center=True, one_hot=True,
-        overwritten_data_path=overwritten_data_path_prefix + '_'+FLAGS.val_sets+'.pickle')
+        overwritten_data_path=overwritten_data_path_prefix + FLAGS.val_sets+'.pickle')
 else:
     print('Unknown dataset: %s' % (FLAGS.dataset))
     exit(-1)
