@@ -200,7 +200,7 @@ def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'), img2)
 
 
-def vis_pred(split='v1.0-mini',vis_pred_path=None, sensor_list = ['CAM_FRONT']):
+def vis_pred(split='v1.0-mini', sensor_list = ['CAM_FRONT'], vis_pred_path=None):
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple  # , draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split=split)
@@ -671,10 +671,10 @@ if __name__ == '__main__':
         demo(args.data_idx,args.obj_idx)
         exit()
     if args.vis_label:
-        vis_label(sensor_list)
+        vis_label(split='v1.0-mini',sensor_list=sensor_list)
         exit()
     if args.vis_pred:
-        vis_pred(args.vis_pred_path,sensor_list)
+        vis_pred(split='v1.0-mini',sensor_list=sensor_list,vis_pred_path=args.vis_pred_path)
         exit()
 
     if args.gen_mini:
