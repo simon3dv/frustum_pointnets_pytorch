@@ -104,12 +104,18 @@ class Calibration(object):
             calibs = self.read_calib_file(calib_filepath)
         # Projection matrix from global coord to image2 coord
         self.sensor_list = sensor_list
-        self.CAM_FRONT = np.reshape(calibs['CAM_FRONT'], [3, 3])
-        self.CAM_BACK = np.reshape(calibs['CAM_BACK'], [3, 3])
-        self.CAM_FRONT_LEFT = np.reshape(calibs['CAM_FRONT_LEFT'], [3, 3])
-        self.CAM_BACK_LEFT = np.reshape(calibs['CAM_BACK_LEFT'], [3, 3])
-        self.CAM_FRONT_RIGHT = np.reshape(calibs['CAM_FRONT_RIGHT'], [3, 3])
-        self.CAM_BACK_RIGHT = np.reshape(calibs['CAM_BACK_RIGHT'], [3, 3])
+        if 'CAM_FRONT' in self.sensor_list:
+            self.CAM_FRONT = np.reshape(calibs['CAM_FRONT'], [3, 3])
+        if 'CAM_BACK' in self.sensor_list:
+            self.CAM_BACK = np.reshape(calibs['CAM_BACK'], [3, 3])
+        if 'CAM_FRONT_LEFT' in self.sensor_list:
+            self.CAM_FRONT_LEFT = np.reshape(calibs['CAM_FRONT_LEFT'], [3, 3])
+        if 'CAM_BACK_LEFT' in self.sensor_list:
+            self.CAM_BACK_LEFT = np.reshape(calibs['CAM_BACK_LEFT'], [3, 3])
+        if 'CAM_FRONT_RIGHT' in self.sensor_list:
+            self.CAM_FRONT_RIGHT = np.reshape(calibs['CAM_FRONT_RIGHT'], [3, 3])
+        if 'CAM_BACK_RIGHT' in self.sensor_list:
+            self.CAM_BACK_RIGHT = np.reshape(calibs['CAM_BACK_RIGHT'], [3, 3])
         self.lidar2ego_translation = np.reshape(calibs['lidar2ego_translation'], [3, 1])
         self.lidar2ego_rotation = np.reshape(calibs['lidar2ego_rotation'], [3, 3])
         self.ego2global_translation = np.reshape(calibs['ego2global_translation'], [3, 1])
