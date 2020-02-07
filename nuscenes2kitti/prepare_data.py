@@ -640,6 +640,8 @@ if __name__ == '__main__':
                         help='*.txt in nuscenes2kitti/image_sets')
     parser.add_argument('--gen_val', action='store_true',
                         help='Generate val split frustum data with perturbed GT 2D boxes')
+    parser.add_argument('--gen_split', type=str, default='training',
+                        help='training,testing,v1.0-mini,v1.0-trainval')
     #parser.add_argument('--gen_trainval', action='store_true',
     #                    help='Generate trainval split frustum data with GT 2D boxes')
     #parser.add_argument('--gen_test', action='store_true',
@@ -693,7 +695,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets', args.train_sets+'.txt'),
-                'training',
+                gen_split,
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.train_sets+'.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
@@ -705,7 +707,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets', args.val_sets+'.txt'),
-                'training',
+                gen_split,
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.val_sets+'.pickle'),
                 viz=False, perturb_box2d=False, augmentX=1,
