@@ -673,10 +673,10 @@ if __name__ == '__main__':
         demo(args.data_idx,args.obj_idx)
         exit()
     if args.vis_label:
-        vis_label(split='v1.0-mini',sensor_list=sensor_list)
+        vis_label(split='training',sensor_list=sensor_list)
         exit()
     if args.vis_pred:
-        vis_pred(split='v1.0-mini',sensor_list=sensor_list,vis_pred_path=args.vis_pred_path)
+        vis_pred(split='training',sensor_list=sensor_list,vis_pred_path=args.vis_pred_path)
         exit()
 
     if args.gen_mini:
@@ -695,7 +695,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets', args.train_sets+'.txt'),
-                gen_split,
+                args.sgen_split,
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.train_sets+'.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
@@ -707,7 +707,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets', args.val_sets+'.txt'),
-                gen_split,
+                args.gen_split,
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.val_sets+'.pickle'),
                 viz=False, perturb_box2d=False, augmentX=1,
