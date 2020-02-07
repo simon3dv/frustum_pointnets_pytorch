@@ -523,6 +523,10 @@ if __name__ == '__main__':
                         help='Generate v1.0-mini split frustum data with perturbed GT 2D boxes')
     parser.add_argument('--gen_train', action='store_true',
                         help='Generate train split frustum data with perturbed GT 2D boxes')
+    parser.add_argument('--train_sets', type=str, default='train',
+                        help='*.txt in nuscenes2kitti/image_sets')
+    parser.add_argument('--val_sets', type=str, default='val',
+                        help='*.txt in nuscenes2kitti/image_sets')
     parser.add_argument('--gen_val', action='store_true',
                         help='Generate val split frustum data with perturbed GT 2D boxes')
     #parser.add_argument('--gen_trainval', action='store_true',
@@ -573,10 +577,10 @@ if __name__ == '__main__':
         for sensor in sensor_list:
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
-                os.path.join(BASE_DIR, 'image_sets/train.txt'),
+                os.path.join(BASE_DIR, 'image_sets', args.train_sets+'.txt'),
                 'training',
                 sensor,
-                os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'train.pickle'),
+                os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.train_sets+'.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
                 type_whitelist=type_whitelist)
 
@@ -585,10 +589,10 @@ if __name__ == '__main__':
         for sensor in sensor_list:
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
-                os.path.join(BASE_DIR, 'image_sets/val.txt'),
+                os.path.join(BASE_DIR, 'image_sets', args.val_sets+'.txt'),
                 'training',
                 sensor,
-                os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'val.pickle'),
+                os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.val_sets+'.pickle'),
                 viz=False, perturb_box2d=False, augmentX=1,
                 type_whitelist=type_whitelist)
 
