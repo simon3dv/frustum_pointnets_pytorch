@@ -176,6 +176,7 @@ def vis_label():
 
                 corners_2d = box3d_pts_2d
                 # Draw the sides
+                ipdb.set_trace()
                 for i in range(4):
                     cv2.line(img2,
                              (int(corners_2d.T[i][0]), int(corners_2d.T[i][1])),
