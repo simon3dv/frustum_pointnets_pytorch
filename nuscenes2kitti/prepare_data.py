@@ -695,7 +695,7 @@ if __name__ == '__main__':
             sensor_prefix = sensor + '_'
             extract_frustum_data(\
                 os.path.join(BASE_DIR, 'image_sets', args.train_sets+'.txt'),
-                args.sgen_split,
+                args.gen_split,
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.train_sets+'.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
