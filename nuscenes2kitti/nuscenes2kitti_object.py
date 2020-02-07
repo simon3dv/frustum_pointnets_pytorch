@@ -28,7 +28,7 @@ except NameError:
 class nuscenes2kitti_object(object):
     '''Load and parse object data into a usable format.'''
     
-    def __init__(self, root_dir, split='v1.0-mini'):
+    def __init__(self, root_dir, split='v1.0-mini',sensor_list=['CAM_FRONT']):
         '''root_dir contains training and testing folders'''
         self.root_dir = root_dir
         self.split = split
@@ -81,7 +81,7 @@ class nuscenes2kitti_object(object):
     def get_calibration(self, idx):
         assert(idx<self.num_samples)
         calib_filename = os.path.join(self.calib_dir, '%06d.txt'%(idx))
-        return utils.Calibration(calib_filename)
+        return utils.Calibration(calib_filename,sensor_list=sensor_list)
 
     def get_label_objects(self, sensor, idx):
         assert(idx<self.num_samples and self.split!='v1.0-test')

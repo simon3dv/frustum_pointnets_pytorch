@@ -97,13 +97,13 @@ class Calibration(object):
             0.0 0.0 1.0
 
     '''
-    def __init__(self, calib_filepath, from_video=False):
+    def __init__(self, calib_filepath, from_video=False,sensor_list = ['CAM_FRONT']):
         if from_video:
             calibs = self.read_calib_from_video(calib_filepath)
         else:
             calibs = self.read_calib_file(calib_filepath)
         # Projection matrix from global coord to image2 coord
-        self.sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+        self.sensor_list = sensor_list
         self.CAM_FRONT = np.reshape(calibs['CAM_FRONT'], [3, 3])
         self.CAM_BACK = np.reshape(calibs['CAM_BACK'], [3, 3])
         self.CAM_FRONT_LEFT = np.reshape(calibs['CAM_FRONT_LEFT'], [3, 3])
