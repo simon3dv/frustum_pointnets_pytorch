@@ -696,7 +696,7 @@ if __name__ == '__main__':
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'v1.0-mini.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
                 type_whitelist=type_whitelist)
-
+        print('gen_mini is done.')
     if args.gen_train:
         for sensor in sensor_list:
             sensor_prefix = sensor + '_'
@@ -707,7 +707,7 @@ if __name__ == '__main__':
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.train_sets+'.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
                 type_whitelist=type_whitelist)
-
+        print('gen_train is done.')
 
     if args.gen_val:
         for sensor in sensor_list:
@@ -719,4 +719,4 @@ if __name__ == '__main__':
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.val_sets+'.pickle'),
                 viz=False, perturb_box2d=False, augmentX=1,
                 type_whitelist=type_whitelist)
-
+        print('gen_val is done.')
