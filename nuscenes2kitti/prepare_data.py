@@ -675,12 +675,15 @@ if __name__ == '__main__':
 
     if args.demo:
         demo(args.data_idx,args.obj_idx)
+        print('demo is done. Exit now.')
         exit()
     if args.vis_label:
         vis_label(split='training',sensor_list=sensor_list,type_whitelist=type_whitelist)
+        print('vis_label is done. Exit now.')
         exit()
     if args.vis_pred:
         vis_pred(split='training',sensor_list=sensor_list,type_whitelist=type_whitelist,vis_pred_path=args.vis_pred_path)
+        print('vis_pred is done. Exit now.')
         exit()
 
     if args.gen_mini:
