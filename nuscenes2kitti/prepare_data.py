@@ -97,13 +97,14 @@ def draw_gt_boxes3d(gt_boxes3d, fig, color=(1,1,1), line_width=1, draw_text=True
     return fig
 
 
-def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT']):
+def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT'],type_whitelist=['Car']):
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple  # , draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split=split)
-    type2color = {'Pedestrian': 0,
-                  'Car': 1,
-                  'Cyclist': 2}
+    type2color = {}
+    for i,x in enumerate(type_whitelist):
+        type2color[x] = i
+    print('type_whitlist:', type_whitelist)
     print('Sensor_list:', sensor_list)
     linewidth = 2
     colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))
@@ -200,13 +201,14 @@ def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT']):
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'), img2)
 
 
-def vis_pred(split='training', sensor_list = ['CAM_FRONT'], vis_pred_path=None):
+def vis_pred(split='training', sensor_list = ['CAM_FRONT'], vis_pred_path=None,type_whitelist):
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple  # , draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split=split)
-    type2color = {'Pedestrian': 0,
-                  'Car': 1,
-                  'Cyclist': 2}
+    type2color = {}
+    for i,x in enumerate(type_whitelist):
+        type2color[x] = i
+    print('type_whitlist:', type_whitelist)
     print('Sensor_list:', sensor_list)
     linewidth = 2
     colors = ((0, 0, 255), (255, 0, 0), (155, 155, 155))
@@ -675,10 +677,10 @@ if __name__ == '__main__':
         demo(args.data_idx,args.obj_idx)
         exit()
     if args.vis_label:
-        vis_label(split='training',sensor_list=sensor_list)
+        vis_label(split='training',sensor_list=sensor_list,type_whitelist=type_whitelist)
         exit()
     if args.vis_pred:
-        vis_pred(split='training',sensor_list=sensor_list,vis_pred_path=args.vis_pred_path)
+        vis_pred(split='training',sensor_list=sensor_list,type_whitelist=type_whitelist,vis_pred_path=args.vis_pred_path)
         exit()
 
     if args.gen_mini:
