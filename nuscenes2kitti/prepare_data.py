@@ -130,8 +130,8 @@ def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT'],type_whitelist=['Car']
             ...
     '''
     for present_sensor in sensor_list:
-        save2ddir = os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI', split, 'vis', 'vis2d_' + present_sensor)
-        save3ddir = os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI', split, 'vis', 'vis3d_' + present_sensor)
+        save2ddir = os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI', split, 'vis_label', 'vis2d_' + present_sensor)
+        save3ddir = os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI', split, 'vis_label', 'vis3d_' + present_sensor)
         if os.path.isdir(save2ddir) == True:
             print('previous save2ddir found. deleting...')
             shutil.rmtree(save2ddir)
