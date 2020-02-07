@@ -471,10 +471,11 @@ def compute_box_3d(obj,view):
 
 
     # only draw 3d bounding box for objs in front of the camera
+    '''
     if np.any(corners_3d[2,:]<0.1):
         corners_2d = None
         return corners_2d, np.transpose(corners_3d)
-    
+    '''
     # project the 3d bounding box into the image plane
     # corners_2d = project_to_image(np.transpose(corners_3d), P);
     #sensor = 'CAM_FRONT'
