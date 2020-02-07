@@ -247,7 +247,7 @@ def vis_pred(split='v1.0-mini', sensor_list = ['CAM_FRONT'], vis_pred_path=None)
         print('Saving images with 3d boxes to {}...'.format(save3ddir))
 
         filename_list = glob.glob(os.path.join(vis_pred_path,"*.txt"))
-        for i,label_filename in tqdm(filename_list):
+        for i,label_filename in tqdm(enumerate(filename_list)):
             # Load data from dataset
             data_idx = int(label_filename[-10:-4])
             objects = utils.read_label(label_filename)
