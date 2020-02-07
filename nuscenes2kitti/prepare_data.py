@@ -174,22 +174,21 @@ def vis_label():
                                  color, linewidth)
                         prev = corner
 
-                corners_2d = box3d_pts_2d
+                corners_2d = box3d_pts_2d #(8,2)
                 # Draw the sides
-                ipdb.set_trace()
                 for i in range(4):
                     cv2.line(img2,
-                             (int(corners_2d.T[i][0]), int(corners_2d.T[i][1])),
-                             (int(corners_2d.T[i + 4][0]), int(corners_2d.T[i + 4][1])),
+                             (int(corners_2d[i][0]), int(corners_2d[i][1])),
+                             (int(corners_2d[i + 4][0]), int(corners_2d[i + 4][1])),
                              colors[c][::-1], linewidth)
 
                 # Draw front (first 4 corners) and rear (last 4 corners) rectangles(3d)/lines(2d)
-                draw_rect(corners_2d.T[:4], colors[c][::-1])
-                draw_rect(corners_2d.T[4:], colors[c][::-1])
+                draw_rect(corners_2d[:4], colors[c][::-1])
+                draw_rect(corners_2d[4:], colors[c][::-1])
 
                 # Draw line indicating the front
-                center_bottom_forward = np.mean(corners_2d.T[0:2], axis=0)
-                center_bottom = np.mean(corners_2d.T[[0, 1, 2, 3]], axis=0)
+                center_bottom_forward = np.mean(corners_2d[0:2], axis=0)
+                center_bottom = np.mean(corners_2d[[0, 1, 2, 3]], axis=0)
                 # center_bottom_forward = np.mean(corners_2d.T[2:4], axis=0)
                 # center_bottom = np.mean(corners_2d.T[[2, 3, 7, 6]], axis=0)
                 cv2.line(img2,
