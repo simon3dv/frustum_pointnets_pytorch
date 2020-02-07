@@ -200,7 +200,7 @@ def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'), img2)
 
 
-def vis_pred(split='v1.0-mini',vis_pred_path,sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']):
+def vis_pred(split='v1.0-mini',vis_pred_path=None, sensor_list = ['CAM_FRONT']):
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple  # , draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split=split)
