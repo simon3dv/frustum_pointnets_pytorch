@@ -282,6 +282,8 @@ def vis_pred(split='training', sensor_list = ['CAM_FRONT'], vis_pred_path=None):
 
                 corners_2d = box3d_pts_2d  # (8,2)
                 # Draw the sides
+                if corners_2d == None:
+                    ipdb.set_trace()
                 for i in range(4):
                     cv2.line(img2,
                              (int(corners_2d[i][0]), int(corners_2d[i][1])),
