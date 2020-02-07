@@ -201,7 +201,7 @@ def vis_label(split='v1.0-mini',sensor_list=['CAM_FRONT'],type_whitelist=['Car']
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'), img2)
 
 
-def vis_pred(split='training', sensor_list = ['CAM_FRONT'], vis_pred_path=None,type_whitelist):
+def vis_pred(split='training', sensor_list = ['CAM_FRONT'], type_whitelist=['Car'], vis_pred_path=None):
     import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple  # , draw_gt_boxes3d
     dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split=split)
@@ -284,8 +284,6 @@ def vis_pred(split='training', sensor_list = ['CAM_FRONT'], vis_pred_path=None,t
 
                 corners_2d = box3d_pts_2d  # (8,2)
                 # Draw the sides
-                if np.sum(corners_2d == None):
-                    ipdb.set_trace()
                 for i in range(4):
                     cv2.line(img2,
                              (int(corners_2d[i][0]), int(corners_2d[i][1])),
@@ -697,6 +695,7 @@ if __name__ == '__main__':
                 viz=False, perturb_box2d=True, augmentX=5,
                 type_whitelist=type_whitelist)
         print('gen_mini is done.')
+
     if args.gen_train:
         for sensor in sensor_list:
             sensor_prefix = sensor + '_'
