@@ -97,7 +97,7 @@ class Calibration(object):
             0.0 0.0 1.0
 
     '''
-    def __init__(self, calib_filepath, from_video=False,sensor_list = ['CAM_FRONT']):
+    def __init__(self, calib_filepath, from_video=False, sensor_list = ['CAM_FRONT']):
         if from_video:
             calibs = self.read_calib_from_video(calib_filepath)
         else:

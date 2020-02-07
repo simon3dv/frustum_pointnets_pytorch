@@ -46,6 +46,7 @@ class nuscenes2kitti_object(object):
             print('Unknown split: %s' % (split))
             exit(-1)
 
+        self.sensor_list = sensor_list
         self.CAM_FRONT_dir = os.path.join(self.split_dir, 'image_CAM_FRONT')
         self.CAM_FRONT_RIGHT_dir = os.path.join(self.split_dir, 'image_CAM_FRONT_RIGHT')
         self.CAM_BACK_RIGHT_dir = os.path.join(self.split_dir, 'image_CAM_BACK_RIGHT')
@@ -68,8 +69,7 @@ class nuscenes2kitti_object(object):
 
     def get_image(self, sensor, idx):
         assert(idx<self.num_samples)
-        assert (sensor in ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT',
-                           'CAM_BACK_RIGHT'])
+        assert (sensor in self.sensor_list)
         img_filename = os.path.join(getattr(self,sensor+'_dir'), '%06d.jpg'%(idx))
         return utils.load_image(img_filename)
 
@@ -81,12 +81,11 @@ class nuscenes2kitti_object(object):
     def get_calibration(self, idx):
         assert(idx<self.num_samples)
         calib_filename = os.path.join(self.calib_dir, '%06d.txt'%(idx))
-        return utils.Calibration(calib_filename,sensor_list=sensor_list)
+        return utils.Calibration(calib_filename,sensor_list=self.sensor_list)
 
     def get_label_objects(self, sensor, idx):
         assert(idx<self.num_samples and self.split!='v1.0-test')
-        assert (sensor in ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT',
-                           'CAM_BACK_RIGHT'])
+        assert (sensor in self.sensor_list)
         label_filename = os.path.join(getattr(self,'label_'+sensor+'_dir'), '%06d.txt'%(idx))
         return utils.read_label(label_filename)
         
