@@ -344,7 +344,7 @@ def test_one_epoch(model, loader):
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
             pos_cnt += np.sum(batch_data[j,:])
-            pos_pred_cnt += np.sum(batch_output[j, :])
+            pos_pred_cnt += np.sum(batch_output[j, :].cpu().detach().numpy())
             all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             pts_np = batch_data[j,:3,:].cpu().detach().numpy()#(3,1024)
             max_xyz = np.max(pts_np,axis=1)
