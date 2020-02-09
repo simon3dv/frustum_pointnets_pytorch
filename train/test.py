@@ -345,11 +345,12 @@ def test_one_epoch(model, loader):
             pos_cnt += np.sum(batch_output[j,:])
             all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             ipdb.set_trace()
-            max_xyz = np.max(batch_data[j, ...],axis=0) #(1,3)
+            pts_np = batch_data[j,:3,:].cpu().detach().numpy()#(3,1024)
+            max_xyz = np.max(pts_np,axis=1).T#(1,3)
             max_info= np.maximum(max_info,max_xyz)
-            min_xyz = np.min(batch_data[j, ...],axis=0)
+            min_xyz = np.min(pts_np,axis=1).T
             max_info= np.minimum(max_info,max_xyz)
-            mean_info += np.sum(batch_data[j, ...],axis=0)
+            mean_info += np.sum(pts_np,axis=0).T
     '''
     return np.argmax(logits, 2), centers, heading_cls, heading_res, \
         size_cls, size_res, scores
