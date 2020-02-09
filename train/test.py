@@ -183,6 +183,7 @@ def test_one_epoch(model, loader):
         test_corners_loss = 0.0
 
     pos_cnt = 0.0
+    pos_pred_cnt = 0.0
     all_cnt = 0.0
     max_info = np.zeros(3)
     min_info = np.zeros(3)
@@ -342,7 +343,8 @@ def test_one_epoch(model, loader):
             size_res_list.append(batch_sres_pred[j, :])
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
-            pos_cnt += np.sum(batch_output[j,:])
+            pos_cnt += np.sum(batch_data[j,:])
+            pos_pred_cnt += np.sum(batch_output[j, :])
             all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             pts_np = batch_data[j,:3,:].cpu().detach().numpy()#(3,1024)
             max_xyz = np.max(pts_np,axis=1)
@@ -389,6 +391,7 @@ def test_one_epoch(model, loader):
         fill_files(output_dir, to_fill_filename_list)
 
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
+    print('Average pos prediction ratio: %f' % (pos_pred_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(ps_list)))
     mean_info = mean_info / len(ps_list) / FLAGS.num_point
     print('Mean points: x%f y%f z%f' % (mean_info[0],mean_info[1],mean_info[2]))
@@ -397,13 +400,14 @@ def test_one_epoch(model, loader):
     '''
     2020.2.9
     nuScenes:        
-    Mean points: x-67.062391 y865.505454 z36125.768758                         
-    Max points: x3.142300 y1.966641 z99.342896                               
-    Min points: x0.000000 y0.000000 z0.000000
+    Mean points: x-0.062936 y0.845626 z35.268282                       
+    Max points: x69.445435 y8.210817 z104.238876                              
+    Min points: x-75.259071 y-13.231046 z0.000000
     kitti:
-    Mean points: x26.538174 y1010.627422 z25555.257181
-    Max points: x1.805200 y1.805186 z74.910660
-    Min points: x0.000000 y0.000000 z0.000000
+    Mean points: x0.026233 y0.987107 z24.964601
+    Max points: x17.198647 y9.347202 z79.747406
+    Min points: x-20.309679 y-3.882158 z0.000000
+
 
     '''
     if FLAGS.return_all_loss:
