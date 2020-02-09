@@ -344,7 +344,6 @@ def test_one_epoch(model, loader):
             score_list.append(batch_scores[j])
             pos_cnt += np.sum(batch_output[j,:])
             all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
-            ipdb.set_trace()
             pts_np = batch_data[j,:3,:].cpu().detach().numpy()#(3,1024)
             max_xyz = np.max(pts_np,axis=1).T#(1,3)
             max_info= np.maximum(max_info,max_xyz)
