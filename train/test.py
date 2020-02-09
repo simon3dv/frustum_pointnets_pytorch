@@ -349,7 +349,7 @@ def test_one_epoch(model, loader):
             max_info= np.maximum(max_info,max_xyz)
             min_xyz = np.min(pts_np,axis=1).T
             max_info= np.minimum(max_info,max_xyz)
-            mean_info += np.sum(pts_np,axis=0).T
+            mean_info += np.sum(pts_np,axis=1).T
     '''
     return np.argmax(logits, 2), centers, heading_cls, heading_res, \
         size_cls, size_res, scores
