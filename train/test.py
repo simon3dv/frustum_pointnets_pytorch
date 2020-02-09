@@ -21,13 +21,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
 parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
-parser.add_argument('--model_path', default='log/model.ckpt', help='model checkpoint file path [default: log/model.ckpt]')
+parser.add_argument('--model_path', default='log/1-_caronlykitti_2020-01-29-15\:39\:35/1-_caronlykitti_2020-01-29-15\:39\:35-acc0.760568-epoch065.pth', help='model checkpoint file path [default: log/model.ckpt]')
 #ex. log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
 parser.add_argument('--output', default='test_results', help='output file/folder name [default: test_results]')
 parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
+#ex. nuscenes2kitti/frustum_caronly_CAM_FRONT_val.pickle
 parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
 parser.add_argument('--idx_path', default='idx_path kitti/image_sets/val.txt', help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
+#ex.nuscenes2kitti/image_sets/val.txt
 parser.add_argument('--dump_result', action='store_true', help='If true, also dump results to .pickle file')
 parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
 parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
@@ -35,6 +37,10 @@ parser.add_argument('--sensor', type=str, default='CAM_FRONT', help='only consid
 parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes or nuscenes2kitti')
 parser.add_argument('--split', type=str, default='val', help='v1.0-mini or val')
 parser.add_argument('--debug', default=False, action='store_true',help='debug mode')
+'''
+python train/test.py --model_path log/1-_caronlykitti_2020-01-29-15\:
+39\:35/1-_caronlykitti_2020-01-29-15\:39\:35-acc0.760568-epoch065.pth --data_path nuscenes2kitti/frustum_caronly_CAM_FRONT_val.pickle --idx_path nuscenes2kitti/image_sets/val.txt --dataset nuscenes2kitti
+'''
 FLAGS = parser.parse_args()
 
 # Set training configurations
@@ -337,7 +343,7 @@ def test_one_epoch(model, loader):
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
             pos_cnt += np.sum(batch_output[j,:])
-            all_cnt += np.sum(batch_label[j,:])
+            all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             max_xyz = np.max(batch_data[j, ...],axis=0) #(1,3)
             max_info= np.maximum(max_info,max_xyz)
             min_xyz = np.min(batch_data[j, ...],axis=0)
