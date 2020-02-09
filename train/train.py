@@ -111,6 +111,7 @@ def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
     LOG_FOUT.flush()
     print(out_str)
+
 def test_one_epoch(model, loader):
     test_n_samples = 0
     test_total_loss = 0.0
@@ -258,7 +259,6 @@ def test_one_epoch(model, loader):
                test_iou3d_acc/test_n_samples
 
 def train():
-
     ''' Main function for training and simple evaluation. '''
     start= time.perf_counter()
     SEED = 1

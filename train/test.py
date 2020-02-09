@@ -176,6 +176,9 @@ def test_one_epoch(model, loader):
         test_stage1_center_loss = 0.0
         test_corners_loss = 0.0
 
+    pos_cnt = 0.0
+    all_cnt = max
+    max
     for i, data in tqdm(enumerate(loader), \
                         total=len(loader), smoothing=0.9):
         # for debug
@@ -331,6 +334,8 @@ def test_one_epoch(model, loader):
             size_res_list.append(batch_sres_pred[j, :])
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
+            pos_cnt += np.sum(batch_output[j,:])
+            all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
     '''
     return np.argmax(logits, 2), centers, heading_cls, heading_res, \
         size_cls, size_res, scores
@@ -368,6 +373,9 @@ def test_one_epoch(model, loader):
         to_fill_filename_list = [line.rstrip()+'.txt' \
             for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
+
+    print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
+    print('Average npoints: %f' % (float(all_cnt) / len(ps_list)))
 
     if FLAGS.return_all_loss:
         return test_total_loss / test_n_samples, \
