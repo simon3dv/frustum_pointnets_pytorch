@@ -343,7 +343,7 @@ def test_one_epoch(model, loader):
             size_res_list.append(batch_sres_pred[j, :])
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
-            pos_cnt += np.sum(batch_data[j,:].cpu().detach().numpy())
+            pos_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             pos_pred_cnt += np.sum(batch_output[j, :])
             all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             pts_np = batch_data[j,:3,:].cpu().detach().numpy()#(3,1024)
@@ -399,14 +399,50 @@ def test_one_epoch(model, loader):
     print('Min points: x%f y%f z%f' % (min_info[0],min_info[1],min_info[2]))
     '''
     2020.2.9
-    nuScenes:        
-    Mean points: x-0.062936 y0.845626 z35.268282                       
-    Max points: x69.445435 y8.210817 z104.238876                              
-    Min points: x-75.259071 y-13.231046 z0.000000
-    kitti:
-    Mean points: x0.026233 y0.987107 z24.964601
-    Max points: x17.198647 y9.347202 z79.747406
-    Min points: x-20.309679 y-3.882158 z0.000000
+    
+    nuscenes->nuscenes:
+    Number of point clouds: 6408
+    Average pos ratio: 151.052473
+    Average pos prediction ratio: 0.982697
+    Average npoints: 393.820069
+    Mean points: x-0.064442 y0.845251 z35.271175
+    Max points: x69.445435 y8.203144 z104.238876
+    Min points: x-75.259071 y-14.208739 z0.000000
+    test from 2d gt: Done
+    test loss: 0.948371
+    test segmentation accuracy: 0.842269
+    test box IoU(ground/3D): 0.563429/0.483347
+    test box estimation accuracy (IoU=0.7): 0.243914
+
+    kitti->kitti:
+    Number of point clouds: 12538
+    Average pos ratio: 59.842735
+    Average pos prediction ratio: 1.089077
+    Average npoints: 447.111102
+    Mean points: x0.026136 y0.987294 z24.958540
+    Max points: x16.992741 y9.347202 z79.747406
+    Min points: x-20.476559 y-3.882158 z0.000000
+    test from 2d gt: Done
+    test loss: 0.104301
+    test segmentation accuracy: 0.901477
+    test box IoU(ground/3D): 0.796052/0.743673
+    test box estimation accuracy (IoU=0.7): 0.761605
+
+    kitti->nuscenes:
+    Number of point clouds: 6408
+    Average pos ratio: 151.174013
+    Average pos prediction ratio: 0.000000
+    Average npoints: 393.582865
+    Mean points: x-0.063360 y0.845064 z35.272771
+    Max points: x69.348808 y9.001218 z104.238876
+    Min points: x-67.831200 y-14.235371 z0.000000
+    test from 2d gt: Done
+    test loss: 25.182920
+    test segmentation accuracy: 0.615642
+    test box IoU(ground/3D): 0.023954/0.019012
+    test box estimation accuracy (IoU=0.7): 0.000000
+
+    
 
 
     '''
