@@ -345,7 +345,6 @@ def test_one_epoch(model, loader):
             score_list.append(batch_scores[j])
             pos_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             pos_pred_cnt += np.sum(batch_output[j, :])
-            all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
             pts_np = batch_data[j,:3,:].cpu().detach().numpy()#(3,1024)
             max_xyz = np.max(pts_np,axis=1)
             max_info= np.maximum(max_info,max_xyz)
@@ -390,6 +389,7 @@ def test_one_epoch(model, loader):
             for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
 
+    all_cnt = FLAGS.num_point * len(ps_list)
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
     print('Average pos prediction ratio: %f' % (pos_pred_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(ps_list)))
