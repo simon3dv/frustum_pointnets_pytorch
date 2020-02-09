@@ -392,9 +392,9 @@ def test_one_epoch(model, loader):
     print('Average npoints: %f' % (float(all_cnt) / len(ps_list)))
     mean_info = mean_info / len(ps_list) / FLAGS.num_point
     ipdb.set_trace()
-    print('Mean points: x%f y%f z%f' % (mean_info[0,0],mean_info[0,1],mean_info[0,2]))
-    print('Max points: x%f y%f z%f' % (max_info[0,0],max_info[0,1],max_info[0,2]))
-    print('Min points: x%f y%f z%f' % (min_info[0,0],min_info[0,1],min_info[0,2]))
+    print('Mean points: x%f y%f z%f' % (mean_info[0],mean_info[1],mean_info[2]))
+    print('Max points: x%f y%f z%f' % (max_info[0],max_info[1],max_info[2]))
+    print('Min points: x%f y%f z%f' % (min_info[0],min_info[1],min_info[2]))
     '''
     2020.2.9
     nuScenes:        
