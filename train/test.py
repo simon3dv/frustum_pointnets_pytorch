@@ -177,12 +177,10 @@ def test_one_epoch(model, loader):
         test_corners_loss = 0.0
 
     pos_cnt = 0.0
-<<<<<<< HEAD
-    all_cnt = max
-    max
-=======
     all_cnt = 0.0
->>>>>>> 505e946887509c9e3928acfd820813800ea49e59
+    max_info = np.zeros((1,3))
+    min_info = np.zeros((1,3))
+    mean_info = np.zeros((1,3))
     for i, data in tqdm(enumerate(loader), \
                         total=len(loader), smoothing=0.9):
         # for debug
@@ -339,11 +337,12 @@ def test_one_epoch(model, loader):
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
             pos_cnt += np.sum(batch_output[j,:])
-<<<<<<< HEAD
-            all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
-=======
             all_cnt += np.sum(batch_label[j,:])
->>>>>>> 505e946887509c9e3928acfd820813800ea49e59
+            max_xyz = np.max(batch_data[j, ...],axis=0) #(1,3)
+            max_info= np.maximum(max_info,max_xyz)
+            min_xyz = np.min(batch_data[j, ...],axis=0)
+            max_info= np.minimum(max_info,max_xyz)
+            mean_info += np.sum(batch_data[j, ...],axis=0)
     '''
     return np.argmax(logits, 2), centers, heading_cls, heading_res, \
         size_cls, size_res, scores
@@ -384,6 +383,10 @@ def test_one_epoch(model, loader):
 
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(ps_list)))
+    mean_info /= len(ps_list)
+    print('Mean points: x%f y%f z%f' % (mean_info[0],mean_info[1],mean_info[2]))
+    print('Max points: x%f y%f z%f' % (max_info[0],max_info[1],max_info[2]))
+    print('Min points: x%f y%f z%f' % (min_info[0],min_info[1],min_info[2]))
 
     if FLAGS.return_all_loss:
         return test_total_loss / test_n_samples, \
