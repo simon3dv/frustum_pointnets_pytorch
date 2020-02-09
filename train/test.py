@@ -391,6 +391,7 @@ def test_one_epoch(model, loader):
     print('Average pos ratio: %f' % (pos_cnt / float(all_cnt)))
     print('Average npoints: %f' % (float(all_cnt) / len(ps_list)))
     mean_info /= len(ps_list)
+    ipdb.set_trace()
     print('Mean points: x%f y%f z%f' % (mean_info[0],mean_info[1],mean_info[2]))
     print('Max points: x%f y%f z%f' % (max_info[0],max_info[1],max_info[2]))
     print('Min points: x%f y%f z%f' % (min_info[0],min_info[1],min_info[2]))
