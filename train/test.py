@@ -177,8 +177,12 @@ def test_one_epoch(model, loader):
         test_corners_loss = 0.0
 
     pos_cnt = 0.0
+<<<<<<< HEAD
     all_cnt = max
     max
+=======
+    all_cnt = 0.0
+>>>>>>> 505e946887509c9e3928acfd820813800ea49e59
     for i, data in tqdm(enumerate(loader), \
                         total=len(loader), smoothing=0.9):
         # for debug
@@ -335,7 +339,11 @@ def test_one_epoch(model, loader):
             rot_angle_list.append(batch_rot_angle[j])
             score_list.append(batch_scores[j])
             pos_cnt += np.sum(batch_output[j,:])
+<<<<<<< HEAD
             all_cnt += np.sum(batch_label[j,:].cpu().detach().numpy())
+=======
+            all_cnt += np.sum(batch_label[j,:])
+>>>>>>> 505e946887509c9e3928acfd820813800ea49e59
     '''
     return np.argmax(logits, 2), centers, heading_cls, heading_res, \
         size_cls, size_res, scores
