@@ -34,7 +34,7 @@ parser.add_argument('--no_intensity', action='store_true', help='Only use XYZ fo
 parser.add_argument('--restore_model_path', default=None, help='Restore model path e.g. log/model.ckpt [default: None]')
 parser.add_argument('--ckpt',type=str,default=None,help='Pre-trained model file')
 parser.add_argument('--weight_decay', type=float, default=0.0, help='Weight Decay of Adam [default: 1e-4]')
-parser.add_argument('--name', type=str, default='1-', help='tensorboard writer name')
+parser.add_argument('--name', type=str, default='default', help='tensorboard writer name')
 parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
 parser.add_argument('--debug', default=False, action='store_true',help='debug mode')
 parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
@@ -46,11 +46,11 @@ FLAGS = parser.parse_args()
 
 # Set training configurations
 
-strtime = time.strftime('%Y-%m-%d-%H:%M:%S',time.localtime(time.time()))
+strtime = time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time()))
 if 'nuscenes' in FLAGS.dataset:
-    NAME = strtime + '_' + FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + FLAGS.sensor + '_'
+    NAME = FLAGS.dataset + '_' + FLAGS.objtype + '_' + FLAGS.sensor + '_' + FLAGS.name + strtime
 else:
-    NAME = strtime + '_' + FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + strtime
+    NAME = FLAGS.dataset + '_' + FLAGS.objtype + '_' + FLAGS.name + strtime
 EPOCH_CNT = 0
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
