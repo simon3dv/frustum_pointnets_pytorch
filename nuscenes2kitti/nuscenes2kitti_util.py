@@ -285,28 +285,26 @@ class Calibration(object):
 
     #=========intrinsic=========#
     def project_image_to_cam(self, uv_depth, sensor):
-        ''' Input: nx3 first two channels are uv, 3rd channel
+        ''' Input: 3xn first two channels are uv, 3rd channel
                    is depth in rect camera coord.
-            Output: nx3 points in (rect) camera coord.
+            Output: 3xn points in (rect) camera coord.
         '''
         # Camera intrinsics and extrinsics
         c_u = getattr(self,sensor)[0,2]
         c_v = getattr(self,sensor)[1,2]
         f_u = getattr(self,sensor)[0,0]
         f_v = getattr(self,sensor)[1,1]
-        b_x = 0.0
-        b_y = 0.0
-        n = uv_depth.shape[0]
-        x = ((uv_depth[:,0]-c_u)*uv_depth[:,2])/f_u + b_x
-        y = ((uv_depth[:,1]-c_v)*uv_depth[:,2])/f_v + b_y
-        pts_3d_cam = np.zeros((n,3))
-        pts_3d_cam[:,0] = x
-        pts_3d_cam[:,1] = y
-        pts_3d_cam[:,2] = uv_depth[:,2]
+        n = uv_depth.shape[1]
+        x = ((uv_depth[0,:]-c_u)*uv_depth[2,:])/f_u
+        y = ((uv_depth[1,:]-c_v)*uv_depth[2,:])/f_v
+        pts_3d_cam = np.zeros((3,n))
+        pts_3d_cam[0,:] = x
+        pts_3d_cam[1,:] = y
+        pts_3d_cam[2,:] = uv_depth[2,:]
         return pts_3d_cam
 
     def project_cam_to_image(self, pts_3d_cam, sensor):
-        pts_2d = view_points(pts_3d_cam[:3, :], getattr(self,sensor), normalize=True).T#(n,3)
+        pts_2d = view_points(pts_3d_cam[:3, :], getattr(self,sensor), normalize=True)#(3,n)
         return pts_2d
 
     """
