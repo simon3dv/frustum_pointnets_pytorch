@@ -16,6 +16,7 @@ sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 import kitti_util as utils
 import shutil
 import ipdb
+import time
 
 try:
     raw_input          # Python 2
@@ -136,6 +137,7 @@ def show_image_with_boxes(img, objects, calib, show3d=True):
     Image.fromarray(img1).show()
     if show3d:
         Image.fromarray(img2).show()
+
 def return_image_with_boxes(img, objects, calib, show3d=True):
     ''' Show image with 2D bounding boxes '''
     img1 = np.copy(img) # for 2d bbox
@@ -198,11 +200,15 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
             tube_radius=None, line_width=1, figure=fig)
     mlab.show(1)
 
-def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
+def show_lidar_on_image(pc_velo, img, calib, img_width, img_height,showtime=False):
     ''' Project LiDAR points to image '''
+    if showtime:
+        time1 = time.perf_counter()
     imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
         calib, 0, 0, img_width, img_height, True)
     imgfov_pts_2d = pts_2d[fov_inds,:]
+    if showtime:
+        print("get_lidar_in_image_fov cost %.2f ms" % ((time.perf_counter() - time1) * 1000))
     imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
     import matplotlib.pyplot as plt
@@ -298,7 +304,7 @@ def dataset_viz_pred(pred_label_dir):
         cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.png'),img2)
 
         if os.path.exists(objects_pred_label_filename):
-            print('writing')
+            print('writing...')
             img1_pred,img2_pred= return_image_with_boxes(img, objects_pred, calib, True)
             cv2.imwrite(os.path.join(save2ddir_pred, str(data_idx).zfill(6) + '.png'),img1_pred)
             cv2.imwrite(os.path.join(save3ddir_pred, str(data_idx).zfill(6) + '.png'),img2_pred)
