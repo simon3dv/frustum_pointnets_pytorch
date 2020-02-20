@@ -566,8 +566,9 @@ if __name__=='__main__':
 
     if args.gen_val:
         print('Start gen_val...')
+        imagesets_file = os.path.join(BASE_DIR, 'image_sets/val.txt')
         extract_frustum_data(\
-            os.path.join(BASE_DIR, 'image_sets/val.txt'),
+            imagesets_file,
             'training',
             os.path.join(BASE_DIR, output_prefix+'val.pickle'),
             viz=False, perturb_box2d=False, augmentX=1,
@@ -581,5 +582,4 @@ if __name__=='__main__':
             'training',
             os.path.join(BASE_DIR, output_prefix+'val_rgb_detection.pickle'),
             viz=False,
-            type_whitelist=type_whitelist) 
-        get_box3d_dim_statistics(imagesets_file, type_whitelist,'val')
+            type_whitelist=type_whitelist)
