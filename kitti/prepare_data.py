@@ -19,6 +19,7 @@ import _pickle as pickle
 from kitti_object import *
 import argparse
 import ipdb
+from tqdm import tqdm
 
 def in_hull(p, hull):
     from scipy.spatial import Delaunay
@@ -94,7 +95,7 @@ def demo():
 
     # Visualize LiDAR points on images
     print(' -------- LiDAR points projected to image plane --------')
-    show_lidar_on_image(pc_velo, img, calib, img_width, img_height) 
+    show_lidar_on_image(pc_velo, img, calib, img_width, img_height, showtime=True)
     raw_input()
     
     # Show LiDAR points that are in the 3d box
@@ -193,11 +194,12 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
     # (cont.) clockwise angle from positive x axis in velo coord.
     box3d_size_list = [] # array of l,w,h
     frustum_angle_list = [] # angle of 2d box center from pos x-axis
+    calib_list = [] # calibration matrix 3x4 for fconvnet
 
     pos_cnt = 0
     all_cnt = 0
-    for data_idx in data_idx_list:
-        print('------------- ', data_idx)
+    for data_idx in tqdm(data_idx_list):
+        #print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
         objects = dataset.get_label_objects(data_idx)
         pc_velo = dataset.get_lidar(data_idx)
@@ -218,8 +220,8 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 # Augment data by box2d perturbation
                 if perturb_box2d:
                     xmin,ymin,xmax,ymax = random_shift_box2d(box2d)
-                    print(box2d)
-                    print(xmin,ymin,xmax,ymax)
+                    #print(box2d)
+                    #print(xmin,ymin,xmax,ymax)
                 else:
                     xmin,ymin,xmax,ymax = box2d
                 box_fov_inds = (pc_image_coord[:,0]<xmax) & \
@@ -260,7 +262,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 heading_list.append(heading_angle)
                 box3d_size_list.append(box3d_size)
                 frustum_angle_list.append(frustum_angle)
-    
+                calib_list.append(calib.P)
                 # collect statistics
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
@@ -278,6 +280,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         pickle.dump(heading_list, fp)
         pickle.dump(box3d_size_list, fp)
         pickle.dump(frustum_angle_list, fp)
+        pickle.dump(calib_list, fp)
     
     if viz:
         import mayavi.mlab as mlab
@@ -294,28 +297,31 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 colormap='gnuplot', scale_factor=1, figure=fig)
             raw_input()
 
-def get_box3d_dim_statistics(idx_filename):
+def get_box3d_dim_statistics(idx_filename, all_types=['Car','Pedestrian','Cyclist']):
     ''' Collect and dump 3D bounding box statistics '''
     dataset = kitti_object(os.path.join(ROOT_DIR,'dataset/KITTI/object'))
     dimension_list = []
     type_list = []
     ry_list = []
     data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
-    for data_idx in data_idx_list:
-        print('------------- ', data_idx)
+    for data_idx in tqdm(data_idx_list):
+        #print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
         objects = dataset.get_label_objects(data_idx)
         for obj_idx in range(len(objects)):
             obj = objects[obj_idx]
-            if obj.type=='DontCare':continue
+            if obj.type not in all_types:continue
             dimension_list.append(np.array([obj.l,obj.w,obj.h])) 
             type_list.append(obj.type) 
             ry_list.append(obj.ry)
+    dimension_mean = np.array(dimension_list).mean(0)
+    print(dimension_mean)
 
-    with open('box3d_dimensions.pickle','wb') as fp:
-        pickle.dump(type_list, fp)
-        pickle.dump(dimension_list, fp)
-        pickle.dump(ry_list, fp)
+    with open(os.path.join(BASE_DIR,'box3d_mean_dimensions.pickle'),'wb') as fp:
+        pickle.dump(dimension_mean, fp)
+
+
+
 
 def read_det_file(det_filename):
     ''' Parse lines in 2D detection output files '''
@@ -365,11 +371,12 @@ def extract_frustum_data_rgb_detection(det_filename, split, output_filename,
     prob_list = []
     input_list = [] # channel number = 4, xyz,intensity in rect camera coord
     frustum_angle_list = [] # angle of 2d box center from pos x-axis
+    calib_list = []
 
-    for det_idx in range(len(det_id_list)):
+    for det_idx in tqdm(range(len(det_id_list))):
         data_idx = det_id_list[det_idx]
-        print('det idx: %d/%d, data idx: %d' % \
-            (det_idx, len(det_id_list), data_idx))
+        #print('det idx: %d/%d, data idx: %d' % \
+        #    (det_idx, len(det_id_list), data_idx))
         if cache_id != data_idx:
             calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
             pc_velo = dataset.get_lidar(data_idx)
@@ -415,6 +422,7 @@ def extract_frustum_data_rgb_detection(det_filename, split, output_filename,
         prob_list.append(det_prob_list[det_idx])
         input_list.append(pc_in_box_fov)
         frustum_angle_list.append(frustum_angle)
+        calib_list.append(calib.P)
     
     with open(output_filename,'wb') as fp:
         pickle.dump(id_list, fp)
@@ -423,6 +431,7 @@ def extract_frustum_data_rgb_detection(det_filename, split, output_filename,
         pickle.dump(type_list, fp)
         pickle.dump(frustum_angle_list, fp)
         pickle.dump(prob_list, fp)
+        pickle.dump(calib_list, fp)
     
     if viz:
         import mayavi.mlab as mlab
@@ -478,15 +487,25 @@ def write_2d_rgb_detection(det_filename, split, result_dir):
             fout.write(line+'\n')
         fout.close() 
 
+def cluster():
+    imagesets_file = os.path.join(BASE_DIR, 'image_sets/trainval.txt')
+    all_type = ['Car']
+    get_box3d_dim_statistics(imagesets_file,all_type)
+
 if __name__=='__main__':
     #python kitti/prepare_data.py --gen_train --gen_val --gen_val_rgb_detection
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true', help='Run demo.')
+    parser.add_argument('--cluster', action='store_true', help='Run cluster.')
     parser.add_argument('--gen_train', action='store_true', help='Generate train split frustum data with perturbed GT 2D boxes')
     parser.add_argument('--gen_val', action='store_true', help='Generate val split frustum data with GT 2D boxes')
     parser.add_argument('--gen_val_rgb_detection', action='store_true', help='Generate val split frustum data with RGB detection 2D boxes')
     parser.add_argument('--car_only', action='store_true', help='Only generate cars; otherwise cars, peds and cycs')
     args = parser.parse_args()
+
+    if args.cluster:
+        cluster()
+        exit()
 
     if args.demo:
         demo()# draw 2d box and 3d box
@@ -510,14 +529,18 @@ if __name__=='__main__':
         output_prefix = 'frustum_carpedcyc_'
 
     if args.gen_train:
+        print('Start gen_train...')
+        imagesets_file = os.path.join(BASE_DIR, 'image_sets/train.txt')
         extract_frustum_data(\
-            os.path.join(BASE_DIR, 'image_sets/train.txt'),
+            imagesets_file,
             'training',
             os.path.join(BASE_DIR, output_prefix+'train.pickle'), 
             viz=False, perturb_box2d=True, augmentX=5,
             type_whitelist=type_whitelist)
+        get_box3d_dim_statistics(imagesets_file, type_whitelist)
 
     if args.gen_val:
+        print('Start gen_val...')
         extract_frustum_data(\
             os.path.join(BASE_DIR, 'image_sets/val.txt'),
             'training',
@@ -526,6 +549,7 @@ if __name__=='__main__':
             type_whitelist=type_whitelist)
 
     if args.gen_val_rgb_detection:
+        print('Start gen_val_rgb_detection...')
         extract_frustum_data_rgb_detection(\
             os.path.join(BASE_DIR, 'rgb_detections/rgb_detection_val.txt'),
             'training',
