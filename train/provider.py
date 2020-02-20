@@ -218,7 +218,7 @@ class FrustumDataset(object):
 
             return data_inputs
         # ------------------------------ LABELS ----------------------------
-        if not gen_ref:#not fconvnet
+        if not self.gen_ref:#not fconvnet
             seg = self.label_list[index]
             seg = seg[choice]#(1024,),array([0., 1., 0., ..., 1., 1., 1.])
 
