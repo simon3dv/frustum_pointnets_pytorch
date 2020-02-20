@@ -297,7 +297,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 colormap='gnuplot', scale_factor=1, figure=fig)
             raw_input()
 
-def get_box3d_dim_statistics(idx_filename, all_types=['Car','Pedestrian','Cyclist']):
+def get_box3d_dim_statistics(idx_filename, type_whitelist=['Car','Pedestrian','Cyclist'],split='train'):
     ''' Collect and dump 3D bounding box statistics '''
     dataset = kitti_object(os.path.join(ROOT_DIR,'dataset/KITTI/object'))
     dimension_list = []
@@ -310,18 +310,28 @@ def get_box3d_dim_statistics(idx_filename, all_types=['Car','Pedestrian','Cyclis
         objects = dataset.get_label_objects(data_idx)
         for obj_idx in range(len(objects)):
             obj = objects[obj_idx]
-            if obj.type not in all_types:continue
+            if obj.type not in type_whitelist:continue
             dimension_list.append(np.array([obj.l,obj.w,obj.h])) 
             type_list.append(obj.type) 
             ry_list.append(obj.ry)
-    dimension_mean = np.array(dimension_list).mean(0)
-    print(dimension_mean)
 
-    with open(os.path.join(BASE_DIR,'box3d_mean_dimensions.pickle'),'wb') as fp:
-        pickle.dump(dimension_mean, fp)
-
-
-
+    dimensions = np.array(dimension_list)
+    if len(type_whitelist) == 1:
+        dimensions_mean = dimensions.mean(0)
+        print(dimensions_mean)
+        type = type_whitelist[0]
+        with open(os.path.join(BASE_DIR, split + '_' + type + '_' + 'box3d_mean_dimensions.pickle'),'wb') as fp:
+            pickle.dump(dimensions_mean, fp)
+    else:
+        import pandas as pd
+        df = pd.DataFrame(dimensions)
+        grouped = df.groupby(type_list)
+        for type in type_whitelist:
+            dimensions = grouped.get_group(type)
+            dimensions_mean = np.array(dimensions.mean(0))
+            print(type,':',dimensions_mean)
+            with open(os.path.join(BASE_DIR, split + '_' + type + '_' + 'box3d_mean_dimensions.pickle'), 'wb') as fp:
+                pickle.dump(dimensions_mean, fp)
 
 def read_det_file(det_filename):
     ''' Parse lines in 2D detection output files '''
@@ -488,9 +498,24 @@ def write_2d_rgb_detection(det_filename, split, result_dir):
         fout.close() 
 
 def cluster():
-    imagesets_file = os.path.join(BASE_DIR, 'image_sets/trainval.txt')
-    all_type = ['Car']
-    get_box3d_dim_statistics(imagesets_file,all_type)
+    imagesets_file = os.path.join(BASE_DIR, 'image_sets/train.txt')
+    all_type = ['Car','Pedestrian','Cyclist']
+    get_box3d_dim_statistics(imagesets_file,all_type,split='train')
+    '''
+    train.txt
+    Car : [3.89206519 1.61876715 1.52986348]
+    Pedestrian : [0.81796103 0.62783416 1.76773901]
+    Cyclist : [1.77081744 0.56961853 1.72332425]
+    trainval.txt
+    Car : [3.88395449 1.62858987 1.52608343]
+    Pedestrian : [0.84228438 0.66018944 1.76070649]
+    Cyclist : [1.7635464  0.5967732  1.73720344]
+    val.txt
+    Car : [3.87585958 1.63839347 1.52231074]
+    Pedestrian : [0.86582895 0.69150877 1.75389912]
+    Cyclist : [1.75756999 0.61909295 1.74861142]
+
+    '''
 
 if __name__=='__main__':
     #python kitti/prepare_data.py --gen_train --gen_val --gen_val_rgb_detection
@@ -537,7 +562,7 @@ if __name__=='__main__':
             os.path.join(BASE_DIR, output_prefix+'train.pickle'), 
             viz=False, perturb_box2d=True, augmentX=5,
             type_whitelist=type_whitelist)
-        get_box3d_dim_statistics(imagesets_file, type_whitelist)
+        get_box3d_dim_statistics(imagesets_file, type_whitelist,'train')
 
     if args.gen_val:
         print('Start gen_val...')
@@ -547,6 +572,7 @@ if __name__=='__main__':
             os.path.join(BASE_DIR, output_prefix+'val.pickle'),
             viz=False, perturb_box2d=False, augmentX=1,
             type_whitelist=type_whitelist)
+        get_box3d_dim_statistics(imagesets_file, type_whitelist,'val')
 
     if args.gen_val_rgb_detection:
         print('Start gen_val_rgb_detection...')
@@ -556,3 +582,4 @@ if __name__=='__main__':
             os.path.join(BASE_DIR, output_prefix+'val_rgb_detection.pickle'),
             viz=False,
             type_whitelist=type_whitelist) 
+        get_box3d_dim_statistics(imagesets_file, type_whitelist,'val')
