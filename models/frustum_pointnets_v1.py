@@ -219,7 +219,7 @@ class FrustumPointNetv1(nn.Module):
                  heading_class_label, heading_residual_label, \
                  size_scores, size_residuals_normalized, \
                  size_residuals, \
-                 size_class_label, size_residual_label)
+                 size_class_label, size_residual_label)/bs
 
         with torch.no_grad():
             seg_correct = torch.argmax(logits.detach().cpu(), 2).eq(seg_label.detach().cpu()).numpy()
