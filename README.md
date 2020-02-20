@@ -1,6 +1,8 @@
 # frustum_pointnets_pytorch
 A pytorch version of [frustum-pointnets](https://github.com/charlesq34/frustum-pointnets) 
+(Not support Pointnet++ yet)
 
+Keep updating, README is false, don't use it right now.
 ## Requirements
 Test on 
 * Ubuntu-18.04
@@ -10,11 +12,26 @@ Test on
 
 
 ## Usage
-
+### Installation
+Some visulization demos need mayavi,I install mayavi(python3) by:
+(ref:http://docs.enthought.com/mayavi/mayavi/installation.html#installing-with-pip) 
+```angular2
+1. download vtk(https://vtk.org/download/) and compile:
+unzip VTK
+cd VTK
+mkdir build
+cd build
+cmake ..
+make
+sudo make install 
+2. install mayavi and PyQt5
+pip install mayavi
+pip install PyQt5
+```
 ### Prepare Training Data
 ```angular2
 frustum_pointnets_pytorch
-├── datase
+├── dataset
 │   ├── KITTI
 │   │   ├── ImageSets
 │   │   ├── object
@@ -24,6 +41,7 @@ frustum_pointnets_pytorch
 │   │   │      ├──calib & velodyne & image_2
 │   ├── nuScenes
 │   │   ├── v1.0-mini
+│   │   │      ├──maps & samples & sweeps & v1.0-mini
 │   │   ├── v1.0-trainval
 │   │   ├── v1.0-test
 │   ├── nuScenes2kitti
@@ -41,7 +59,7 @@ frustum_pointnets_pytorch
 #### Kitti
 To visulize Kitti
 ```angular2
-python nuscenes2kitti/prepare_data.py --demo
+python kitti/prepare_data.py --demo
 ```
 To prepare training data
 ```angular2
@@ -54,8 +72,8 @@ TODO
 #### nuScenes2Kitti
 First, convert nuScenes to kitti(only consider CAM_FRONT)
 ```angular2
-python nuscenes2kitti/nuscenes_convert_full_sample.py --version 'v1.0-mini' --CAM_FRONT_only
-python nuscenes2kitti/nuscenes_convert_full_sample.py --version 'v1.0-trainval' --CAM_FRONT_only --number 7481
+python nuscenes2kitti/nuscenes_convert_full_samples.py --version v1.0-mini --CAM_FRONT_only
+python nuscenes2kitti/nuscenes_convert_full_samples.py --version v1.0-trainval --CAM_FRONT_only --number 7481
 ```
 After conversion, you can visulize them by 
 ```angular2
@@ -88,42 +106,41 @@ train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_
 ```
 
 ## Results
+### FrustumPointnetv1 from rgb detection on KITTI(val) Dataset
 ```angular2
-CUDA_VISIBLE_DEVICES=2 python train/train.py --name 20200121-decay_rate=0.7-decay_step=20_caronly --decay_rate 0.7 --decay_step 20 --datatype caronly
-**** EPOCH 150 ****
-Epoch 150/150:
-100%|███████████████████████████████████████████████████████| 1851/1851 [04:04<00:00,  7.57it/s]
-[150: 1850/1851] train loss: 0.052071
-segmentation accuracy: 0.961067
-box IoU(ground/3D): 0.847253/0.792872
-box estimation accuracy (IoU=0.7): 0.886701
-100%|█████████████████████████████████████████████████████████| 392/392 [00:22<00:00, 17.70it/s]
-[150] test loss: 0.103528
-test segmentation accuracy: 0.902443
-test box IoU(ground/3D): 0.800930/0.748648
-test box estimation accuracy (IoU=0.7): 0.772930
-learning rate: 0.000082
-Best Test acc: 0.777317(Epoch 131)
-Time 11.087114362829999 hours
-
-CUDA_VISIBLE_DEVICES=0 python train/test.py --model_path log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth --return_all_loss --output train/kitti_caronly_v1
-100%|█████████████████████████████████████████████████████████████████████████████████████████████████████| 392/392 [00:24<00:00, 16.04it/s]
-[1] test loss: 0.103475
+(score_list.append(batch_rgb_prob[j])))
+car  AP @0.70, 0.70,  0.70:
+bbox AP:96.48, 90.31, 87.63
+bev  AP:88.57, 84.78, 76.79
+3d   AP:85.09, 72.11, 64.25
+```
+### FrustumPointnetv1 with 2D gt box on KITTI(val) Dataset
+```
 test segmentation accuracy: 0.902415
 test box IoU(ground/3D): 0.800471/0.748862
 test box estimation accuracy (IoU=0.7): 0.776121
+(batch_scores = mask_mean_prob)
+car  AP @0.70, 0.70,  0.70:
+bbox AP:100.00,100.00,100.00
+bev  AP:85.76, 80.21, 74.20
+3d   AP:68.41, 63.89, 66.46
 ```
+
+
+
 ## TODO List
 * features
   - [ ] pointnet++
 * models
   - [ ] frustum-convnet
+  - [ ] extend_rgb,pointfusion,densefusion
 * datasets
-  - [ ] nuScenes
+  - [ ] nuScenes2kitti
   - [ ] SUN-RGBD
 
   
 # Acknowledgement
+many codes are from:
 * [frustum-pointnets](https://github.com/charlesq34/frustum-pointnets) 
 * [frustum-convnet](https://github.com/zhixinwang/frustum-convnet)
 * [Pointnet_Pointnet2_pytorch](https://github.com/yanx27/Pointnet_Pointnet2_pytorch)
