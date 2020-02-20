@@ -22,13 +22,6 @@ from configs.config import cfg
 import ipdb
 import torch
 
-
-try:
-    raw_input          # Python 2
-except NameError:
-    raw_input = input  # Python 3
-
-
 def rotate_pc_along_y(pc, rot_angle):
     '''
     Input:
@@ -546,7 +539,7 @@ if __name__=='__main__':
             mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2, figure=fig)
             draw_gt_boxes3d([box3d_from_label], fig, color=(1,0,0))
             mlab.orientation_axes()
-        raw_input()
+        input()
     '''
     0
     dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'label', 'center_ref1', 'center_ref2', 'center_ref3', 'center_ref4'])

@@ -247,6 +247,41 @@ class FrustumPointNetv1(nn.Module):
 
 
 if __name__ == '__main__':
+    from provider import FrustumDataset
+    dataset = FrustumDataset(npoints=1024, split='val',
+        rotate_to_center=True, random_flip=False, random_shift=False, one_hot=True,
+        overwritten_data_path='kitti/frustum_caronly_val.pickle',
+        gen_ref = False)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False,
+                            num_workers=4, pin_memory=True)
+    model = FrustumPointNetv1().cuda()
+    for batch, data_dicts in enumerate(dataloader):
+        data_dicts_var = {key: value.squeeze().cuda() for key, value in data_dicts.items()}
+        losses, metrics= model(data_dicts_var)
+
+        print()
+        for key,value in losses.items():
+            print(key,value)
+        print()
+        for key,value in metrics.items():
+            print(key,value)
+        input()
+    '''
+    total_loss tensor(50.4213, device='cuda:0', grad_fn=<AddBackward0>)
+    mask_loss tensor(5.5672, device='cuda:0', grad_fn=<MulBackward0>)
+    heading_class_loss tensor(2.5698, device='cuda:0', grad_fn=<MulBackward0>)
+    size_class_loss tensor(0.9636, device='cuda:0', grad_fn=<MulBackward0>)
+    heading_residuals_normalized_loss tensor(9.8356, device='cuda:0', grad_fn=<MulBackward0>)
+    size_residuals_normalized_loss tensor(4.0655, device='cuda:0', grad_fn=<MulBackward0>)
+    stage1_center_loss tensor(4.0655, device='cuda:0', grad_fn=<MulBackward0>)
+    corners_loss tensor(26.4575, device='cuda:0', grad_fn=<MulBackward0>)
+    
+    seg_acc 16.07421875
+    iou2d 0.066525616
+    iou3d 0.045210287
+    iou3d_acc 0.0
+    '''
+    '''
     data_dicts = {
         'point_cloud': torch.zeros(size=(32,1024,4),dtype=torch.float32).transpose(2, 1),
         'rot_angle': torch.zeros(32).float(),
@@ -268,3 +303,4 @@ if __name__ == '__main__':
     print()
     for key,value in metrics.items():
         print(key,value)
+    '''
