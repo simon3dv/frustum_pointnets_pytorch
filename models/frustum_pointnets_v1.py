@@ -237,6 +237,7 @@ class FrustumPointNetv1(nn.Module):
                 size_class_label.detach().cpu().numpy(),
                 size_residual_label.detach().cpu().numpy())
             iou3ds_acc = np.sum(iou3ds >= 0.7)
+        ipdb.set_trace()
         metrics = {
             'seg_acc': seg_accuracy,
             'iou2d': iou2ds.mean(),
