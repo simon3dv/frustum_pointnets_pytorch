@@ -8,13 +8,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from torch.autograd import Variable
 import ipdb
 from torch.nn import init
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER, NUM_OBJECT_POINT
 from model_util import point_cloud_masking, parse_output_to_tensors
 from model_util import FrustumPointNetLoss
-
 from model_util import g_type2class, g_class2type, g_type2onehotclass
 from model_util import g_type_mean_size
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
@@ -111,8 +109,8 @@ class PointNetEstimation(nn.Module):
         '''
         :param pts: [bs,3,m]: x,y,z after InstanceSeg
         :return: box_pred: [bs,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER*4]
-            including box centers, heading bin class scores and residuals,
-            and size cluster scores and residuals
+            including box centers, heading bin class scores and residual,
+            and size cluster scores and residual
         '''
         bs = pts.size()[0]
         n_pts = pts.size()[2]
@@ -206,20 +204,23 @@ class FrustumPointNetv1(nn.Module):
         box_pred = self.est(object_pts_xyz_new,one_hot)#(32, 59)
 
         center_boxnet, \
-        heading_scores, heading_residuals_normalized, heading_residuals, \
-        size_scores, size_residuals_normalized, size_residuals = \
+        heading_scores, heading_residual_normalized, heading_residual, \
+        size_scores, size_residual_normalized, size_residual = \
                 parse_output_to_tensors(box_pred, logits, mask, stage1_center)
 
         box3d_center = center_boxnet + stage1_center #bs,3
 
         losses = self.Loss(logits, seg_label, \
                  box3d_center, box3d_center_label, stage1_center, \
-                 heading_scores, heading_residuals_normalized, \
-                 heading_residuals, \
+                 heading_scores, heading_residual_normalized, \
+                 heading_residual, \
                  heading_class_label, heading_residual_label, \
-                 size_scores, size_residuals_normalized, \
-                 size_residuals, \
-                 size_class_label, size_residual_label)/bs
+                 size_scores, size_residual_normalized, \
+                 size_residual, \
+                 size_class_label, size_residual_label)
+
+        for key in losses.keys():
+            losses[key] = losses[key]/bs
 
         with torch.no_grad():
             seg_correct = torch.argmax(logits.detach().cpu(), 2).eq(seg_label.detach().cpu()).numpy()
@@ -228,9 +229,9 @@ class FrustumPointNetv1(nn.Module):
             iou2ds, iou3ds = compute_box3d_iou( \
                 box3d_center.detach().cpu().numpy(),
                 heading_scores.detach().cpu().numpy(),
-                heading_residuals.detach().cpu().numpy(),
+                heading_residual.detach().cpu().numpy(),
                 size_scores.detach().cpu().numpy(),
-                size_residuals.detach().cpu().numpy(),
+                size_residual.detach().cpu().numpy(),
                 box3d_center_label.detach().cpu().numpy(),
                 heading_class_label.detach().cpu().numpy(),
                 heading_residual_label.detach().cpu().numpy(),
@@ -270,8 +271,8 @@ if __name__ == '__main__':
     mask_loss tensor(5.5672, device='cuda:0', grad_fn=<MulBackward0>)
     heading_class_loss tensor(2.5698, device='cuda:0', grad_fn=<MulBackward0>)
     size_class_loss tensor(0.9636, device='cuda:0', grad_fn=<MulBackward0>)
-    heading_residuals_normalized_loss tensor(9.8356, device='cuda:0', grad_fn=<MulBackward0>)
-    size_residuals_normalized_loss tensor(4.0655, device='cuda:0', grad_fn=<MulBackward0>)
+    heading_residual_normalized_loss tensor(9.8356, device='cuda:0', grad_fn=<MulBackward0>)
+    size_residual_normalized_loss tensor(4.0655, device='cuda:0', grad_fn=<MulBackward0>)
     stage1_center_loss tensor(4.0655, device='cuda:0', grad_fn=<MulBackward0>)
     corners_loss tensor(26.4575, device='cuda:0', grad_fn=<MulBackward0>)
     

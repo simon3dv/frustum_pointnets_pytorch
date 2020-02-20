@@ -70,7 +70,7 @@ def class2angle(pred_cls, residual, num_class, to_label_format=True):
     return angle
         
 def size2class(size, type_name):
-    ''' Convert 3D bounding box size to template class and residuals.
+    ''' Convert 3D bounding box size to template class and residual.
     todo (rqi): support multiple size clusters per type.
  
     Input:
@@ -260,10 +260,10 @@ class FrustumDataset(object):
             'point_cloud': torch.FloatTensor(point_set).transpose(1, 0),
             'rot_angle': torch.FloatTensor([rot_angle]),
             'box3d_center': torch.FloatTensor(box3d_center),
-            'size_class': torch.LongTensor([size_class]),
-            'size_residual': torch.FloatTensor([size_residual]),
-            'angle_class': torch.LongTensor([angle_class]),
-            'angle_residual': torch.FloatTensor([angle_residual]),
+            #'size_class': torch.LongTensor([size_class]),
+            #'size_residual': torch.FloatTensor([size_residual]),
+            #'angle_class': torch.LongTensor([angle_class]),
+            #'angle_residual': torch.FloatTensor([angle_residual]),
         }
 
         if self.one_hot:
@@ -271,13 +271,20 @@ class FrustumDataset(object):
 
         if self.gen_ref:#F-ConvNet
             labels = self.generate_ref_labels(box3d_center, box3d_size, heading_angle, ref2, P)
-            data_inputs.update({'label': torch.LongTensor(labels)})
+            data_inputs.update({'ref_label': torch.LongTensor(labels)})
             data_inputs.update({'center_ref1': torch.FloatTensor(ref1).transpose(1, 0)})
             data_inputs.update({'center_ref2': torch.FloatTensor(ref2).transpose(1, 0)})
             data_inputs.update({'center_ref3': torch.FloatTensor(ref3).transpose(1, 0)})
             data_inputs.update({'center_ref4': torch.FloatTensor(ref4).transpose(1, 0)})
+            data_inputs.update({'size_class': torch.LongTensor([size_class])})
+            data_inputs.update({'box3d_size': torch.FloatTensor(box3d_size)})
+            data_inputs.update({'box3d_heading': torch.FloatTensor([heading_angle])})
         else:#F-Pointnets
             data_inputs.update({'seg': seg})
+            data_inputs.update({'size_class':torch.LongTensor([size_class])})
+            data_inputs.update({'size_residual':torch.FloatTensor([size_residual])})
+            data_inputs.update({'angle_class':torch.LongTensor([angle_class])})
+            data_inputs.update({'angle_residual':torch.FloatTensor([angle_residual])})
         return data_inputs
 
     def get_center_view_rot_angle(self, index):
@@ -406,8 +413,8 @@ def get_3d_box(box_size, heading_angle, center):
     return corners_3d
 
 def compute_box3d_iou(center_pred,
-                      heading_logits, heading_residuals,
-                      size_logits, size_residuals,
+                      heading_logits, heading_residual,
+                      size_logits, size_residual,
                       center_label,
                       heading_class_label, heading_residual_label,
                       size_class_label, size_residual_label):
@@ -417,9 +424,9 @@ def compute_box3d_iou(center_pred,
     Inputs:
         center_pred: (B,3)
         heading_logits: (B,NUM_HEADING_BIN)
-        heading_residuals: (B,NUM_HEADING_BIN)
+        heading_residual: (B,NUM_HEADING_BIN)
         size_logits: (B,NUM_SIZE_CLUSTER)
-        size_residuals: (B,NUM_SIZE_CLUSTER,3)
+        size_residual: (B,NUM_SIZE_CLUSTER,3)
         center_label: (B,3)
         heading_class_label: (B,)
         heading_residual_label: (B,)
@@ -431,10 +438,10 @@ def compute_box3d_iou(center_pred,
     '''
     batch_size = heading_logits.shape[0]
     heading_class = np.argmax(heading_logits, 1) # B
-    heading_residual = np.array([heading_residuals[i,heading_class[i]] \
+    heading_residual = np.array([heading_residual[i,heading_class[i]] \
         for i in range(batch_size)]) # B,
     size_class = np.argmax(size_logits, 1) # B
-    size_residual = np.vstack([size_residuals[i,size_class[i],:] \
+    size_residual = np.vstack([size_residual[i,size_class[i],:] \
         for i in range(batch_size)])
 
     iou2d_list = [] 

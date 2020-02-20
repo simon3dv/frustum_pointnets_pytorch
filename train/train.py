@@ -95,6 +95,7 @@ TEST_SETS = cfg.TEST.TEST_SETS
 MODEL_FILE = cfg.MODEL.FILE
 NUM_CLASSES = cfg.MODEL.NUM_CLASSES
 ## DATA
+INFO = cfg.DATA.INFO
 DATA_FILE = cfg.DATA.FILE
 DATASET = cfg.DATA.DATASET
 DATAROOT = cfg.DATA.DATA_ROOT
@@ -158,20 +159,21 @@ def test_one_epoch(model, loader):
 
     test_losses = {
         'total_loss': 0.0,
-        'mask_loss': 0.0,
-        'mask_loss': 0.0,
+        'cls_loss': 0.0,  # fconvnet
+        'mask_loss': 0.0,  # fpointnet
         'heading_class_loss': 0.0,
         'size_class_loss': 0.0,
-        'heading_residuals_normalized_loss': 0.0,
-        'size_residuals_normalized_loss': 0.0,
+        'heading_residual_normalized_loss': 0.0,
+        'size_residual_normalized_loss': 0.0,
         'stage1_center_loss': 0.0,
         'corners_loss': 0.0
     }
     test_metrics = {
-        'seg_acc': 0.0,
+        'seg_acc': 0.0,  # fpointnet
+        'cls_acc': 0.0,  # fconvnet
         'iou2d': 0.0,
         'iou3d': 0.0,
-        'iou3d_acc': 0.0,
+        'iou3d0.7': 0.0,
     }
 
     n_batches = 0
@@ -189,11 +191,12 @@ def test_one_epoch(model, loader):
 
         losses, metrics = model(data_dicts_var)
 
-
         for key in test_losses.keys():
-            test_losses[key] += losses[key].detach().item()
+            if key in losses.keys():
+                test_losses[key] += losses[key].detach().item()
         for key in test_metrics.keys():
-            test_metrics[key] += metrics[key]
+            if key in metrics.keys():
+                test_metrics[key] += metrics[key]
 
     for key in test_losses.keys():
         test_losses[key] /= n_batches
@@ -255,7 +258,7 @@ def train():
         writer = SummaryWriter('runs/' + NAME)
 
     num_batch = len(TRAIN_DATASET) / BATCH_SIZE
-    best_iou3d_acc = 0.0
+    best_iou3d_70 = 0.0
     best_epoch = 1
     best_file = ''
 
@@ -268,34 +271,35 @@ def train():
         train_iou2d = 0.0
         train_iou3d = 0.0
         train_acc = 0.0
-        train_iou3d_acc = 0.0
+        train_iou3d_70 = 0.0
         '''deprecated
         if FLAGS.return_all_loss:
             train_mask_loss = 0.0
             train_center_loss = 0.0
             train_heading_class_loss = 0.0
             train_size_class_loss = 0.0
-            train_heading_residuals_normalized_loss = 0.0
-            train_size_residuals_normalized_loss = 0.0
+            train_heading_residual_normalized_loss = 0.0
+            train_size_residual_normalized_loss = 0.0
             train_stage1_center_loss = 0.0
             train_corners_loss = 0.0
         '''
         train_losses = {
             'total_loss': 0.0,
-            'mask_loss': 0.0,
-            'mask_loss': 0.0,
+            'cls_loss': 0.0, #fconvnet
+            'mask_loss': 0.0,#fpointnet
             'heading_class_loss': 0.0,
             'size_class_loss': 0.0,
-            'heading_residuals_normalized_loss': 0.0,
-            'size_residuals_normalized_loss': 0.0,
+            'heading_residual_normalized_loss': 0.0,
+            'size_residual_normalized_loss': 0.0,
             'stage1_center_loss': 0.0,
             'corners_loss': 0.0
         }
         train_metrics = {
-            'seg_acc': 0.0,
+            'seg_acc': 0.0,#fpointnet
+            'cls_acc': 0.0,#fconvnet
             'iou2d': 0.0,
             'iou3d': 0.0,
-            'iou3d_acc': 0.0,
+            'iou3d0.7': 0.0,
         }
         n_batches = 0
         for i, data_dicts in tqdm(enumerate(train_dataloader),\
@@ -352,8 +356,8 @@ def train():
             '''
             '''deprecated
             logits, mask, stage1_center, center_boxnet, \
-            heading_scores, heading_residuals_normalized, heading_residuals, \
-            size_scores, size_residuals_normalized, size_residuals, center = \
+            heading_scores, heading_residual_normalized, heading_residual, \
+            size_scores, size_residual_normalized, size_residual, center = \
                 model(data_dicts_var)
             '''
 
@@ -361,26 +365,26 @@ def train():
             '''deprecated
             if FLAGS.return_all_loss:
                 total_loss, mask_loss, center_loss, heading_class_loss, \
-                    size_class_loss, heading_residuals_normalized_loss, \
-                    size_residuals_normalized_loss, stage1_center_loss, \
+                    size_class_loss, heading_residual_normalized_loss, \
+                    size_residual_normalized_loss, stage1_center_loss, \
                     corners_loss = \
                     Loss(logits, batch_label, \
                         center, batch_center, stage1_center, \
-                        heading_scores, heading_residuals_normalized, \
-                        heading_residuals, \
+                        heading_scores, heading_residual_normalized, \
+                        heading_residual, \
                         batch_hclass, batch_hres, \
-                        size_scores,size_residuals_normalized,\
-                        size_residuals,\
+                        size_scores,size_residual_normalized,\
+                        size_residual,\
                         batch_sclass,batch_sres)
             else:
                 total_loss = \
                     Loss(logits, batch_label, \
                         center, batch_center, stage1_center, \
-                        heading_scores, heading_residuals_normalized, \
-                        heading_residuals, \
+                        heading_scores, heading_residual_normalized, \
+                        heading_residual, \
                         batch_hclass, batch_hres, \
-                        size_scores,size_residuals_normalized,\
-                        size_residuals,\
+                        size_scores,size_residual_normalized,\
+                        size_residual,\
                         batch_sclass,batch_sres)
             '''
 
@@ -396,9 +400,9 @@ def train():
             iou2ds, iou3ds = provider.compute_box3d_iou(\
                 center.cpu().detach().numpy(),\
                 heading_scores.cpu().detach().numpy(),\
-                heading_residuals.cpu().detach().numpy(), \
+                heading_residual.cpu().detach().numpy(), \
                 size_scores.cpu().detach().numpy(), \
-                size_residuals.cpu().detach().numpy(), \
+                size_residual.cpu().detach().numpy(), \
                 batch_center.cpu().detach().numpy(), \
                 batch_hclass.cpu().detach().numpy(), \
                 batch_hres.cpu().detach().numpy(), \
@@ -406,7 +410,7 @@ def train():
                 batch_sres.cpu().detach().numpy())
             train_iou2d += np.sum(iou2ds)
             train_iou3d += np.sum(iou3ds)
-            train_iou3d_acc += np.sum(iou3ds>=0.7)
+            train_iou3d_70 += np.sum(iou3ds>=0.7)
             
             correct = torch.argmax(logits, 2).eq(batch_label.long()).detach().cpu().numpy()
             accuracy = np.sum(correct)
@@ -416,30 +420,32 @@ def train():
                 train_center_loss += center_loss.item()
                 train_heading_class_loss += heading_class_loss.item()
                 train_size_class_loss += size_class_loss.item()
-                train_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
-                train_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
+                train_heading_residual_normalized_loss += heading_residual_normalized_loss.item()
+                train_size_residual_normalized_loss += size_residual_normalized_loss.item()
                 train_stage1_center_loss += stage1_center_loss.item()
                 train_corners_loss += corners_loss.item()
 
             '''
 
             for key in train_losses.keys():
-                train_losses[key] += losses[key].detach().item()
+                if key in losses.keys():
+                    train_losses[key] += losses[key].detach().item()
             for key in train_metrics.keys():
-                train_metrics[key] += metrics[key]
+                if key in metrics.keys():
+                    train_metrics[key] += metrics[key]
 
             '''deprecated
             print('[%d: %d/%d] train loss: %.6f' % \
                   (epoch + 1, i, len(train_dataloader),(train_total_loss/n_samples)))
             print('box IoU(ground/3D): %.6f/%.6f' % (train_iou2d/n_samples, train_iou3d/n_samples))
-            print('box estimation accuracy (IoU=0.7): %.6f' % (train_iou3d_acc/n_samples))
+            print('box estimation accuracy (IoU=0.7): %.6f' % (train_iou3d_70/n_samples))
             if FLAGS.return_all_loss:
                 print('train_mask_loss:%.6f'%(train_mask_loss/n_samples))
                 print('train_stage1_center_loss:%.6f' % (train_stage1_center_loss/n_samples))
                 print('train_heading_class_loss:%.6f' % (train_heading_class_loss/n_samples))
                 print('train_size_class_loss:%.6f' % (train_size_class_loss/n_samples))
-                print('train_heading_residuals_normalized_loss:%.6f' % (train_heading_residuals_normalized_loss/n_samples))
-                print('train_size_residuals_normalized_loss:%.6f' % (train_size_residuals_normalized_loss/n_samples))
+                print('train_heading_residual_normalized_loss:%.6f' % (train_heading_residual_normalized_loss/n_samples))
+                print('train_size_residual_normalized_loss:%.6f' % (train_size_residual_normalized_loss/n_samples))
                 print('train_stage1_center_loss:%.6f' % (train_stage1_center_loss/n_samples))
                 print('train_corners_loss:%.6f'%(train_corners_loss/n_samples))
             '''
@@ -450,23 +456,25 @@ def train():
 
         log_string('[%d: %d/%d] train' % (epoch + 1, i, len(train_dataloader)))
         for key, value in train_losses.items():
-            log_string(str(key)+':'+str(value))
+            if value < 1e-6: continue
+            log_string(str(key)+':'+"%.6f"%(value))
         for key, value in train_metrics.items():
-            log_string(str(key)+':'+str(value))
+            if value < 1e-6: continue
+            log_string(str(key)+':'+"%.6f"%(value))
         '''
         train_total_loss /= n_samples
         train_acc /= n_samples*float(NUM_POINT)
         train_iou2d /= n_samples
         train_iou3d /= n_samples
-        train_iou3d_acc /= n_samples
+        train_iou3d_70 /= n_samples
 
         if FLAGS.return_all_loss:
             train_mask_loss /= n_samples
             train_center_loss /= n_samples
             train_heading_class_loss /= n_samples
             train_size_class_loss /= n_samples
-            train_heading_residuals_normalized_loss /= n_samples
-            train_size_residuals_normalized_loss /= n_samples
+            train_heading_residual_normalized_loss /= n_samples
+            train_size_residual_normalized_loss /= n_samples
             train_stage1_center_loss /= n_samples
             train_corners_loss /= n_samples
         
@@ -474,22 +482,24 @@ def train():
               (epoch + 1, i, len(train_dataloader),train_total_loss))
         print('segmentation accuracy: %.6f'% train_acc )
         print('box IoU(ground/3D): %.6f/%.6f'% (train_iou2d, train_iou3d))
-        print('box estimation accuracy (IoU=0.7): %.6f'%(train_iou3d_acc))
+        print('box estimation accuracy (IoU=0.7): %.6f'%(train_iou3d_70))
         '''
         # test one epoch
         test_losses, test_metrics = test_one_epoch(model,test_dataloader)
         log_string('[%d: %d/%d] %s' % (epoch + 1, i, len(train_dataloader),blue('test')))
         for key, value in test_losses.items():
-            log_string(str(key)+':'+str(value))
+            if value < 1e-6: continue
+            log_string(str(key)+':'+"%.6f"%(value))
         for key, value in test_metrics.items():
-            log_string(str(key)+':'+str(value))
+            if value < 1e-6: continue
+            log_string(str(key)+':'+"%.6f"%(value))
 
         '''deprecated
         print('[%d] %s loss: %.6f' % \
               (epoch + 1, blue('test'), test_total_loss))
         print('%s segmentation accuracy: %.6f'% (blue('test'),test_acc))
         print('%s box IoU(ground/3D): %.6f/%.6f'% (blue('test'),test_iou2d, test_iou3d))
-        print('%s box estimation accuracy (IoU=0.7): %.6f'%(blue('test'), test_iou3d_acc))
+        print('%s box estimation accuracy (IoU=0.7): %.6f'%(blue('test'), test_iou3d_70))
         '''
         scheduler.step()
         if MIN_LR > 0:
@@ -500,24 +510,24 @@ def train():
 
         if USE_TFBOARD:
             writer.add_scalar('train_total_loss',train_losses['total_loss'],epoch)
-            writer.add_scalar('train_iou3d_acc',train_metrics['iou3d_acc'],epoch)
+            writer.add_scalar('train_iou3d0.7',train_metrics['iou3d0.7'],epoch)
             writer.add_scalar('test_total_loss',test_losses['total_loss'],epoch)
-            writer.add_scalar('test_iou3d_acc',test_metrics['iou3d_acc'],epoch)
+            writer.add_scalar('test_iou3d0.7',test_metrics['iou3d0.7'],epoch)
         '''
         if not FLAGS.debug:
             writer.add_scalar('train_total_loss',train_total_loss, epoch)
             writer.add_scalar('train_iou2d',train_iou2d, epoch)
             writer.add_scalar('train_iou3d',train_iou3d, epoch)
             writer.add_scalar('train_acc',train_acc, epoch)
-            writer.add_scalar('train_iou3d_acc',train_iou3d_acc, epoch)
+            writer.add_scalar('train_iou3d0.7',train_iou3d_70, epoch)
 
         if FLAGS.return_all_loss and not FLAGS.debug:
             writer.add_scalar('train_mask_loss',train_mask_loss)
             writer.add_scalar('train_center_loss',train_center_loss, epoch)
             writer.add_scalar('train_heading_class_loss',train_heading_class_loss, epoch)
             writer.add_scalar('train_size_class_loss',train_size_class_loss, epoch)
-            writer.add_scalar('train_heading_residuals_normalized_loss',train_heading_residuals_normalized_loss, epoch)
-            writer.add_scalar('train_size_residuals_normalized_loss',train_size_residuals_normalized_loss, epoch)
+            writer.add_scalar('train_heading_residual_normalized_loss',train_heading_residual_normalized_loss, epoch)
+            writer.add_scalar('train_size_residual_normalized_loss',train_size_residual_normalized_loss, epoch)
             writer.add_scalar('train_stage1_center_loss',train_stage1_center_loss, epoch)
             writer.add_scalar('train_corners_loss',train_corners_loss, epoch)
 
@@ -526,40 +536,41 @@ def train():
             writer.add_scalar('test_iou2d_loss',test_iou2d, epoch)
             writer.add_scalar('test_iou3d_loss',test_iou3d, epoch)
             writer.add_scalar('test_acc',test_acc, epoch)
-            writer.add_scalar('test_iou3d_acc',test_iou3d_acc, epoch)
+            writer.add_scalar('test_iou3d0.7',test_iou3d_70, epoch)
 
         if FLAGS.return_all_loss:
             writer.add_scalar('test_mask_loss',test_mask_loss, epoch)
             writer.add_scalar('test_center_loss',test_center_loss, epoch)
             writer.add_scalar('test_heading_class_loss',test_heading_class_loss, epoch)
             writer.add_scalar('test_size_class_loss',test_size_class_loss, epoch)
-            writer.add_scalar('test_heading_residuals_normalized_loss',test_heading_residuals_normalized_loss, epoch)
-            writer.add_scalar('test_size_residuals_normalized_loss',test_size_residuals_normalized_loss, epoch)
+            writer.add_scalar('test_heading_residual_normalized_loss',test_heading_residual_normalized_loss, epoch)
+            writer.add_scalar('test_size_residual_normalized_loss',test_size_residual_normalized_loss, epoch)
             writer.add_scalar('test_stage1_center_loss',test_stage1_center_loss, epoch)
             writer.add_scalar('test_corners_loss',test_corners_loss, epoch)
         '''
-        if test_metrics['iou3d_acc'] >= best_iou3d_acc:
-            best_iou3d_acc = test_metrics['iou3d_acc']
+        if test_metrics['iou3d0.7'] >= best_iou3d_70:
+            best_iou3d_70 = test_metrics['iou3d0.7']
             best_epoch = epoch + 1
             if epoch > MAX_EPOCH / 5:
                 savepath = LOG_DIR + '/acc%.3f-epoch%03d.pth' % \
-                           (test_metrics['iou3d_acc'], epoch)
+                           (test_metrics['iou3d0.7'], epoch)
                 log_string('save to:'+str(savepath))
                 if os.path.exists(best_file):
                     os.remove(best_file)# update to newest best epoch
                 best_file = savepath
                 state = {
                     'epoch': epoch + 1,
-                    'train_iou3d_acc': train_metrics['iou3d_acc'],
-                    'test_iou3d_acc': test_metrics['iou3d_acc'],
+                    'train_iou3d0.7': train_metrics['iou3d0.7'],
+                    'test_iou3d0.7': test_metrics['iou3d0.7'],
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
                 torch.save(state,savepath)
                 log_string('Saving model to %s'%savepath)
-        log_string('Best Test acc: %f(Epoch %d)' % (best_iou3d_acc, best_epoch))
+        log_string('Best Test acc: %f(Epoch %d)' % (best_iou3d_70, best_epoch))
     log_string("Time {} hours".format(float(time.perf_counter()-start)/3600))
-    writer.close()
+    if USE_TFBOARD:
+        writer.close()
 
 if __name__ == "__main__":
     log_string('pid: %s'%(str(os.getpid())))
@@ -668,8 +679,8 @@ if __name__ == "__main__":
     train_stage1_center_loss:0.002503
     train_heading_class_loss:0.019569
     train_size_class_loss:0.000064
-    train_heading_residuals_normalized_loss:0.001008
-    train_size_residuals_normalized_loss:0.009315
+    train_heading_residual_normalized_loss:0.001008
+    train_size_residual_normalized_loss:0.009315
     train_stage1_center_loss:0.002503
     train_corners_loss:0.096189
     100%|██████████████████████████████████████████████████████| 2296/2296 [07:22<00:00,  5.19it/s]
@@ -694,8 +705,8 @@ if __name__ == "__main__":
     train_stage1_center_loss:0.002294
     train_heading_class_loss:0.013876
     train_size_class_loss:0.000045
-    train_heading_residuals_normalized_loss:0.001029
-    train_size_residuals_normalized_loss:0.007258
+    train_heading_residual_normalized_loss:0.001029
+    train_size_residual_normalized_loss:0.007258
     train_stage1_center_loss:0.002294
     train_corners_loss:0.077865
     100%|██████████████████████████████████████████████████████| 2296/2296 [07:23<00:00,  5.18it/s]
