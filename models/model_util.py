@@ -203,9 +203,8 @@ def huber_loss(error, delta=1.0):#(32,), ()
     return torch.mean(losses)
 
 class FrustumPointNetLoss(nn.Module):
-    def __init__(self,return_all=False):
+    def __init__(self):
         super(FrustumPointNetLoss, self).__init__()
-        self.return_all = return_all
 
     def forward(self, logits, mask_label, \
                 center, center_label, stage1_center, \
@@ -226,13 +225,13 @@ class FrustumPointNetLoss(nn.Module):
         heading_scores: torch.Size([32, 12]) torch.float32
         heading_residuals_snormalized: torch.Size([32, 12]) torch.float32
         heading_residuals: torch.Size([32, 12]) torch.float32
-        heading_class_label:(32,)
+        heading_class_label:(32)
         heading_residuals_label:(32)
         4.Size
         size_scores: torch.Size([32, 8]) torch.float32
         size_residuals_normalized: torch.Size([32, 8, 3]) torch.float32
         size_residuals: torch.Size([32, 8, 3]) torch.float32
-        size_class_label:(32,)
+        size_class_label:(32)
         size_residuals_label:(32,3)
         5.Corner
         6.Weight
@@ -240,7 +239,6 @@ class FrustumPointNetLoss(nn.Module):
         box_loss_weight: float scalar
 
         '''
-        ###print(heading_class_label.cpu().detach().numpy())
         bs = logits.shape[0]
         # 3D Instance Segmentation PointNet Loss
         logits = F.log_softmax(logits.view(-1,2),dim=1)#torch.Size([32768, 2])
@@ -278,7 +276,7 @@ class FrustumPointNetLoss(nn.Module):
             .view(1, NUM_SIZE_CLUSTER, 3)  # 1,8,3
         mean_size_label = torch.sum(scls_onehot_repeat * mean_size_arr_expand, dim=1)# 32,3
         size_residuals_label_normalized = size_residuals_label / mean_size_label.cuda()
-        ###ipdb.set_trace()
+
         size_normalized_dist = torch.norm(size_residuals_label_normalized-\
                     predicted_size_residuals_normalized_dist,dim=1)#32
         size_residuals_normalized_loss = huber_loss(size_normalized_dist, delta=1.0)#tensor(11.2784, grad_fn=<MeanBackward0>)
@@ -292,7 +290,6 @@ class FrustumPointNetLoss(nn.Module):
             gt_mask.view(bs,NUM_HEADING_BIN,NUM_SIZE_CLUSTER,1,1)\
             .float().cuda() * corners_3d,\
             dim=[1, 2]) # (bs,8,3)
-        ###ipdb.set_trace()
         heading_bin_centers = torch.from_numpy(\
             np.arange(0, 2 * np.pi, 2 * np.pi / NUM_HEADING_BIN)).float().cuda()  # (NH,)
         heading_label = heading_residuals_label.view(bs,1) + \
@@ -305,6 +302,7 @@ class FrustumPointNetLoss(nn.Module):
                      size_residuals_label.view(bs,1,3) #(1,NS,3)+(bs,1,3)=(bs,NS,3)
         size_label = torch.sum(\
            scls_onehot.view(bs,NUM_SIZE_CLUSTER,1).float() * size_label, axis=[1])  # (B,3)
+
         corners_3d_gt = get_box3d_corners_helper( \
             center_label, heading_label, size_label)  # (B,8,3)
         corners_3d_gt_flip = get_box3d_corners_helper( \
@@ -325,17 +323,18 @@ class FrustumPointNetLoss(nn.Module):
         #tensor(306.7591, grad_fn=<AddBackward0>)
         ###if np.isnan(total_loss.item()) or total_loss > 10000.0:
         ###    ipdb.set_trace()
-        if self.return_all:
-            return total_loss, mask_loss, \
-                   box_loss_weight * center_loss, \
-                   box_loss_weight * heading_class_loss, \
-                   box_loss_weight * size_class_loss, \
-                   box_loss_weight * heading_residuals_normalized_loss * 20, \
-                   box_loss_weight * size_residuals_normalized_loss * 20,\
-                   box_loss_weight * stage1_center_loss, \
-                   box_loss_weight * corners_loss * corner_loss_weight
-        else:
-            return total_loss
+        losses = {
+            'total_loss': total_loss,
+            'mask_loss': mask_loss,
+            'mask_loss': box_loss_weight * center_loss,
+            'heading_class_loss': box_loss_weight * heading_class_loss,
+            'size_class_loss': box_loss_weight * size_class_loss,
+            'heading_residuals_normalized_loss': box_loss_weight * heading_residuals_normalized_loss * 20,
+            'size_residuals_normalized_loss': box_loss_weight * size_residuals_normalized_loss * 20,
+            'stage1_center_loss': box_loss_weight * size_residuals_normalized_loss * 20,
+            'corners_loss': box_loss_weight * corners_loss * corner_loss_weight,
+        }
+        return losses
         '''
         return total_loss, mask_loss, center_loss, heading_class_loss, \
             size_class_loss, heading_residuals_normalized_loss, \

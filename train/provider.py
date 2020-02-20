@@ -12,12 +12,16 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
+sys.path.append(ROOT_DIR)
 sys.path.append(os.path.join(ROOT_DIR,'models'))
 from box_util import box3d_iou
 from model_util import g_type2class, g_class2type, g_type2onehotclass
 from model_util import g_type_mean_size
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
+from configs.config import cfg
 import ipdb
+import torch
+
 
 try:
     raw_input          # Python 2
@@ -100,7 +104,8 @@ class FrustumDataset(object):
     '''
     def __init__(self, npoints, split,
                  random_flip=False, random_shift=False, rotate_to_center=False,
-                 overwritten_data_path=None, from_rgb_detection=False, one_hot=False):
+                 overwritten_data_path=None, from_rgb_detection=False, one_hot=False,
+                 gen_ref=False):
         '''
         Input:
             npoints: int scalar, number of points for frustum point cloud.
@@ -115,17 +120,16 @@ class FrustumDataset(object):
             from_rgb_detection: bool, if True we assume we do not have
                 groundtruth, just return data elements.
             one_hot: bool, if True, return one hot vector
+            gen_ref: bool, if True, generate ref data for fconvnet
         '''
         self.npoints = npoints
         self.random_flip = random_flip
         self.random_shift = random_shift
         self.rotate_to_center = rotate_to_center
         self.one_hot = one_hot
-        if overwritten_data_path is None:
-            overwritten_data_path = os.path.join(ROOT_DIR,
-                'kitti/frustum_carpedcyc_%s.pickle'%(split))
-
+        self.gen_ref = gen_ref
         self.from_rgb_detection = from_rgb_detection
+
         if from_rgb_detection:
             with open(overwritten_data_path,'rb') as fp:
                 self.id_list = pickle.load(fp)
@@ -135,6 +139,7 @@ class FrustumDataset(object):
                 # frustum_angle is clockwise angle from positive x-axis
                 self.frustum_angle_list = pickle.load(fp) 
                 self.prob_list = pickle.load(fp)
+                self.calib_list = pickle.load(fp)
         else:
             with open(overwritten_data_path,'rb') as fp:
                 self.id_list = pickle.load(fp)
@@ -147,6 +152,15 @@ class FrustumDataset(object):
                 self.size_list = pickle.load(fp)
                 # frustum_angle is clockwise angle from positive x-axis
                 self.frustum_angle_list = pickle.load(fp)
+                self.calib_list = pickle.load(fp)
+
+        if gen_ref:
+            s1, s2, s3, s4 = cfg.DATA.STRIDE#(0.25, 0.5, 1.0, 2.0)
+            self.z1 = np.arange(0, 70, s1) + s1 / 2.#[0.125,0.375,...,69.875]
+            self.z2 = np.arange(0, 70, s2) + s2 / 2.#[0.25,0.75,...,69.75]
+            self.z3 = np.arange(0, 70, s3) + s3 / 2.#[0.5,1.5,...,69.5]
+            self.z4 = np.arange(0, 70, s4) + s4 / 2.#[1,3,...,69]
+
     def __len__(self):
             return len(self.input_list)
 
@@ -169,20 +183,44 @@ class FrustumDataset(object):
         else:
             point_set = self.input_list[index]
 
-        #ipdb.set_trace()
         # Resample
         choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
         point_set = point_set[choice, :]
 
+        if self.gen_ref:#fconvnet
+            box = self.box2d_list[index]
+            P = self.calib_list[index]  # 3x4(kitti) or 3x3(nuscenes)
+            ref1, ref2, ref3, ref4 = self.generate_ref(box, P)
+            if self.rotate_to_center:
+                ref1 = self.get_center_view(ref1, index)#(280, 3)
+                ref2 = self.get_center_view(ref2, index)#(140, 3)
+                ref3 = self.get_center_view(ref3, index)#(70, 3)
+                ref4 = self.get_center_view(ref4, index)#(35, 3)
+
         if self.from_rgb_detection:
+            data_inputs = {
+                'point_cloud': torch.FloatTensor(point_set).transpose(1, 0),
+                'rot_angle': torch.FloatTensor([rot_angle]),
+                'rgb_prob': torch.FloatTensor([self.prob_list[index]]),
+            }
+
+            if not self.rotate_to_center:
+                data_inputs.update({'rot_angle': torch.zeros(1)})
+
             if self.one_hot:
-                return point_set, rot_angle, self.prob_list[index], one_hot_vec
-            else:
-                return point_set, rot_angle, self.prob_list[index]
-        
+                data_inputs.update({'one_hot':torch.FloatTensor(one_hot_vec)})
+
+            if self.gen_ref:
+                data_inputs.update({'center_ref1': torch.FloatTensor(ref1).transpose(1, 0)})
+                data_inputs.update({'center_ref2': torch.FloatTensor(ref2).transpose(1, 0)})
+                data_inputs.update({'center_ref3': torch.FloatTensor(ref3).transpose(1, 0)})
+                data_inputs.update({'center_ref4': torch.FloatTensor(ref4).transpose(1, 0)})
+
+            return data_inputs
         # ------------------------------ LABELS ----------------------------
-        seg = self.label_list[index] 
-        seg = seg[choice]#(1024,),array([0., 1., 0., ..., 1., 1., 1.])
+        if not gen_ref:#not fconvnet
+            seg = self.label_list[index]
+            seg = seg[choice]#(1024,),array([0., 1., 0., ..., 1., 1., 1.])
 
         # Get center point of 3D box
         if self.rotate_to_center:#True
@@ -196,6 +234,9 @@ class FrustumDataset(object):
         else:
             heading_angle = self.heading_list[index]# rotation_y
 
+        angle_class, angle_residual = angle2class(heading_angle,
+            NUM_HEADING_BIN)
+
         # Size
         size_class, size_residual = size2class(self.size_list[index],
             self.type_list[index]) #5, array([0.25717603, 0.00293633, 0.12301873])
@@ -207,21 +248,44 @@ class FrustumDataset(object):
                 point_set[:,0] *= -1
                 box3d_center[0] *= -1
                 heading_angle = np.pi - heading_angle
+
+                if self.gen_ref:
+                    ref1[:, 0] *= -1
+                    ref2[:, 0] *= -1
+                    ref3[:, 0] *= -1
+                    ref4[:, 0] *= -1
+
         if self.random_shift:
             dist = np.sqrt(np.sum(box3d_center[0]**2+box3d_center[1]**2))
             shift = np.clip(np.random.randn()*dist*0.05, dist*0.8, dist*1.2)
             point_set[:,2] += shift
             box3d_center[2] += shift
 
-        angle_class, angle_residual = angle2class(heading_angle,
-            NUM_HEADING_BIN)
+        box3d_size = self.size_list[index]
+
+        data_inputs = {
+            'point_cloud': torch.FloatTensor(point_set).transpose(1, 0),
+            'rot_angle': torch.FloatTensor([rot_angle]),
+            'box3d_center': torch.FloatTensor(box3d_center),
+            'size_class': torch.LongTensor([size_class]),
+            'size_residual': torch.FloatTensor([size_residual]),
+            'angle_class': torch.LongTensor([angle_class]),
+            'angle_residual': torch.FloatTensor([angle_residual]),
+        }
 
         if self.one_hot:
-            return point_set, seg, box3d_center, angle_class, angle_residual,\
-                size_class, size_residual, rot_angle, one_hot_vec
-        else:
-            return point_set, seg, box3d_center, angle_class, angle_residual,\
-                size_class, size_residual, rot_angle
+            data_inputs.update({'one_hot': torch.FloatTensor(one_hot_vec)})
+
+        if self.gen_ref:#F-ConvNet
+            labels = self.generate_ref_labels(box3d_center, box3d_size, heading_angle, ref2, P)
+            data_inputs.update({'label': torch.LongTensor(labels)})
+            data_inputs.update({'center_ref1': torch.FloatTensor(ref1).transpose(1, 0)})
+            data_inputs.update({'center_ref2': torch.FloatTensor(ref2).transpose(1, 0)})
+            data_inputs.update({'center_ref3': torch.FloatTensor(ref3).transpose(1, 0)})
+            data_inputs.update({'center_ref4': torch.FloatTensor(ref4).transpose(1, 0)})
+        else:#F-Pointnets
+            data_inputs.update({'seg': seg})
+        return data_inputs
 
     def get_center_view_rot_angle(self, index):
         ''' Get the frustum rotation angle, it isshifted by pi/2 so that it
@@ -258,7 +322,63 @@ class FrustumDataset(object):
         return rotate_pc_along_y(point_set, \
             self.get_center_view_rot_angle(index))
 
+    def generate_ref(self, box, P):
+        cx, cy = (box[0] + box[2]) / 2., (box[1] + box[3]) / 2.,#678.73,206.76
 
+        xyz1 = np.zeros((len(self.z1), 3))
+        xyz1[:, 0] = cx
+        xyz1[:, 1] = cy
+        xyz1[:, 2] = self.z1
+        xyz1_rect = project_image_to_rect(xyz1, P)
+
+        xyz2 = np.zeros((len(self.z2), 3))
+        xyz2[:, 0] = cx
+        xyz2[:, 1] = cy
+        xyz2[:, 2] = self.z2
+        xyz2_rect = project_image_to_rect(xyz2, P)
+
+        xyz3 = np.zeros((len(self.z3), 3))
+        xyz3[:, 0] = cx
+        xyz3[:, 1] = cy
+        xyz3[:, 2] = self.z3
+        xyz3_rect = project_image_to_rect(xyz3, P)
+
+        xyz4 = np.zeros((len(self.z4), 3))
+        xyz4[:, 0] = cx
+        xyz4[:, 1] = cy
+        xyz4[:, 2] = self.z4
+        xyz4_rect = project_image_to_rect(xyz4, P)
+
+        return xyz1_rect, xyz2_rect, xyz3_rect, xyz4_rect
+
+    def generate_ref_labels(self, center, dimension, angle, ref_xyz, P):
+        box_corner1 = get_3d_box(dimension * 0.5, angle, center)
+        box_corner2 = get_3d_box(dimension, angle, center)
+
+        labels = np.zeros(len(ref_xyz))#(140,)
+        _, inside1 = extract_pc_in_box3d(ref_xyz, box_corner1)#(140,)
+        _, inside2 = extract_pc_in_box3d(ref_xyz, box_corner2)#(140,)
+
+        labels[inside2] = -1
+        labels[inside1] = 1
+        # dis = np.sqrt(((ref_xyz - center)**2).sum(1))
+        # print(dis.min())
+        if inside1.sum() == 0:
+            dis = np.sqrt(((ref_xyz - center) ** 2).sum(1))
+            argmin = np.argmin(dis)
+            labels[argmin] = 1
+
+        return labels
+
+    def get_center_view(self, point_set, index):
+        ''' Frustum rotation of point clouds.
+        NxC points with first 3 channels as XYZ
+        z is facing forward, x is left ward, y is downward
+        '''
+        # Use np.copy to avoid corrupting original data
+        point_set = np.copy(point_set)
+        return rotate_pc_along_y(point_set,
+                                 self.get_center_view_rot_angle(index))
 # ----------------------------------
 # Helper functions for evaluation
 # ----------------------------------
@@ -354,29 +474,96 @@ def from_prediction_to_label_format(center, angle_class, angle_res,\
     ty += h/2.0
     return h,w,l,tx,ty,tz,ry
 
+def project_image_to_rect(uv_depth, P):
+    '''
+    :param box: nx3 first two channels are uv in image coord, 3rd channel
+                is depth in rect camera coord
+    :param P: 3x3 or 3x4
+    :return: nx3 points in rect camera coord
+    '''
+    c_u = P[0,2]
+    c_v = P[1,2]
+    f_u = P[0, 0]
+    f_v = P[1, 1]
+    if P.shape[1] == 4:
+        b_x = P[0, 3] / (-f_u)  # relative
+        b_y = P[1, 3] / (-f_v)
+    else:
+        b_x = 0
+        b_y = 0
+    n = uv_depth.shape[0]
+    x = ((uv_depth[:, 0] - c_u) * uv_depth[:, 2]) / f_u + b_x
+    y = ((uv_depth[:, 1] - c_v) * uv_depth[:, 2]) / f_v + b_y
+    pts_3d_rect = np.zeros((n, 3), dtype=uv_depth.dtype)
+    pts_3d_rect[:, 0] = x
+    pts_3d_rect[:, 1] = y
+    pts_3d_rect[:, 2] = uv_depth[:, 2]
+    return pts_3d_rect
+
+def in_hull(p, hull):
+    from scipy.spatial import Delaunay
+    if not isinstance(hull,Delaunay):
+        hull = Delaunay(hull)
+    return hull.find_simplex(p)>=0
+
+def extract_pc_in_box3d(pc, box3d):
+    ''' pc: (N,3), box3d: (8,3) '''
+    box3d_roi_inds = in_hull(pc[:,0:3], box3d)
+    return pc[box3d_roi_inds,:], box3d_roi_inds
+
+
 if __name__=='__main__':
+    gen_ref = True
+    show = False
     import mayavi.mlab as mlab 
     sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
     from viz_util import draw_lidar, draw_gt_boxes3d
     median_list = []
     dataset = FrustumDataset(1024, split='val',
-        rotate_to_center=True, random_flip=True, random_shift=True)
+        rotate_to_center=True, random_flip=True, random_shift=True,
+        overwritten_data_path='kitti/frustum_caronly_val.pickle',
+        gen_ref = gen_ref)
     for i in range(len(dataset)):
-        data = dataset[i]
-        print(('Center: ', data[2], \
-            'angle_class: ', data[3], 'angle_res:', data[4], \
-            'size_class: ', data[5], 'size_residual:', data[6], \
-            'real_size:', g_type_mean_size[g_class2type[data[5]]]+data[6]))
+        print(i)
+        data_dicts = dataset[i]
+        print(data_dicts.keys())
+        for key, value in data_dicts.items():
+            print('%s:%s,%s'%(key,str(value.shape),str(value.dtype)))
         print(('Frustum angle: ', dataset.frustum_angle_list[i]))
-        median_list.append(np.median(data[0][:,0]))
-        print((data[2], dataset.box3d_list[i], median_list[-1]))
-        box3d_from_label = get_3d_box(class2size(data[5],data[6]), class2angle(data[3], data[4],12), data[2])
-        ps = data[0]
-        seg = data[1]
-        fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4), fgcolor=None, engine=None, size=(1000, 500))
-        mlab.points3d(ps[:,0], ps[:,1], ps[:,2], seg, mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
-        mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2, figure=fig)
-        draw_gt_boxes3d([box3d_from_label], fig, color=(1,0,0))
-        mlab.orientation_axes()
+        point_cloud = data_dicts['point_cloud']
+        print('max:',point_cloud.max(1)[0])
+        print('mean:',point_cloud.mean(1))
+        print('min:',point_cloud.min(1)[0])
+        if show:
+            box3d_from_label = get_3d_box(
+                class2size(data_dicts['size_class'].item(),data_dicts['size_residual'].squeeze().numpy()),
+                class2angle(data_dicts['angle_class'].item(), data_dicts['angle_residual'].squeeze().numpy(),12),
+                data_dicts['box3d_center'].numpy())
+            ps = point_cloud.T
+            seg = data_dicts['seg']
+            fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4), fgcolor=None, engine=None, size=(1000, 500))
+            mlab.points3d(ps[:,0], ps[:,1], ps[:,2], seg, mode='point', colormap='gnuplot', scale_factor=1, figure=fig)
+            mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2, figure=fig)
+            draw_gt_boxes3d([box3d_from_label], fig, color=(1,0,0))
+            mlab.orientation_axes()
         raw_input()
-    print(np.mean(np.abs(median_list)))
+    '''
+    0
+    dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'label', 'center_ref1', 'center_ref2', 'center_ref3', 'center_ref4'])
+    point_cloud:torch.Size([4, 1024]),torch.float32
+    rot_angle:torch.Size([1]),torch.float32
+    box3d_center:torch.Size([3]),torch.float32
+    size_class:torch.Size([1]),torch.int64
+    size_residual:torch.Size([1, 3]),torch.float32
+    angle_class:torch.Size([1]),torch.int64
+    angle_residual:torch.Size([1]),torch.float32
+    label:torch.Size([140]),torch.int64
+    center_ref1:torch.Size([3, 280]),torch.float32
+    center_ref2:torch.Size([3, 140]),torch.float32
+    center_ref3:torch.Size([3, 70]),torch.float32
+    center_ref4:torch.Size([3, 35]),torch.float32
+    ('Frustum angle: ', -1.4783037599141617)
+    max: tensor([ 1.0734,  2.8949, 77.1032,  0.9900])
+    mean: tensor([3.6379e-02, 1.7382e+00, 4.1251e+01, 1.2603e-01])
+    min: tensor([-1.6102,  0.9591, 33.8156,  0.0000])
+    '''

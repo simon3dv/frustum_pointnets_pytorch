@@ -3,6 +3,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(ROOT_DIR, 'train'))
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,170 +15,290 @@ from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER, NUM_OBJECT_POINT
 from model_util import point_cloud_masking, parse_output_to_tensors
 from model_util import FrustumPointNetLoss
 
-class PointNetInstanceSeg(nn.Module):
-    def __init__(self,n_classes=3,n_channel=4):
-        '''v1 3D Instance Segmentation PointNet
-        :param n_classes:3
-        :param one_hot_vec:[bs,n_classes]
-        '''
-        super(PointNetInstanceSeg, self).__init__()
-        self.conv1 = nn.Conv1d(n_channel, 64, 1)
-        self.conv2 = nn.Conv1d(64, 64, 1)
-        self.conv3 = nn.Conv1d(64, 64, 1)
-        self.conv4 = nn.Conv1d(64, 128, 1)
-        self.conv5 = nn.Conv1d(128, 1024, 1)
-        self.bn1 = nn.BatchNorm1d(64)
-        self.bn2 = nn.BatchNorm1d(64)
-        self.bn3 = nn.BatchNorm1d(64)
-        self.bn4 = nn.BatchNorm1d(128)
-        self.bn5 = nn.BatchNorm1d(1024)
+from model_util import g_type2class, g_class2type, g_type2onehotclass
+from model_util import g_type_mean_size
+from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
+from provider import compute_box3d_iou
+from configs.config import cfg
 
-        self.n_classes = n_classes
-        self.dconv1 = nn.Conv1d(1088+n_classes, 512, 1)
-        self.dconv2 = nn.Conv1d(512, 256, 1)
-        self.dconv3 = nn.Conv1d(256, 128, 1)
-        self.dconv4 = nn.Conv1d(128, 128, 1)
-        self.dropout = nn.Dropout(p=0.5)
-        self.dconv5 = nn.Conv1d(128, 2, 1)
-        self.dbn1 = nn.BatchNorm1d(512)
-        self.dbn2 = nn.BatchNorm1d(256)
-        self.dbn3 = nn.BatchNorm1d(128)
-        self.dbn4 = nn.BatchNorm1d(128)
+from ops.query_depth_point.query_depth_point import QueryDepthPoint
+from ops.pybind11.box_ops_cc import rbbox_iou_3d_pair
 
-    def forward(self, pts, one_hot_vec): # bs,4,n
-        '''
-        :param pts: [bs,4,n]: x,y,z,intensity
-        :return: logits: [bs,n,2],scores for bkg/clutter and object
-        '''
-        bs = pts.size()[0]
-        n_pts = pts.size()[2]
+def Conv2d(i_c, o_c, k, s=1, p=0, bn=True):
+    if bn:
+        return nn.Sequential(nn.Conv2d(i_c, o_c, k, s, p, bias=False), nn.BatchNorm2d(o_c), nn.ReLU(True))
+    else:
+        return nn.Sequential(nn.Conv2d(i_c, o_c, k, s, p), nn.ReLU(True))
 
-        out1 = F.relu(self.bn1(self.conv1(pts))) # bs,64,n
-        out2 = F.relu(self.bn2(self.conv2(out1))) # bs,64,n
-        out3 = F.relu(self.bn3(self.conv3(out2))) # bs,64,n
-        out4 = F.relu(self.bn4(self.conv4(out3)))# bs,128,n
-        out5 = F.relu(self.bn5(self.conv5(out4)))# bs,1024,n
-        global_feat = torch.max(out5, 2, keepdim=True)[0] #bs,1024,1
+def init_params(m, method='constant'):
+    """
+    method: xavier_uniform, kaiming_normal, constant
+    """
+    if isinstance(m, list):
+        for im in m:
+            init_params(im, method)
+    else:
+        if method == 'xavier_uniform':
+            nn.init.xavier_uniform_(m.weight.data)
+        elif method == 'kaiming_normal':
+            nn.init.kaiming_normal_(m.weight.data, mode='fan_in')
+        elif isinstance(method, (int, float)):
+            m.weight.data.fill_(method)
+        else:
+            raise ValueError("unknown method.")
+        if m.bias is not None:
+            m.bias.data.zero_()
 
-        expand_one_hot_vec = one_hot_vec.view(bs,-1,1)#bs,3,1
-        expand_global_feat = torch.cat([global_feat, expand_one_hot_vec],1)#bs,1027,1
-        expand_global_feat_repeat = expand_global_feat.view(bs,-1,1)\
-                .repeat(1,1,n_pts)# bs,1027,n
-        concat_feat = torch.cat([out2,\
-            expand_global_feat_repeat],1)
-        # bs, (641024+3)=1091, n
+# single scale PointNet module
+class PointNetModule(nn.Module):
+    def __init__(self, Infea, mlp, dist, nsample, use_xyz=True, use_feature=True):
+        super(PointNetModule, self).__init__()
+        self.dist = dist
+        self.nsample = nsample
+        self.use_xyz = use_xyz
 
-        x = F.relu(self.dbn1(self.dconv1(concat_feat)))#bs,512,n
-        x = F.relu(self.dbn2(self.dconv2(x)))#bs,256,n
-        x = F.relu(self.dbn3(self.dconv3(x)))#bs,128,n
-        x = F.relu(self.dbn4(self.dconv4(x)))#bs,128,n
-        x = self.dropout(x)
-        x = self.dconv5(x)#bs, 2, n
+        if Infea > 0:
+            use_feature = True
+        else:
+            use_feature = False
 
-        seg_pred = x.transpose(2,1).contiguous()#bs, n, 2
-        return seg_pred
+        self.use_feature = use_feature
 
-class PointNetEstimation(nn.Module):
-    def __init__(self,n_classes=3):
-        '''v1 Amodal 3D Box Estimation Pointnet
-        :param n_classes:3
-        :param one_hot_vec:[bs,n_classes]
-        '''
-        super(PointNetEstimation, self).__init__()
-        self.conv1 = nn.Conv1d(3, 128, 1)
-        self.conv2 = nn.Conv1d(128, 128, 1)
-        self.conv3 = nn.Conv1d(128, 256, 1)
-        self.conv4 = nn.Conv1d(256, 512, 1)
-        self.bn1 = nn.BatchNorm1d(128)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(256)
-        self.bn4 = nn.BatchNorm1d(512)
+        self.query_depth_point = QueryDepthPoint(dist, nsample)
 
-        self.n_classes = n_classes
+        if self.use_xyz:
+            self.conv1 = Conv2d(Infea + 3, mlp[0], 1)
+        else:
+            self.conv1 = Conv2d(Infea, mlp[0], 1)
 
-        self.fc1 = nn.Linear(512+n_classes, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER*4)
-        self.fcbn1 = nn.BatchNorm1d(512)
-        self.fcbn2 = nn.BatchNorm1d(256)
+        self.conv2 = Conv2d(mlp[0], mlp[1], 1)
+        self.conv3 = Conv2d(mlp[1], mlp[2], 1)
 
-    def forward(self, pts,one_hot_vec): # bs,3,m
-        '''
-        :param pts: [bs,3,m]: x,y,z after InstanceSeg
-        :return: box_pred: [bs,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER*4]
-            including box centers, heading bin class scores and residuals,
-            and size cluster scores and residuals
-        '''
-        bs = pts.size()[0]
-        n_pts = pts.size()[2]
+        init_params([self.conv1[0], self.conv2[0], self.conv3[0]], 'kaiming_normal')
+        init_params([self.conv1[1], self.conv2[1], self.conv3[1]], 1)
 
-        out1 = F.relu(self.bn1(self.conv1(pts))) # bs,128,n
-        out2 = F.relu(self.bn2(self.conv2(out1))) # bs,128,n
-        out3 = F.relu(self.bn3(self.conv3(out2))) # bs,256,n
-        out4 = F.relu(self.bn4(self.conv4(out3)))# bs,512,n
-        global_feat = torch.max(out4, 2, keepdim=False)[0] #bs,512
+    def forward(self, pc, feat, new_pc=None):
+        batch_size = pc.shape[0]
+        ipdb.set_trace()
+        npoint = new_pc.shape[2]
+        k = self.nsample
+        indices, num = self.query_depth_point(pc, new_pc)  # b*npoint*nsample
 
-        expand_one_hot_vec = one_hot_vec.view(bs,-1)#bs,3
-        expand_global_feat = torch.cat([global_feat, expand_one_hot_vec],1)#bs,515
+        assert indices.data.max() < pc.shape[2] and indices.data.min() >= 0
+        grouped_pc = None
+        grouped_feature = None
 
-        x = F.relu(self.fcbn1(self.fc1(expand_global_feat)))#bs,512
-        x = F.relu(self.fcbn2(self.fc2(x)))  # bs,256
-        box_pred = self.fc3(x)  # bs,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER*4
-        return box_pred
+        if self.use_xyz:
+            grouped_pc = torch.gather(
+                pc, 2,
+                indices.view(batch_size, 1, npoint * k).expand(-1, 3, -1)
+            ).view(batch_size, 3, npoint, k)
 
-class STNxyz(nn.Module):
-    def __init__(self,n_classes=3):
-        super(STNxyz, self).__init__()
-        self.conv1 = torch.nn.Conv1d(3, 128, 1)
-        self.conv2 = torch.nn.Conv1d(128, 128, 1)
-        self.conv3 = torch.nn.Conv1d(128, 256, 1)
-        #self.conv4 = torch.nn.Conv1d(256, 512, 1)
-        self.fc1 = nn.Linear(256+n_classes, 256)
-        self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, 3)
+            grouped_pc = grouped_pc - new_pc.unsqueeze(3)
 
-        init.zeros_(self.fc3.weight)
-        init.zeros_(self.fc3.bias)
+        if self.use_feature:
+            grouped_feature = torch.gather(
+                feat, 2,
+                indices.view(batch_size, 1, npoint * k).expand(-1, feat.size(1), -1)
+            ).view(batch_size, feat.size(1), npoint, k)
 
-        self.bn1 = nn.BatchNorm1d(128)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(256)
-        self.fcbn1 = nn.BatchNorm1d(256)
-        self.fcbn2 = nn.BatchNorm1d(128)
-    def forward(self, pts,one_hot_vec):
-        bs = pts.shape[0]
-        x = F.relu(self.bn1(self.conv1(pts)))# bs,128,n
-        x = F.relu(self.bn2(self.conv2(x)))# bs,128,n
-        x = F.relu(self.bn3(self.conv3(x)))# bs,256,n
-        x = torch.max(x, 2)[0]# bs,256
-        expand_one_hot_vec = one_hot_vec.view(bs, -1)# bs,3
-        x = torch.cat([x, expand_one_hot_vec],1)#bs,259
-        x = F.relu(self.fcbn1(self.fc1(x)))# bs,256
-        x = F.relu(self.fcbn2(self.fc2(x)))# bs,128
-        x = self.fc3(x)# bs,
-        ###if np.isnan(x.cpu().detach().numpy()).any():
-        ###    ipdb.set_trace()
+            # grouped_feature = torch.cat([new_feat.unsqueeze(3), grouped_feature], -1)
+
+        if self.use_feature and self.use_xyz:
+            grouped_feature = torch.cat([grouped_pc, grouped_feature], 1)
+        elif self.use_xyz:
+            grouped_feature = grouped_pc.contiguous()
+
+        grouped_feature = self.conv1(grouped_feature)
+        grouped_feature = self.conv2(grouped_feature)
+        grouped_feature = self.conv3(grouped_feature)
+        # output, _ = torch.max(grouped_feature, -1)
+
+        valid = (num > 0).view(batch_size, 1, -1, 1)
+        grouped_feature = grouped_feature * valid.float()
+
+        return grouped_feature
+
+# multi-scale PointNet module
+class PointNetFeat(nn.Module):
+    def __init__(self, input_channel=3, num_vec=0):
+        super(PointNetFeat, self).__init__()
+
+        self.num_vec = num_vec
+        u = cfg.DATA.HEIGHT_HALF
+        assert len(u) == 4
+        self.pointnet1 = PointNetModule(
+            input_channel - 3, [64, 64, 128], u[0], 32, use_xyz=True, use_feature=True)
+
+        self.pointnet2 = PointNetModule(
+            input_channel - 3, [64, 64, 128], u[1], 64, use_xyz=True, use_feature=True)
+
+        self.pointnet3 = PointNetModule(
+            input_channel - 3, [128, 128, 256], u[2], 64, use_xyz=True, use_feature=True)
+
+        self.pointnet4 = PointNetModule(
+            input_channel - 3, [256, 256, 512], u[3], 128, use_xyz=True, use_feature=True)
+
+    def forward(self, point_cloud, sample_pc, feat=None, one_hot_vec=None):
+        pc = point_cloud#torch.Size([32, 3, 1024])
+        pc1 = sample_pc[0]
+        pc2 = sample_pc[1]
+        pc3 = sample_pc[2]
+        pc4 = sample_pc[3]
+        ipdb.set_trace()
+        feat1 = self.pointnet1(pc, feat, pc1)
+        feat1, _ = torch.max(feat1, -1)
+
+        feat2 = self.pointnet2(pc, feat, pc2)
+        feat2, _ = torch.max(feat2, -1)
+
+        feat3 = self.pointnet3(pc, feat, pc3)
+        feat3, _ = torch.max(feat3, -1)
+
+        feat4 = self.pointnet4(pc, feat, pc4)
+        feat4, _ = torch.max(feat4, -1)
+
+        if one_hot_vec is not None:
+            one_hot = one_hot_vec.unsqueeze(-1).expand(-1, -1, feat1.shape[-1])
+            feat1 = torch.cat([feat1, one_hot], 1)
+
+            one_hot = one_hot_vec.unsqueeze(-1).expand(-1, -1, feat2.shape[-1])
+            feat2 = torch.cat([feat2, one_hot], 1)
+
+            one_hot = one_hot_vec.unsqueeze(-1).expand(-1, -1, feat3.shape[-1])
+            feat3 = torch.cat([feat3, one_hot], 1)
+
+            one_hot = one_hot_vec.unsqueeze(-1).expand(-1, -1, feat4.shape[-1])
+            feat4 = torch.cat([feat4, one_hot], 1)
+
+        return feat1, feat2, feat3, feat4
+
+
+# FCN
+class ConvFeatNet(nn.Module):
+    def __init__(self, i_c=128, num_vec=3):
+        super(ConvFeatNet, self).__init__()
+
+        self.block1_conv1 = Conv1d(i_c + num_vec, 128, 3, 1, 1)
+
+        self.block2_conv1 = Conv1d(128, 128, 3, 2, 1)
+        self.block2_conv2 = Conv1d(128, 128, 3, 1, 1)
+        self.block2_merge = Conv1d(128 + 128 + num_vec, 128, 1, 1)
+
+        self.block3_conv1 = Conv1d(128, 256, 3, 2, 1)
+        self.block3_conv2 = Conv1d(256, 256, 3, 1, 1)
+        self.block3_merge = Conv1d(256 + 256 + num_vec, 256, 1, 1)
+
+        self.block4_conv1 = Conv1d(256, 512, 3, 2, 1)
+        self.block4_conv2 = Conv1d(512, 512, 3, 1, 1)
+        self.block4_merge = Conv1d(512 + 512 + num_vec, 512, 1, 1)
+
+        self.block2_deconv = DeConv1d(128, 256, 1, 1, 0)
+        self.block3_deconv = DeConv1d(256, 256, 2, 2, 0)
+        self.block4_deconv = DeConv1d(512, 256, 4, 4, 0)
+
+        for m in self.modules():
+            if isinstance(m, (nn.Conv1d, nn.ConvTranspose1d)):
+                # nn.init.xavier_uniform_(m.weight.data)
+                nn.init.kaiming_normal_(m.weight.data, mode='fan_in')
+                if m.bias is not None:
+                    m.bias.data.zero_()
+
+            if isinstance(m, nn.BatchNorm1d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def forward(self, x1, x2, x3, x4):
+
+        x = self.block1_conv1(x1)
+
+        x = self.block2_conv1(x)
+        x = self.block2_conv2(x)
+        x = torch.cat([x, x2], 1)
+        x = self.block2_merge(x)
+        xx1 = x
+
+        x = self.block3_conv1(x)
+        x = self.block3_conv2(x)
+        x = torch.cat([x, x3], 1)
+        x = self.block3_merge(x)
+        xx2 = x
+
+        x = self.block4_conv1(x)
+        x = self.block4_conv2(x)
+        x = torch.cat([x, x4], 1)
+        x = self.block4_merge(x)
+        xx3 = x
+
+        xx1 = self.block2_deconv(xx1)
+        xx2 = self.block3_deconv(xx2)
+        xx3 = self.block4_deconv(xx3)
+
+        x = torch.cat([xx1, xx2[:, :, :xx1.shape[-1]], xx3[:, :, :xx1.shape[-1]]], 1)
+
         return x
 
-class FrustumPointNetv1(nn.Module):
+class FrustumConvNetv1(nn.Module):
     def __init__(self,n_classes=3,n_channel=4):
-        super(FrustumPointNetv1, self).__init__()
+        super(FrustumConvNetv1, self).__init__()
         self.n_classes = n_classes
-        self.InsSeg = PointNetInstanceSeg(n_classes=3,n_channel=n_channel)
-        self.STN = STNxyz(n_classes=3)
-        self.est = PointNetEstimation(n_classes=3)
+        self.feat_net = PointNetFeat(n_channel, 0)
+        #self.InsSeg = PointNetInstanceSeg(n_classes=3,n_channel=n_channel)
+        #self.STN = STNxyz(n_classes=3)
+        #self.est = PointNetEstimation(n_classes=3)
+        #self.Loss = FrustumPointNetLoss()
+    def forward(self, data_dicts):
+        #dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'one_hot', 'seg'])
 
-    def forward(self, pts, one_hot_vec):#bs,4,n
+        point_cloud = data_dicts.get('point_cloud')#torch.Size([32, 4, 1024])
+        one_hot = data_dicts.get('one_hot')#torch.Size([32, 3])
+
+        # If not None, use to Compute Loss
+        seg_label = data_dicts.get('seg')#torch.Size([32, 1024])
+        box3d_center_label = data_dicts.get('box3d_center')#torch.Size([32, 3])
+        size_class_label = data_dicts.get('size_class')#torch.Size([32])
+        size_residual_label = data_dicts.get('size_residual')#torch.Size([32, 3])
+        heading_class_label = data_dicts.get('angle_class')#torch.Size([32])
+        heading_residual_label = data_dicts.get('angle_residual')#torch.Size([32])
+
+        center_ref1 = data_dicts.get('center_ref1')#torch.Size([3, 280])
+        center_ref2 = data_dicts.get('center_ref2')#torch.Size([3, 140])
+        center_ref3 = data_dicts.get('center_ref3')#torch.Size([3, 70])
+        center_ref4 = data_dicts.get('center_ref4')#torch.Size([3, 35])
+
+        object_point_cloud_xyz = point_cloud[:,:3,:].contiguous()
+        if point_cloud.shape[1] > 3:
+            object_point_cloud_i = point_cloud[:,[3],:].contiguous()
+        else:
+            object_point_cloud_i = None
+        ipdb.set_trace()
+        feat1, feat2, feat3, feat4 = self.feat_net(
+            object_point_cloud_xyz,
+            [center_ref1, center_ref2, center_ref3, center_ref4],
+            object_point_cloud_i,
+            one_hot)
+        #feat1:torch.Size([32, 131, 280])
+        #feat2:torch.Size([32, 131, 140])
+        #feat3:torch.Size([32, 131, 70])
+        #feat4:torch.Size([32, 131, 35])
+        x = self.conv_net(feat1, feat2, feat3, feat4)
+
+
+
+
+
+
+
         # 3D Instance Segmentation PointNet
-        logits = self.InsSeg(pts,one_hot_vec)#bs,n,2
+        logits = self.InsSeg(point_cloud, one_hot)#bs,n,2
 
         # Mask Point Centroid
         object_pts_xyz, mask_xyz_mean, mask = \
-                 point_cloud_masking(pts, logits)###logits.detach()
+                 point_cloud_masking(point_cloud, logits)
 
         # T-Net
         object_pts_xyz = object_pts_xyz.cuda()
-        center_delta = self.STN(object_pts_xyz,one_hot_vec)#(32,3)
+        center_delta = self.STN(object_pts_xyz,one_hot)#(32,3)
         stage1_center = center_delta + mask_xyz_mean#(32,3)
 
         if(np.isnan(stage1_center.cpu().detach().numpy()).any()):
@@ -186,69 +307,68 @@ class FrustumPointNetv1(nn.Module):
                     center_delta.view(center_delta.shape[0],-1,1).repeat(1,1,object_pts_xyz.shape[-1])
 
         # 3D Box Estimation
-        box_pred = self.est(object_pts_xyz_new,one_hot_vec)#(32, 59)
+        box_pred = self.est(object_pts_xyz_new,one_hot)#(32, 59)
 
         center_boxnet, \
         heading_scores, heading_residuals_normalized, heading_residuals, \
         size_scores, size_residuals_normalized, size_residuals = \
                 parse_output_to_tensors(box_pred, logits, mask, stage1_center)
 
-        center = center_boxnet + stage1_center #bs,3
-        return logits, mask, stage1_center, center_boxnet, \
-            heading_scores, heading_residuals_normalized, heading_residuals, \
-            size_scores, size_residuals_normalized, size_residuals, center
+        box3d_center = center_boxnet + stage1_center #bs,3
 
+        losses = self.Loss(logits, seg_label, \
+                 box3d_center, box3d_center_label, stage1_center, \
+                 heading_scores, heading_residuals_normalized, \
+                 heading_residuals, \
+                 heading_class_label, heading_residual_label, \
+                 size_scores, size_residuals_normalized, \
+                 size_residuals, \
+                 size_class_label, size_residual_label)
 
+        with torch.no_grad():
+            seg_correct = torch.argmax(logits.detach().cpu(), 2).eq(seg_label.detach().cpu()).numpy()
+            seg_accuracy = np.sum(seg_correct) / float(point_cloud.shape[-1])
+
+            iou2ds, iou3ds = compute_box3d_iou( \
+                box3d_center.detach().cpu().numpy(),
+                heading_scores.detach().cpu().numpy(),
+                heading_residuals.detach().cpu().numpy(),
+                size_scores.detach().cpu().numpy(),
+                size_residuals.detach().cpu().numpy(),
+                box3d_center_label.detach().cpu().numpy(),
+                heading_class_label.detach().cpu().numpy(),
+                heading_residual_label.detach().cpu().numpy(),
+                size_class_label.detach().cpu().numpy(),
+                size_residual_label.detach().cpu().numpy())
+            iou3ds_acc = np.sum(iou3ds >= 0.7)
+        metrics = {
+            'seg_acc': seg_accuracy,
+            'iou2d': iou2ds.mean(),
+            'iou3d': iou3ds.mean(),
+            'iou3d_acc': iou3ds_acc.mean()
+        }
+        return losses, metrics
 
 
 if __name__ == '__main__':
-    #python models/pointnet.py
-    points = torch.zeros(size=(32,4,1024),dtype=torch.float32)
-    label = torch.ones(size=(32,3))
-    model = FrustumPointNetv1()
-    logits, mask, stage1_center, center_boxnet, \
-            heading_scores, heading_residuals_normalized, heading_residuals, \
-            size_scores, size_residuals_normalized, size_residuals, center \
-            = model(points,label)
-    print('logits:',logits.shape,logits.dtype)
-    print('mask:',mask.shape,mask.dtype)
-    print('stage1_center:',stage1_center.shape,stage1_center.dtype)
-    print('center_boxnet:',center_boxnet.shape,center_boxnet.dtype)
-    print('heading_scores:',heading_scores.shape,heading_scores.dtype)
-    print('heading_residuals_normalized:',heading_residuals_normalized.shape,\
-          heading_residuals_normalized.dtype)
-    print('heading_residuals:',heading_residuals.shape,\
-          heading_residuals.dtype)
-    print('size_scores:',size_scores.shape,size_scores.dtype)
-    print('size_residuals_normalized:',size_residuals_normalized.shape,\
-          size_residuals_normalized.dtype)
-    print('size_residuals:',size_residuals.shape,size_residuals.dtype)
-    print('center:', center.shape,center.dtype)
-    '''
-    logits: torch.Size([32, 1024, 2]) torch.float32
-    mask: torch.Size([32, 1024]) torch.float32
-    stage1_center: torch.Size([32, 3]) torch.float32
-    center_boxnet: torch.Size([32, 3]) torch.float32
-    heading_scores: torch.Size([32, 12]) torch.float32
-    heading_residual_normalized: torch.Size([32, 12]) torch.float32
-    heading_residual: torch.Size([32, 12]) torch.float32
-    size_scores: torch.Size([32, 8]) torch.float32
-    size_residuals_normalized: torch.Size([32, 8, 3]) torch.float32
-    size_residuals: torch.Size([32, 8, 3]) torch.float32
-    center: torch.Size([32, 3]) torch.float32
-    '''
-    loss = FrustumPointNetLoss()
-    mask_label = torch.zeros(32,1024).float()
-    center_label = torch.zeros(32,3).float()
-    heading_class_label = torch.zeros(32).long()
-    heading_residuals_label = torch.zeros(32).float()
-    size_class_label = torch.zeros(32).long()
-    size_residuals_label = torch.zeros(32,3).float()
-    output_loss = loss(logits, mask_label, \
-                center, center_label, stage1_center, \
-                heading_scores, heading_residuals_normalized, heading_residuals, \
-                heading_class_label, heading_residuals_label, \
-                size_scores,size_residuals_normalized,size_residuals,
-                size_class_label,size_residuals_label)
-    print('output_loss',output_loss)
+    data_dicts = {
+        'point_cloud': torch.zeros(size=(32,1024,4),dtype=torch.float32).transpose(2, 1),
+        'rot_angle': torch.zeros(32).float(),
+        'box3d_center': torch.zeros(32,3).float(),
+        'size_class': torch.zeros(32),
+        'size_residual': torch.zeros(32,3).float(),
+        'angle_class': torch.zeros(32).long(),
+        'angle_residual': torch.zeros(32).float(),
+        'one_hot': torch.zeros(32,3).float(),
+        'seg': torch.zeros(32,1024).float()
+    }
+    data_dicts_var = {key: value.cuda() for key, value in data_dicts.items()}
+    model = FrustumPointNetv1().cuda()
+    losses, metrics= model(data_dicts_var)
+
     print()
+    for key,value in losses.items():
+        print(key,value)
+    print()
+    for key,value in metrics.items():
+        print(key,value)

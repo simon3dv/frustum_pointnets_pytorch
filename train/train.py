@@ -17,8 +17,17 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import provider
+from configs.config import cfg
+from configs.config import merge_cfg_from_file
+from configs.config import merge_cfg_from_list
+from configs.config import assert_and_infer_cfg
+from utils import import_from_file
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--cfg', default='cfgs/fpointnet/fpointnet_v1_kitti.yaml', help='Config file for training (and optionally testing)')
+parser.add_argument('opts',help='See configs/config.py for all options',default=None,nargs=argparse.REMAINDER)
+parser.add_argument('--debug', default=False, action='store_true',help='debug mode')
+'''
 ###parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
 parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
@@ -26,6 +35,7 @@ parser.add_argument('--num_point', type=int, default=1024, help='Point Number [d
 parser.add_argument('--max_epoch', type=int, default=150, help='Epoch to run [default: 201]')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 32]')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Initial learning rate [default: 0.001]')
+parser.add_argument('--min_lr', type=float, default=1e-5, help='min learning rate [default: 1e-5]')
 parser.add_argument('--momentum', type=float, default=0.9, help='Initial learning rate [default: 0.9]')
 parser.add_argument('--optimizer', default='adam', help='adam or momentum [default: adam]')
 parser.add_argument('--decay_step', type=int, default=20, help='Decay step for lr decay [default: 60]')
@@ -42,70 +52,101 @@ parser.add_argument('--sensor', type=str, default='CAM_FRONT', help='only consid
 parser.add_argument('--dataset', type=str, default='kitti', help='kitti or nuscenes or nuscenes2kitti')
 parser.add_argument('--train_sets', type=str, default='train')
 parser.add_argument('--val_sets', type=str, default='val')
-FLAGS = parser.parse_args()
+'''
+args = parser.parse_args()
+if args.cfg is not None:
+    merge_cfg_from_file(args.cfg)
 
-# Set training configurations
+if args.opts is not None:
+    merge_cfg_from_list(args.opts)
+
+assert_and_infer_cfg()
+
+if not os.path.exists(cfg.OUTPUT_DIR):
+    os.makedirs(cfg.OUTPUT_DIR)
+
+# Set configurations
+CONFIG_FILE = args.cfg
+RESUME = cfg.RESUME
+OUTPUT_DIR = cfg.OUTPUT_DIR
+USE_TFBOARD = cfg.USE_TFBOARD
+NUM_WORKERS = cfg.NUM_WORKERS
+FROM_RGB_DET = cfg.FROM_RGB_DET
+## TRAIN
+TRAIN_FILE = cfg.TRAIN.FILE
+BATCH_SIZE = cfg.TRAIN.BATCH_SIZE
+START_EPOCH = cfg.TRAIN.START_EPOCH
+MAX_EPOCH = cfg.TRAIN.MAX_EPOCH
+OPTIMIZER = cfg.TRAIN.OPTIMIZER
+BASE_LR = cfg.TRAIN.BASE_LR
+MIN_LR = cfg.TRAIN.MIN_LR
+GAMMA = cfg.TRAIN.GAMMA
+LR_STEPS = cfg.TRAIN.LR_STEPS
+MOMENTUM = cfg.TRAIN.MOMENTUM
+WEIGHT_DECAY = cfg.TRAIN.WEIGHT_DECAY
+NUM_POINT = cfg.TRAIN.NUM_POINT
+TRAIN_SETS = cfg.TRAIN.TRAIN_SETS
+## TEST
+TEST_FILE = cfg.TEST.FILE
+TEST_BATCH_SIZE = cfg.TEST.BATCH_SIZE
+TEST_NUM_POINT = cfg.TEST.NUM_POINT
+TEST_SETS = cfg.TEST.TEST_SETS
+## MODEL
+MODEL_FILE = cfg.MODEL.FILE
+NUM_CLASSES = cfg.MODEL.NUM_CLASSES
+## DATA
+DATA_FILE = cfg.DATA.FILE
+DATASET = cfg.DATA.DATASET
+DATAROOT = cfg.DATA.DATA_ROOT
+OBJTYPE = cfg.DATA.OBJTYPE
+SENSOR = cfg.DATA.SENSOR
+ROTATE_TO_CENTER = cfg.DATA.ROTATE_TO_CENTER
+NUM_CHANNEL = cfg.DATA.NUM_CHANNEL
+NUM_SAMPLES = cfg.DATA.NUM_SAMPLES
 
 strtime = time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time()))
-if 'nuscenes' in FLAGS.dataset:
-    NAME = FLAGS.dataset + '_' + FLAGS.objtype + '_' + FLAGS.sensor + '_' + FLAGS.name + strtime
+if 'nuscenes' in DATASET:
+    NAME = DATASET + '_' + OBJTYPE + '_' + SENSOR + '_' + strtime
 else:
-    NAME = FLAGS.dataset + '_' + FLAGS.objtype + '_' + FLAGS.name + strtime
-EPOCH_CNT = 0
-BATCH_SIZE = FLAGS.batch_size
-NUM_POINT = FLAGS.num_point
-MAX_EPOCH = FLAGS.max_epoch
-BASE_LEARNING_RATE = FLAGS.learning_rate
-# GPU_INDEX = FLAGS.gpu
-MOMENTUM = FLAGS.momentum
-OPTIMIZER = FLAGS.optimizer
-DECAY_STEP = FLAGS.decay_step
-DECAY_RATE = FLAGS.decay_rate
-NUM_CHANNEL = 3 if FLAGS.no_intensity else 4 # point feature channel
-NUM_CLASSES = 2 # segmentation has two classes
-if FLAGS.objtype == 'carpedcyc':
-    n_classes = 3
-elif FLAGS.objtype == 'caronly':
-    n_classes = 1
-MODEL = importlib.import_module(FLAGS.model) # import network module
-MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
-LOG_DIR = FLAGS.log_dir
+    NAME = DATASET + '_' + OBJTYPE + '_' + strtime
+
+MODEL = import_from_file(MODEL_FILE) # import network module
+LOG_DIR = OUTPUT_DIR + '/' + NAME
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
-if not os.path.exists(LOG_DIR + '/' + NAME): os.mkdir(LOG_DIR + '/' + NAME)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
+os.system('cp %s %s' % (CONFIG_FILE, LOG_DIR)) # bkp of model def
 os.system('cp %s %s' % (os.path.join(BASE_DIR, 'train.py'), LOG_DIR))
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
-LOG_FOUT.write(str(FLAGS)+'\n')
+LOG_FOUT.write(str(args)+'\n')
 # BN_INIT_DECAY = 0.5
 # BN_DECAY_DECAY_RATE = 0.5
 # BN_DECAY_DECAY_STEP = float(DECAY_STEP)
 # BN_DECAY_CLIP = 0.99
 
-# Load Frustum Datasets. Use default data paths.
-if FLAGS.dataset == 'kitti':
-    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.train_sets,
-        rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_'+FLAGS.train_sets+'.pickle')
-    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.val_sets,
-        rotate_to_center=True, one_hot=True,
-        overwritten_data_path='kitti/frustum_'+FLAGS.objtype+'_'+FLAGS.val_sets+'.pickle')
-elif FLAGS.dataset == 'nuscenes2kitti':
-    SENSOR = FLAGS.sensor
-    overwritten_data_path_prefix = 'nuscenes2kitti/frustum_' +FLAGS.objtype + '_' + SENSOR + '_'
-    TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.train_sets,
-        rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-        overwritten_data_path=overwritten_data_path_prefix + FLAGS.train_sets+'.pickle')
-    TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=FLAGS.val_sets,
-        rotate_to_center=True, one_hot=True,
-        overwritten_data_path=overwritten_data_path_prefix + FLAGS.val_sets+'.pickle')
+
+# Load Frustum Datasets.
+if 'frustum_pointnet' in MODEL_FILE:
+    gen_ref = False
+elif 'frustum_convnet' in MODEL_FILE:
+    gen_ref = True
 else:
-    print('Unknown dataset: %s' % (FLAGS.dataset))
-    exit(-1)
-train_dataloader = DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True,\
-                                num_workers=8,pin_memory=True)
-test_dataloader = DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False,\
-                                num_workers=8,pin_memory=True)
-Loss = FrustumPointNetLoss(return_all = FLAGS.return_all_loss)
+    print("Wrong model parameter.")
+    exit(0)
+
+provider = import_from_file(DATA_FILE)
+
+TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=TRAIN_SETS,
+        rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
+        overwritten_data_path=TRAIN_FILE,
+        gen_ref = gen_ref)
+TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=TEST_SETS,
+        rotate_to_center=True, one_hot=True,
+        overwritten_data_path=TEST_FILE,
+        gen_ref = gen_ref)
+train_dataloader = DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True,
+                                num_workers=NUM_WORKERS,pin_memory=True)
+test_dataloader = DataLoader(TEST_DATASET, batch_size=TEST_BATCH_SIZE, shuffle=False,
+                                num_workers=NUM_WORKERS,pin_memory=True)
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -113,150 +154,55 @@ def log_string(out_str):
     print(out_str)
 
 def test_one_epoch(model, loader):
-    test_n_samples = 0
-    test_total_loss = 0.0
-    test_iou2d = 0.0
-    test_iou3d = 0.0
-    test_acc = 0.0
-    test_iou3d_acc = 0.0
+    time1 = time.perf_counter()
 
-    if FLAGS.return_all_loss:
-        test_mask_loss = 0.0
-        test_center_loss = 0.0
-        test_heading_class_loss = 0.0
-        test_size_class_loss = 0.0
-        test_heading_residuals_normalized_loss = 0.0
-        test_size_residuals_normalized_loss = 0.0
-        test_stage1_center_loss = 0.0
-        test_corners_loss = 0.0
+    test_losses = {
+        'total_loss': 0.0,
+        'mask_loss': 0.0,
+        'mask_loss': 0.0,
+        'heading_class_loss': 0.0,
+        'size_class_loss': 0.0,
+        'heading_residuals_normalized_loss': 0.0,
+        'size_residuals_normalized_loss': 0.0,
+        'stage1_center_loss': 0.0,
+        'corners_loss': 0.0
+    }
+    test_metrics = {
+        'seg_acc': 0.0,
+        'iou2d': 0.0,
+        'iou3d': 0.0,
+        'iou3d_acc': 0.0,
+    }
 
-    for i, data in tqdm(enumerate(loader), \
-                        total=len(loader), smoothing=0.9):
+    n_batches = 0
+    for i, data_dicts in tqdm(enumerate(loader), \
+                              total=len(loader), smoothing=0.9):
+        n_batches += 1
         # for debug
-        if FLAGS.debug == True:
+        if args.debug == True:
             if i == 1:
                 break
-        test_n_samples += data[0].shape[0]
-        '''
-        batch_data:[32, 2048, 4], pts in frustum
-        batch_label:[32, 2048], pts ins seg label in frustum
-        batch_center:[32, 3],
-        batch_hclass:[32],
-        batch_hres:[32],
-        batch_sclass:[32],
-        batch_sres:[32,3],
-        batch_rot_angle:[32],
-        batch_one_hot_vec:[32,3],
-        '''
-        batch_data, batch_label, batch_center, \
-        batch_hclass, batch_hres, \
-        batch_sclass, batch_sres, \
-        batch_rot_angle, batch_one_hot_vec = data
 
-        batch_data = batch_data.transpose(2, 1).float().cuda()
-        batch_label = batch_label.float().cuda()
-        batch_center = batch_center.float().cuda()
-        batch_hclass = batch_hclass.float().cuda()
-        batch_hres = batch_hres.float().cuda()
-        batch_sclass = batch_sclass.float().cuda()
-        batch_sres = batch_sres.float().cuda()
-        batch_rot_angle = batch_rot_angle.float().cuda()
-        batch_one_hot_vec = batch_one_hot_vec.float().cuda()
+        data_dicts_var = {key: value.squeeze().cuda() for key, value in data_dicts.items()}
 
         model = model.eval()
 
-        logits, mask, stage1_center, center_boxnet, \
-        heading_scores, heading_residuals_normalized, heading_residuals, \
-        size_scores, size_residuals_normalized, size_residuals, center = \
-            model(batch_data, batch_one_hot_vec)
+        losses, metrics = model(data_dicts_var)
 
-        logits = logits.detach()
-        stage1_center = stage1_center.detach()
-        center_boxnet = center_boxnet.detach()
-        heading_scores = heading_scores.detach()
-        heading_residuals_normalized = heading_residuals_normalized.detach()
-        heading_residuals = heading_residuals.detach()
-        size_scores = size_scores.detach()
-        size_residuals_normalized = size_residuals_normalized.detach()
-        size_residuals = size_residuals.detach()
-        center = center.detach()
 
-        if FLAGS.return_all_loss:
-            total_loss, mask_loss, center_loss, heading_class_loss, \
-                size_class_loss, heading_residuals_normalized_loss, \
-                size_residuals_normalized_loss, stage1_center_loss, \
-                corners_loss = \
-                Loss(logits, batch_label, \
-                     center, batch_center, stage1_center, \
-                     heading_scores, heading_residuals_normalized, \
-                     heading_residuals, \
-                     batch_hclass, batch_hres, \
-                     size_scores, size_residuals_normalized, \
-                     size_residuals, \
-                     batch_sclass, batch_sres)
-        else:
-            total_loss = \
-                Loss(logits, batch_label, \
-                     center, batch_center, stage1_center, \
-                     heading_scores, heading_residuals_normalized, \
-                     heading_residuals, \
-                     batch_hclass, batch_hres, \
-                     size_scores, size_residuals_normalized, \
-                     size_residuals, \
-                     batch_sclass, batch_sres)
+        for key in test_losses.keys():
+            test_losses[key] += losses[key].detach().item()
+        for key in test_metrics.keys():
+            test_metrics[key] += metrics[key]
 
-        test_total_loss += total_loss.item()
+    for key in test_losses.keys():
+        test_losses[key] /= n_batches
+    for key in test_metrics.keys():
+        test_metrics[key] /= n_batches
 
-        iou2ds, iou3ds = provider.compute_box3d_iou( \
-            center.cpu().detach().numpy(), \
-            heading_scores.cpu().detach().numpy(), \
-            heading_residuals.cpu().detach().numpy(), \
-            size_scores.cpu().detach().numpy(), \
-            size_residuals.cpu().detach().numpy(), \
-            batch_center.cpu().detach().numpy(), \
-            batch_hclass.cpu().detach().numpy(), \
-            batch_hres.cpu().detach().numpy(), \
-            batch_sclass.cpu().detach().numpy(), \
-            batch_sres.cpu().detach().numpy())
-        test_iou2d += np.sum(iou2ds)
-        test_iou3d += np.sum(iou3ds)
-
-        correct = torch.argmax(logits, 2).eq(batch_label.detach().long()).cpu().numpy()
-        accuracy = np.sum(correct) / float(NUM_POINT)
-        test_acc += accuracy
-
-        test_iou3d_acc += np.sum(iou3ds >= 0.7)
-
-        if FLAGS.return_all_loss:
-            test_mask_loss += mask_loss.item()
-            test_center_loss += center_loss.item()
-            test_heading_class_loss += heading_class_loss.item()
-            test_size_class_loss += size_class_loss.item()
-            test_heading_residuals_normalized_loss += heading_residuals_normalized_loss.item()
-            test_size_residuals_normalized_loss += size_residuals_normalized_loss.item()
-            test_stage1_center_loss += stage1_center_loss.item()
-            test_corners_loss += corners_loss.item()
-
-    if FLAGS.return_all_loss:
-        return test_total_loss / test_n_samples, \
-               test_iou2d / test_n_samples, \
-               test_iou3d / test_n_samples, \
-               test_acc / test_n_samples, \
-               test_iou3d_acc / test_n_samples,\
-               test_mask_loss / test_n_samples, \
-               test_center_loss / test_n_samples, \
-               test_heading_class_loss / test_n_samples, \
-               test_size_class_loss / test_n_samples, \
-               test_heading_residuals_normalized_loss / test_n_samples, \
-               test_size_residuals_normalized_loss / test_n_samples, \
-               test_stage1_center_loss / test_n_samples, \
-               test_corners_loss / test_n_samples
-    else:
-        return test_total_loss/test_n_samples,  \
-               test_iou2d/test_n_samples, \
-               test_iou3d/test_n_samples, \
-               test_acc/test_n_samples, \
-               test_iou3d_acc/test_n_samples
+    time2 = time.perf_counter()
+    print('test time:%.2f s/batch'%((time2-time1)/n_batches))
+    return test_losses, test_metrics
 
 def train():
     ''' Main function for training and simple evaluation. '''
@@ -270,35 +216,44 @@ def train():
     blue = lambda x: '\033[94m' + x + '\033[0m'
 
     # set model
-    if FLAGS.model == 'frustum_pointnets_v1':
+    if 'frustum_pointnets_v1' in MODEL_FILE:
         from frustum_pointnets_v1 import FrustumPointNetv1
-        FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
+        model = FrustumPointNetv1(n_classes=NUM_CLASSES).cuda()
+    elif 'frustum_convnet_v1' in MODEL_FILE:
+        from frustum_convnet_v1 import FrustumConvNetv1
+        model = FrustumConvNetv1(n_classes=NUM_CLASSES).cuda()
 
     # load pre-trained model
-    if FLAGS.ckpt:
-        ckpt = torch.load(FLAGS.ckpt)
-        FrustumPointNet.load_state_dict(ckpt['model_state_dict'])
+    if RESUME:
+        ckpt = torch.load(RESUME)###
+        model.load_state_dict(ckpt['model_state_dict'])
 
     # set optimizer and scheduler
     if OPTIMIZER == 'adam':
         optimizer = torch.optim.Adam(
-            FrustumPointNet.parameters(), lr=BASE_LEARNING_RATE,
+            model.parameters(), lr=BASE_LR,
             betas=(0.9, 0.999),eps=1e-08,
-            weight_decay=FLAGS.weight_decay)
-    def lr_func(epoch, init=BASE_LEARNING_RATE, step_size=DECAY_STEP, gamma=DECAY_RATE, eta_min=0.00001):
-        f = gamma**(epoch//DECAY_STEP)
+            weight_decay=WEIGHT_DECAY)
+    '''
+    def lr_func(epoch, init=BASE_LR, step_size=LR_STEPS, gamma=GAMMA, eta_min=MIN_LR):
+        f = gamma**(epoch//LR_STEPS)
         if init*f>eta_min:
             return f
         else:
             return 0.01#0.001*0.01 = eta_min
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lr_func)
-
+    '''
+    if len(LR_STEPS) > 1:
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=LR_STEPS, gamma=GAMMA)
+    else:
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=LR_STEPS[0], gamma=GAMMA)
     # train
-    if os.path.exists('runs/' + NAME):
-        print('name has been existed')
-        shutil.rmtree('runs/' + NAME)
+    if USE_TFBOARD:
+        if os.path.exists('runs/' + NAME):
+            print('name has been existed')
+            shutil.rmtree('runs/' + NAME)
+        writer = SummaryWriter('runs/' + NAME)
 
-    writer = SummaryWriter('runs/' + NAME)
     num_batch = len(TRAIN_DATASET) / BATCH_SIZE
     best_iou3d_acc = 0.0
     best_epoch = 1
@@ -307,15 +262,14 @@ def train():
     for epoch in range(MAX_EPOCH):
         log_string('**** EPOCH %03d ****' % (epoch + 1))
         sys.stdout.flush()
-        print('Epoch %d/%s:' % (epoch + 1, MAX_EPOCH))
-
+        log_string('Epoch %d/%s:' % (epoch + 1, MAX_EPOCH))
         # record for one epoch
         train_total_loss = 0.0
         train_iou2d = 0.0
         train_iou3d = 0.0
         train_acc = 0.0
         train_iou3d_acc = 0.0
-
+        '''deprecated
         if FLAGS.return_all_loss:
             train_mask_loss = 0.0
             train_center_loss = 0.0
@@ -325,16 +279,32 @@ def train():
             train_size_residuals_normalized_loss = 0.0
             train_stage1_center_loss = 0.0
             train_corners_loss = 0.0
-
-        n_samples = 0
-        for i, data in tqdm(enumerate(train_dataloader),\
+        '''
+        train_losses = {
+            'total_loss': 0.0,
+            'mask_loss': 0.0,
+            'mask_loss': 0.0,
+            'heading_class_loss': 0.0,
+            'size_class_loss': 0.0,
+            'heading_residuals_normalized_loss': 0.0,
+            'size_residuals_normalized_loss': 0.0,
+            'stage1_center_loss': 0.0,
+            'corners_loss': 0.0
+        }
+        train_metrics = {
+            'seg_acc': 0.0,
+            'iou2d': 0.0,
+            'iou3d': 0.0,
+            'iou3d_acc': 0.0,
+        }
+        n_batches = 0
+        for i, data_dicts in tqdm(enumerate(train_dataloader),\
                 total=len(train_dataloader), smoothing=0.9):
-            n_samples += data[0].shape[0]
+            n_batches += 1
             #for debug
-            if FLAGS.debug==True:
+            if args.debug==True:
                 if i==1 :
                     break
-
             '''
             data after frustum rotation
             1. For Seg
@@ -351,6 +321,10 @@ def train():
             batch_rot_angle:[32],alpha, not rotation_y,
             batch_one_hot_vec:[32,3],
             '''
+
+            data_dicts_var = {key: value.squeeze().cuda() for key, value in data_dicts.items()}
+            #ipdb.set_trace()
+            '''deprecated
             batch_data, batch_label, batch_center, \
             batch_hclass, batch_hres, \
             batch_sclass, batch_sres, \
@@ -365,9 +339,10 @@ def train():
             batch_sres = batch_sres.float().cuda()
             batch_rot_angle = batch_rot_angle.float().cuda()###Not Use?
             batch_one_hot_vec = batch_one_hot_vec.float().cuda()
+            '''
 
             optimizer.zero_grad()
-            FrustumPointNet = FrustumPointNet.train()
+            model = model.train()
 
             '''
             #bn_decay(defaut 0.1)
@@ -375,12 +350,15 @@ def train():
             if bn_momentum < 1 - BN_DECAY_CLIP:
                 bn_momentum = 1 - BN_DECAY_CLIP
             '''
+            '''deprecated
             logits, mask, stage1_center, center_boxnet, \
             heading_scores, heading_residuals_normalized, heading_residuals, \
             size_scores, size_residuals_normalized, size_residuals, center = \
-                FrustumPointNet(batch_data, batch_one_hot_vec)
+                model(data_dicts_var)
+            '''
 
-
+            losses, metrics = model(data_dicts_var)
+            '''deprecated
             if FLAGS.return_all_loss:
                 total_loss, mask_loss, center_loss, heading_class_loss, \
                     size_class_loss, heading_residuals_normalized_loss, \
@@ -404,9 +382,15 @@ def train():
                         size_scores,size_residuals_normalized,\
                         size_residuals,\
                         batch_sclass,batch_sres)
+            '''
 
+            total_loss = losses['total_loss']
+            #total_loss = total_loss.mean()
             total_loss.backward()
+
             optimizer.step()
+
+            '''deprecated
             train_total_loss += total_loss.item()
 
             iou2ds, iou3ds = provider.compute_box3d_iou(\
@@ -423,7 +407,7 @@ def train():
             train_iou2d += np.sum(iou2ds)
             train_iou3d += np.sum(iou3ds)
             train_iou3d_acc += np.sum(iou3ds>=0.7)
-
+            
             correct = torch.argmax(logits, 2).eq(batch_label.long()).detach().cpu().numpy()
             accuracy = np.sum(correct)
             train_acc += accuracy
@@ -438,6 +422,13 @@ def train():
                 train_corners_loss += corners_loss.item()
 
             '''
+
+            for key in train_losses.keys():
+                train_losses[key] += losses[key].detach().item()
+            for key in train_metrics.keys():
+                train_metrics[key] += metrics[key]
+
+            '''deprecated
             print('[%d: %d/%d] train loss: %.6f' % \
                   (epoch + 1, i, len(train_dataloader),(train_total_loss/n_samples)))
             print('box IoU(ground/3D): %.6f/%.6f' % (train_iou2d/n_samples, train_iou3d/n_samples))
@@ -452,6 +443,17 @@ def train():
                 print('train_stage1_center_loss:%.6f' % (train_stage1_center_loss/n_samples))
                 print('train_corners_loss:%.6f'%(train_corners_loss/n_samples))
             '''
+        for key in train_losses.keys():
+            train_losses[key] /= n_batches
+        for key in train_metrics.keys():
+            train_metrics[key] /= n_batches
+
+        log_string('[%d: %d/%d] train' % (epoch + 1, i, len(train_dataloader)))
+        for key, value in train_losses.items():
+            log_string(str(key)+':'+str(value))
+        for key, value in train_metrics.items():
+            log_string(str(key)+':'+str(value))
+        '''
         train_total_loss /= n_samples
         train_acc /= n_samples*float(NUM_POINT)
         train_iou2d /= n_samples
@@ -467,39 +469,41 @@ def train():
             train_size_residuals_normalized_loss /= n_samples
             train_stage1_center_loss /= n_samples
             train_corners_loss /= n_samples
-
+        
         print('[%d: %d/%d] train loss: %.6f' % \
               (epoch + 1, i, len(train_dataloader),train_total_loss))
         print('segmentation accuracy: %.6f'% train_acc )
         print('box IoU(ground/3D): %.6f/%.6f'% (train_iou2d, train_iou3d))
         print('box estimation accuracy (IoU=0.7): %.6f'%(train_iou3d_acc))
-
+        '''
         # test one epoch
-        if FLAGS.return_all_loss:
-            test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc, \
-                test_mask_loss, \
-                test_center_loss, \
-                test_heading_class_loss, \
-                test_size_class_loss, \
-                test_heading_residuals_normalized_loss, \
-                test_size_residuals_normalized_loss, \
-                test_stage1_center_loss, \
-                test_corners_loss \
-                    = \
-                    test_one_epoch(FrustumPointNet,test_dataloader)
-        else:
-            test_total_loss, test_iou2d, test_iou3d, test_acc, test_iou3d_acc,\
-                = \
-                test_one_epoch(FrustumPointNet,test_dataloader)
+        test_losses, test_metrics = test_one_epoch(model,test_dataloader)
+        log_string('[%d: %d/%d] %s' % (epoch + 1, i, len(train_dataloader),blue('test')))
+        for key, value in test_losses.items():
+            log_string(str(key)+':'+str(value))
+        for key, value in test_metrics.items():
+            log_string(str(key)+':'+str(value))
 
+        '''deprecated
         print('[%d] %s loss: %.6f' % \
               (epoch + 1, blue('test'), test_total_loss))
         print('%s segmentation accuracy: %.6f'% (blue('test'),test_acc))
         print('%s box IoU(ground/3D): %.6f/%.6f'% (blue('test'),test_iou2d, test_iou3d))
         print('%s box estimation accuracy (IoU=0.7): %.6f'%(blue('test'), test_iou3d_acc))
-        print("learning rate: {:.6f}".format(optimizer.param_groups[0]['lr']))
+        '''
         scheduler.step()
+        if MIN_LR > 0:
+            if scheduler.get_lr()[0] < MIN_LR:
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = MIN_LR
+        log_string("learning rate: {:.6f}".format(optimizer.param_groups[0]['lr']))
 
+        if USE_TFBOARD:
+            writer.add_scalar('train_total_loss',train_losses['total_loss'],epoch)
+            writer.add_scalar('train_iou3d_acc',train_metrics['iou3d_acc'],epoch)
+            writer.add_scalar('test_total_loss',test_losses['total_loss'],epoch)
+            writer.add_scalar('test_iou3d_acc',test_metrics['iou3d_acc'],epoch)
+        '''
         if not FLAGS.debug:
             writer.add_scalar('train_total_loss',train_total_loss, epoch)
             writer.add_scalar('train_iou2d',train_iou2d, epoch)
@@ -533,40 +537,34 @@ def train():
             writer.add_scalar('test_size_residuals_normalized_loss',test_size_residuals_normalized_loss, epoch)
             writer.add_scalar('test_stage1_center_loss',test_stage1_center_loss, epoch)
             writer.add_scalar('test_corners_loss',test_corners_loss, epoch)
-
-        if test_iou3d_acc >= best_iou3d_acc:
-            best_iou3d_acc = test_iou3d_acc
+        '''
+        if test_metrics['iou3d_acc'] >= best_iou3d_acc:
+            best_iou3d_acc = test_metrics['iou3d_acc']
             best_epoch = epoch + 1
             if epoch > MAX_EPOCH / 5:
-                savepath = LOG_DIR + '/' + NAME + '/%s-acc%04f-epoch%03d.pth' % \
-                           (NAME, test_iou3d_acc, epoch)
-                print('save to:',savepath)
+                savepath = LOG_DIR + '/acc%.3f-epoch%03d.pth' % \
+                           (test_metrics['iou3d_acc'], epoch)
+                log_string('save to:'+str(savepath))
                 if os.path.exists(best_file):
                     os.remove(best_file)# update to newest best epoch
                 best_file = savepath
                 state = {
                     'epoch': epoch + 1,
-                    'train_iou3d_acc': train_iou3d_acc,
-                    'test_iou3d_acc': test_iou3d_acc,
-                    'model_state_dict': FrustumPointNet.state_dict(),
+                    'train_iou3d_acc': train_metrics['iou3d_acc'],
+                    'test_iou3d_acc': test_metrics['iou3d_acc'],
+                    'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
                 torch.save(state,savepath)
-                print('Saving model to %s'%savepath)
-        print('Best Test acc: %f(Epoch %d)' % (best_iou3d_acc, best_epoch))
-
-        # Save the variables to disk.
-        #if epoch % 10 == 0:
-        #    save_path = saver.save(sess, os.path.join(LOG_DIR, "model.ckpt"))
-        #    log_string("Model saved in file: %s" % save_path)
-    print("Time {} hours".format(
-        float(time.perf_counter()-start)/3600))
+                log_string('Saving model to %s'%savepath)
+        log_string('Best Test acc: %f(Epoch %d)' % (best_iou3d_acc, best_epoch))
+    log_string("Time {} hours".format(float(time.perf_counter()-start)/3600))
     writer.close()
 
 if __name__ == "__main__":
     log_string('pid: %s'%(str(os.getpid())))
-    print('Your FLAGS:')
-    print(FLAGS)
+    print('Your args:')
+    print(args)
     train()
     LOG_FOUT.close()
 

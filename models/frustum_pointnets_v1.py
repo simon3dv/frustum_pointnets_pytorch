@@ -3,6 +3,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(ROOT_DIR, 'train'))
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,6 +14,11 @@ from torch.nn import init
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER, NUM_OBJECT_POINT
 from model_util import point_cloud_masking, parse_output_to_tensors
 from model_util import FrustumPointNetLoss
+
+from model_util import g_type2class, g_class2type, g_type2onehotclass
+from model_util import g_type_mean_size
+from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
+from provider import compute_box3d_iou
 
 class PointNetInstanceSeg(nn.Module):
     def __init__(self,n_classes=3,n_channel=4):
@@ -78,7 +84,7 @@ class PointNetInstanceSeg(nn.Module):
         return seg_pred
 
 class PointNetEstimation(nn.Module):
-    def __init__(self,n_classes=3):
+    def __init__(self,n_classes=2):
         '''v1 Amodal 3D Box Estimation Pointnet
         :param n_classes:3
         :param one_hot_vec:[bs,n_classes]
@@ -95,7 +101,7 @@ class PointNetEstimation(nn.Module):
 
         self.n_classes = n_classes
 
-        self.fc1 = nn.Linear(512+n_classes, 512)
+        self.fc1 = nn.Linear(512+3, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256,3+NUM_HEADING_BIN*2+NUM_SIZE_CLUSTER*4)
         self.fcbn1 = nn.BatchNorm1d(512)
@@ -155,8 +161,6 @@ class STNxyz(nn.Module):
         x = F.relu(self.fcbn1(self.fc1(x)))# bs,256
         x = F.relu(self.fcbn2(self.fc2(x)))# bs,128
         x = self.fc3(x)# bs,
-        ###if np.isnan(x.cpu().detach().numpy()).any():
-        ###    ipdb.set_trace()
         return x
 
 class FrustumPointNetv1(nn.Module):
@@ -166,18 +170,31 @@ class FrustumPointNetv1(nn.Module):
         self.InsSeg = PointNetInstanceSeg(n_classes=3,n_channel=n_channel)
         self.STN = STNxyz(n_classes=3)
         self.est = PointNetEstimation(n_classes=3)
+        self.Loss = FrustumPointNetLoss()
+    def forward(self, data_dicts):
+        #dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'one_hot', 'seg'])
 
-    def forward(self, pts, one_hot_vec):#bs,4,n
+        point_cloud = data_dicts.get('point_cloud')#torch.Size([32, 4, 1024])
+        one_hot = data_dicts.get('one_hot')#torch.Size([32, 3])
+
+        # If not None, use to Compute Loss
+        seg_label = data_dicts.get('seg')#torch.Size([32, 1024])
+        box3d_center_label = data_dicts.get('box3d_center')#torch.Size([32, 3])
+        size_class_label = data_dicts.get('size_class')#torch.Size([32, 1])
+        size_residual_label = data_dicts.get('size_residual')#torch.Size([32, 3])
+        heading_class_label = data_dicts.get('angle_class')#torch.Size([32, 1])
+        heading_residual_label = data_dicts.get('angle_residual')#torch.Size([32, 1])
+
         # 3D Instance Segmentation PointNet
-        logits = self.InsSeg(pts,one_hot_vec)#bs,n,2
+        logits = self.InsSeg(point_cloud, one_hot)#bs,n,2
 
         # Mask Point Centroid
         object_pts_xyz, mask_xyz_mean, mask = \
-                 point_cloud_masking(pts, logits)###logits.detach()
+                 point_cloud_masking(point_cloud, logits)
 
         # T-Net
         object_pts_xyz = object_pts_xyz.cuda()
-        center_delta = self.STN(object_pts_xyz,one_hot_vec)#(32,3)
+        center_delta = self.STN(object_pts_xyz,one_hot)#(32,3)
         stage1_center = center_delta + mask_xyz_mean#(32,3)
 
         if(np.isnan(stage1_center.cpu().detach().numpy()).any()):
@@ -186,69 +203,68 @@ class FrustumPointNetv1(nn.Module):
                     center_delta.view(center_delta.shape[0],-1,1).repeat(1,1,object_pts_xyz.shape[-1])
 
         # 3D Box Estimation
-        box_pred = self.est(object_pts_xyz_new,one_hot_vec)#(32, 59)
+        box_pred = self.est(object_pts_xyz_new,one_hot)#(32, 59)
 
         center_boxnet, \
         heading_scores, heading_residuals_normalized, heading_residuals, \
         size_scores, size_residuals_normalized, size_residuals = \
                 parse_output_to_tensors(box_pred, logits, mask, stage1_center)
 
-        center = center_boxnet + stage1_center #bs,3
-        return logits, mask, stage1_center, center_boxnet, \
-            heading_scores, heading_residuals_normalized, heading_residuals, \
-            size_scores, size_residuals_normalized, size_residuals, center
+        box3d_center = center_boxnet + stage1_center #bs,3
 
+        losses = self.Loss(logits, seg_label, \
+                 box3d_center, box3d_center_label, stage1_center, \
+                 heading_scores, heading_residuals_normalized, \
+                 heading_residuals, \
+                 heading_class_label, heading_residual_label, \
+                 size_scores, size_residuals_normalized, \
+                 size_residuals, \
+                 size_class_label, size_residual_label)
 
+        with torch.no_grad():
+            seg_correct = torch.argmax(logits.detach().cpu(), 2).eq(seg_label.detach().cpu()).numpy()
+            seg_accuracy = np.sum(seg_correct) / float(point_cloud.shape[-1])
+
+            iou2ds, iou3ds = compute_box3d_iou( \
+                box3d_center.detach().cpu().numpy(),
+                heading_scores.detach().cpu().numpy(),
+                heading_residuals.detach().cpu().numpy(),
+                size_scores.detach().cpu().numpy(),
+                size_residuals.detach().cpu().numpy(),
+                box3d_center_label.detach().cpu().numpy(),
+                heading_class_label.detach().cpu().numpy(),
+                heading_residual_label.detach().cpu().numpy(),
+                size_class_label.detach().cpu().numpy(),
+                size_residual_label.detach().cpu().numpy())
+            iou3ds_acc = np.sum(iou3ds >= 0.7)
+        metrics = {
+            'seg_acc': seg_accuracy,
+            'iou2d': iou2ds.mean(),
+            'iou3d': iou3ds.mean(),
+            'iou3d_acc': iou3ds_acc.mean()
+        }
+        return losses, metrics
 
 
 if __name__ == '__main__':
-    #python models/pointnet.py
-    points = torch.zeros(size=(32,4,1024),dtype=torch.float32)
-    label = torch.ones(size=(32,3))
-    model = FrustumPointNetv1()
-    logits, mask, stage1_center, center_boxnet, \
-            heading_scores, heading_residuals_normalized, heading_residuals, \
-            size_scores, size_residuals_normalized, size_residuals, center \
-            = model(points,label)
-    print('logits:',logits.shape,logits.dtype)
-    print('mask:',mask.shape,mask.dtype)
-    print('stage1_center:',stage1_center.shape,stage1_center.dtype)
-    print('center_boxnet:',center_boxnet.shape,center_boxnet.dtype)
-    print('heading_scores:',heading_scores.shape,heading_scores.dtype)
-    print('heading_residuals_normalized:',heading_residuals_normalized.shape,\
-          heading_residuals_normalized.dtype)
-    print('heading_residuals:',heading_residuals.shape,\
-          heading_residuals.dtype)
-    print('size_scores:',size_scores.shape,size_scores.dtype)
-    print('size_residuals_normalized:',size_residuals_normalized.shape,\
-          size_residuals_normalized.dtype)
-    print('size_residuals:',size_residuals.shape,size_residuals.dtype)
-    print('center:', center.shape,center.dtype)
-    '''
-    logits: torch.Size([32, 1024, 2]) torch.float32
-    mask: torch.Size([32, 1024]) torch.float32
-    stage1_center: torch.Size([32, 3]) torch.float32
-    center_boxnet: torch.Size([32, 3]) torch.float32
-    heading_scores: torch.Size([32, 12]) torch.float32
-    heading_residual_normalized: torch.Size([32, 12]) torch.float32
-    heading_residual: torch.Size([32, 12]) torch.float32
-    size_scores: torch.Size([32, 8]) torch.float32
-    size_residuals_normalized: torch.Size([32, 8, 3]) torch.float32
-    size_residuals: torch.Size([32, 8, 3]) torch.float32
-    center: torch.Size([32, 3]) torch.float32
-    '''
-    loss = FrustumPointNetLoss()
-    mask_label = torch.zeros(32,1024).float()
-    center_label = torch.zeros(32,3).float()
-    heading_class_label = torch.zeros(32).long()
-    heading_residuals_label = torch.zeros(32).float()
-    size_class_label = torch.zeros(32).long()
-    size_residuals_label = torch.zeros(32,3).float()
-    output_loss = loss(logits, mask_label, \
-                center, center_label, stage1_center, \
-                heading_scores, heading_residuals_normalized, heading_residuals, \
-                heading_class_label, heading_residuals_label, \
-                size_scores,size_residuals_normalized,size_residuals,
-                size_class_label,size_residuals_label)
-    print('output_loss',output_loss)
+    data_dicts = {
+        'point_cloud': torch.zeros(size=(32,1024,4),dtype=torch.float32).transpose(2, 1),
+        'rot_angle': torch.zeros(32).float(),
+        'box3d_center': torch.zeros(32,3).float(),
+        'size_class': torch.zeros(32),
+        'size_residual': torch.zeros(32,3).float(),
+        'angle_class': torch.zeros(32).long(),
+        'angle_residual': torch.zeros(32).float(),
+        'one_hot': torch.zeros(32,3).float(),
+        'seg': torch.zeros(32,1024).float()
+    }
+    data_dicts_var = {key: value.cuda() for key, value in data_dicts.items()}
+    model = FrustumPointNetv1().cuda()
+    losses, metrics= model(data_dicts_var)
+
     print()
+    for key,value in losses.items():
+        print(key,value)
+    print()
+    for key,value in metrics.items():
+        print(key,value)

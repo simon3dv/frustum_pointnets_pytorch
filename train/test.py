@@ -401,48 +401,85 @@ def test_one_epoch(model, loader):
     2020.2.9
     
     nuscenes->nuscenes:
+     python train/test.py --model_path log/2020-01-29-21\:40\:20_1-_caronly_nuscenes2kitti_CAM_FRONT_/2020-01-29-21\:40\:20_1-_caronly_nuscenes2kitti_CAM_FRONT_-acc0.242665-epoch114.pth --data_path nuscenes2kitti/frustum_caronly_CAM_FRONT_val.pickle --idx_path nuscenes2kitti/image_sets/val.txt --dataset nuscenes2kitti --output train/n2n/test_result
+    
     Number of point clouds: 6408
-    Average pos ratio: 151.052473
-    Average pos prediction ratio: 0.982697
-    Average npoints: 393.820069
-    Mean points: x-0.064442 y0.845251 z35.271175
-    Max points: x69.445435 y8.203144 z104.238876
-    Min points: x-75.259071 y-14.208739 z0.000000
+    Average pos ratio: 0.384588
+    Average pos prediction ratio: 0.377492
+    Average npoints: 1024.000000
+    Mean points: x-0.064339 y0.845485 z35.268281
+    Max points: x69.445435 y9.607244 z104.238876
+    Min points: x-67.831200 y-14.161563 z0.000000
     test from 2d gt: Done
-    test loss: 0.948371
-    test segmentation accuracy: 0.842269
-    test box IoU(ground/3D): 0.563429/0.483347
-    test box estimation accuracy (IoU=0.7): 0.243914
+    test loss: 0.951463
+    test segmentation accuracy: 0.841936
+    test box IoU(ground/3D): 0.562068/0.482008
+    test box estimation accuracy (IoU=0.7): 0.235487
+    
+    train/kitti_eval/evaluate_object_3d_offline dataset/nuScenes2KITTI/training/label_CAM_FRONT/ train/n2n/test_result/
+    
+    car_detection AP: 90.909096 90.909096 90.909096
+    car_detection_ground AP: 21.611404 20.712748 20.712748
+    car_detection_3d AP: 7.032246 6.656452 6.656452
 
+    ---
     kitti->kitti:
     Number of point clouds: 12538
-    Average pos ratio: 59.842735
-    Average pos prediction ratio: 1.089077
-    Average npoints: 447.111102
-    Mean points: x0.026136 y0.987294 z24.958540
+    Average pos ratio: 0.436596
+    Average pos prediction ratio: 0.475597
+    Average npoints: 1024.000000
+    Mean points: x0.025302 y0.986846 z24.966636
     Max points: x16.992741 y9.347202 z79.747406
-    Min points: x-20.476559 y-3.882158 z0.000000
+    Min points: x-17.201658 y-3.882158 z0.000000
     test from 2d gt: Done
-    test loss: 0.104301
-    test segmentation accuracy: 0.901477
-    test box IoU(ground/3D): 0.796052/0.743673
-    test box estimation accuracy (IoU=0.7): 0.761605
+    test loss: 0.104107
+    test segmentation accuracy: 0.901423
+    test box IoU(ground/3D): 0.795341/0.743109
+    test box estimation accuracy (IoU=0.7): 0.761206
+    
+    car_detection AP: 100.000000 100.000000 100.000000
+    car_detection_ground AP: 73.766235 72.695000 68.604942
+    car_detection_3d AP: 56.872833 56.373001 53.764130
 
+    ---
     kitti->nuscenes:
     Number of point clouds: 6408
-    Average pos ratio: 151.174013
+    Average pos ratio: 0.384301
     Average pos prediction ratio: 0.000000
-    Average npoints: 393.582865
-    Mean points: x-0.063360 y0.845064 z35.272771
-    Max points: x69.348808 y9.001218 z104.238876
-    Min points: x-67.831200 y-14.235371 z0.000000
+    Average npoints: 1024.000000
+    Mean points: x-0.064567 y0.845504 z35.269298
+    Max points: x69.445435 y8.194828 z104.238876
+    Min points: x-75.259071 y-14.069223 z0.000000
     test from 2d gt: Done
-    test loss: 25.182920
-    test segmentation accuracy: 0.615642
+    test loss: 25.181181
+    test segmentation accuracy: 0.615699
     test box IoU(ground/3D): 0.023954/0.019012
     test box estimation accuracy (IoU=0.7): 0.000000
 
+    train/kitti_eval/evaluate_object_3d_offline dataset/nuScenes2KITTI/training/label_CAM_FRONT/ train/k2n/test_result/
+    car_detection AP: 90.909096 90.909096 90.909096
+    car_detection_ground AP: 0.000000 0.000000 0.000000
+    car_detection_3d AP: 0.000000 0.000000 0.000000
+
+
+    nuscenes->kitti:
+    Number of point clouds: 12538
+    Average pos ratio: 0.436536
+    Average pos prediction ratio: 0.613729
+    Average npoints: 1024.000000
+    Mean points: x0.026297 y0.987077 z24.957791
+    Max points: x17.198647 y9.372097 z79.747406
+    Min points: x-19.410744 y-3.865781 z0.000000
+    test from 2d gt: Done
+    test loss: 0.661662
+    test segmentation accuracy: 0.676350
+    test box IoU(ground/3D): 0.511144/0.446354
+    test box estimation accuracy (IoU=0.7): 0.174509
+
     
+    car_detection AP: 100.000000 100.000000 100.000000
+    car_detection_ground AP: 11.732146 17.377474 15.602872
+    car_detection_3d AP: 4.295296 4.503248 4.734365
 
 
     '''

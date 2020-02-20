@@ -1,7 +1,8 @@
 TRAIN:
+  FILE: kitti/frustum_caronly_train.pickle
   BATCH_SIZE: 32
   START_EPOCH: 0
-  MAX_EPOCH: 150
+  MAX_EPOCH: 50
   OPTIMIZER: adam
   BASE_LR: 0.001
   MIN_LR: 1e-5
@@ -9,28 +10,36 @@ TRAIN:
   LR_STEPS: [20]
   MOMENTUM: 0.9
   WEIGHT_DECAY: 0.0001
+  NUM_POINT: 1024
+  TRAIN_SETS: train
 
 MODEL:
-  FILE: models/det_base.py
+  FILE: models/frustum_pointnets_v1.py
   NUM_CLASSES: 2
 
 TEST:
+  FILE: kitti/frustum_caronly_val.pickle
   BATCH_SIZE: 32
   METHOD: nms
+  NUM_POINT: 1024
+  TEST_SETS: val
 
 DATA:
   FILE: train/provider.py
+  DATASET: kitti
   DATA_ROOT: kitti
-  CAR_ONLY: True
-  RTC: True
-  WITH_EXTRA_FEAT: False
+  OBJTYPE: caronly
+  SENSOR: cam_front
+  ROTATE_TO_CENTER: True
+  NUM_CHANNEL: 4
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
+  NUM_HEADING_BIN: 12
 
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'output/car_train'
+OUTPUT_DIR: 'log/fpointnet_v1_kitti'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4
