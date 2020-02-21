@@ -35,14 +35,13 @@ DATA:
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
-  NUM_SIZE_BIN: 1
   NUM_HEADING_BIN: 12
 
 RESUME: False
 NUM_GPUS: 1
 OUTPUT_DIR: 'log/fconvnet_v1_kitti'
 SAVE_SUB_DIR: 'val_nms'
-USE_TFBOARD: True
+USE_TFBOARD: False
 NUM_WORKERS: 4
 FROM_RGB_DET: True
 disp: 100
