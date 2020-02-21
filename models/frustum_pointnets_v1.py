@@ -173,6 +173,7 @@ class FrustumPointNetv1(nn.Module):
         #dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'one_hot', 'seg'])
 
         point_cloud = data_dicts.get('point_cloud')#torch.Size([32, 4, 1024])
+        point_cloud = point_cloud[:,:3,:]
         one_hot = data_dicts.get('one_hot')#torch.Size([32, 3])
         bs = point_cloud.shape[0]
         # If not None, use to Compute Loss
@@ -241,7 +242,7 @@ class FrustumPointNetv1(nn.Module):
             'seg_acc': seg_accuracy,
             'iou2d': iou2ds.mean(),
             'iou3d': iou3ds.mean(),
-            'iou3d_acc': np.sum(iou3ds >= 0.7)/bs
+            'iou3d_0.7': np.sum(iou3ds >= 0.7)/bs
         }
         return losses, metrics
 
