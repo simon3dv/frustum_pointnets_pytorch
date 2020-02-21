@@ -162,7 +162,7 @@ class STNxyz(nn.Module):
         return x
 
 class FrustumPointNetv1(nn.Module):
-    def __init__(self,n_classes=3,n_channel=4):
+    def __init__(self,n_classes=3,n_channel=3):
         super(FrustumPointNetv1, self).__init__()
         self.n_classes = n_classes
         self.InsSeg = PointNetInstanceSeg(n_classes=3,n_channel=n_channel)
