@@ -19,7 +19,7 @@ from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
 from provider import compute_box3d_iou
 
 class PointNetInstanceSeg(nn.Module):
-    def __init__(self,n_classes=3,n_channel=4):
+    def __init__(self,n_classes=3,n_channel=3):
         '''v1 3D Instance Segmentation PointNet
         :param n_classes:3
         :param one_hot_vec:[bs,n_classes]
@@ -165,6 +165,7 @@ class FrustumPointNetv1(nn.Module):
     def __init__(self,n_classes=3,n_channel=3):
         super(FrustumPointNetv1, self).__init__()
         self.n_classes = n_classes
+        self.n_channel = n_channel
         self.InsSeg = PointNetInstanceSeg(n_classes=3,n_channel=n_channel)
         self.STN = STNxyz(n_classes=3)
         self.est = PointNetEstimation(n_classes=3)
@@ -173,7 +174,7 @@ class FrustumPointNetv1(nn.Module):
         #dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'one_hot', 'seg'])
 
         point_cloud = data_dicts.get('point_cloud')#torch.Size([32, 4, 1024])
-        point_cloud = point_cloud[:,:3,:]
+        point_cloud = point_cloud[:,:self.n_channel,:]
         one_hot = data_dicts.get('one_hot')#torch.Size([32, 3])
         bs = point_cloud.shape[0]
         # If not None, use to Compute Loss
