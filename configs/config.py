@@ -157,7 +157,7 @@ __C.DATA.EXTEND_FROM_DET = False
 
 __C.DATA.USE_REFLECTION_AS_CHANNEL = False
 
-__C.DATA.USE_RGB_AS_CHENNEL = False
+__C.DATA.USE_RGB_AS_CHANNEL = False
 
 # Loss options
 __C.LOSS = AttrDict()
