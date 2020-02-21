@@ -172,7 +172,7 @@ def test_one_epoch(model, loader):
         'cls_acc': 0.0,  # fconvnet
         'iou2d': 0.0,
         'iou3d': 0.0,
-        'iou3d0.7': 0.0,
+        'iou3d_0.7': 0.0,
     }
 
     n_batches = 0
@@ -220,10 +220,10 @@ def train():
     # set model
     if 'frustum_pointnets_v1' in MODEL_FILE:
         from frustum_pointnets_v1 import FrustumPointNetv1
-        model = FrustumPointNetv1(n_classes=NUM_CLASSES).cuda()
+        model = FrustumPointNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
     elif 'frustum_convnet_v1' in MODEL_FILE:
         from frustum_convnet_v1 import FrustumConvNetv1
-        model = FrustumConvNetv1(n_classes=NUM_CLASSES).cuda()
+        model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
 
     # load pre-trained model
     if RESUME:
@@ -298,7 +298,7 @@ def train():
             'cls_acc': 0.0,#fconvnet
             'iou2d': 0.0,
             'iou3d': 0.0,
-            'iou3d0.7': 0.0,
+            'iou3d_0.7': 0.0,
         }
         n_batches = 0
         for i, data_dicts in tqdm(enumerate(train_dataloader),\
@@ -509,16 +509,16 @@ def train():
 
         if USE_TFBOARD:
             writer.add_scalar('train_total_loss',train_losses['total_loss'],epoch)
-            writer.add_scalar('train_iou3d0.7',train_metrics['iou3d0.7'],epoch)
+            writer.add_scalar('train_iou3d_0.7',train_metrics['iou3d_0.7'],epoch)
             writer.add_scalar('test_total_loss',test_losses['total_loss'],epoch)
-            writer.add_scalar('test_iou3d0.7',test_metrics['iou3d0.7'],epoch)
+            writer.add_scalar('test_iou3d_0.7',test_metrics['iou3d_0.7'],epoch)
         '''
         if not FLAGS.debug:
             writer.add_scalar('train_total_loss',train_total_loss, epoch)
             writer.add_scalar('train_iou2d',train_iou2d, epoch)
             writer.add_scalar('train_iou3d',train_iou3d, epoch)
             writer.add_scalar('train_acc',train_acc, epoch)
-            writer.add_scalar('train_iou3d0.7',train_iou3d_70, epoch)
+            writer.add_scalar('train_iou3d_0.7',train_iou3d_70, epoch)
 
         if FLAGS.return_all_loss and not FLAGS.debug:
             writer.add_scalar('train_mask_loss',train_mask_loss)
@@ -535,7 +535,7 @@ def train():
             writer.add_scalar('test_iou2d_loss',test_iou2d, epoch)
             writer.add_scalar('test_iou3d_loss',test_iou3d, epoch)
             writer.add_scalar('test_acc',test_acc, epoch)
-            writer.add_scalar('test_iou3d0.7',test_iou3d_70, epoch)
+            writer.add_scalar('test_iou3d_0.7',test_iou3d_70, epoch)
 
         if FLAGS.return_all_loss:
             writer.add_scalar('test_mask_loss',test_mask_loss, epoch)
@@ -547,20 +547,20 @@ def train():
             writer.add_scalar('test_stage1_center_loss',test_stage1_center_loss, epoch)
             writer.add_scalar('test_corners_loss',test_corners_loss, epoch)
         '''
-        if test_metrics['iou3d0.7'] >= best_iou3d_70:
-            best_iou3d_70 = test_metrics['iou3d0.7']
+        if test_metrics['iou3d_0.7'] >= best_iou3d_70:
+            best_iou3d_70 = test_metrics['iou3d_0.7']
             best_epoch = epoch + 1
             if epoch > MAX_EPOCH / 5:
                 savepath = LOG_DIR + '/acc%.3f-epoch%03d.pth' % \
-                           (test_metrics['iou3d0.7'], epoch)
+                           (test_metrics['iou3d_0.7'], epoch)
                 log_string('save to:'+str(savepath))
                 if os.path.exists(best_file):
                     os.remove(best_file)# update to newest best epoch
                 best_file = savepath
                 state = {
                     'epoch': epoch + 1,
-                    'train_iou3d0.7': train_metrics['iou3d0.7'],
-                    'test_iou3d0.7': test_metrics['iou3d0.7'],
+                    'train_iou3d_0.7': train_metrics['iou3d_0.7'],
+                    'test_iou3d_0.7': test_metrics['iou3d_0.7'],
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
