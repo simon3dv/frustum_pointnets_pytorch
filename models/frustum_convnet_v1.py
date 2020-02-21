@@ -453,6 +453,7 @@ class FrustumConvNetv1(nn.Module):
         point_cloud = data_dicts.get('point_cloud')#torch.Size([32, 4, 1024])
         one_hot = data_dicts.get('one_hot')#torch.Size([32, 3])
         ref_label = data_dicts.get('ref_label')#torch.Size([32, 140])
+        bs = point_cloud.shape[0]
 
         # If not None, use to Compute Loss
         #seg_label = data_dicts.get('seg')#torch.Size([32, 1024])
@@ -504,8 +505,32 @@ class FrustumConvNetv1(nn.Module):
         cls_probs = F.softmax(cls_scores, -1)#torch.Size([4480, 2])
 
 
-        if box3d_center_label is None: #no label == from rgb detection
-            pass
+        if box3d_center_label is None: #no label == test mode or from rgb detection -> return output
+            det_outputs = self._slice_output(outputs)  # torch.Size([4480, 39])
+            center_boxnet, heading_scores, heading_res_norm, size_scores, size_res_norm = det_outputs
+
+            heading_probs = F.softmax(heading_scores, -1)  # torch.Size([4480, 12])
+            size_probs = F.softmax(size_scores, -1)  # torch.Size([4480, 3])
+
+            heading_pred_label = torch.argmax(heading_probs, -1)
+            size_pred_label = torch.argmax(size_probs, -1)
+
+            center_preds = center_boxnet + center_ref2
+
+            heading_preds = angle_decode(heading_res_norm, heading_pred_label)
+            size_preds = size_decode(size_res_norm, mean_size_array, size_pred_label)
+
+            # corner_preds = get_box3d_corners_helper(center_preds, heading_preds, size_preds)
+
+            cls_probs = cls_probs.view(bs, -1, 2)
+            center_preds = center_preds.view(bs, -1, 3)
+
+            size_preds = size_preds.view(bs, -1, 3)
+            heading_preds = heading_preds.view(bs, -1)
+
+            outputs = (cls_probs, center_preds, heading_preds, size_preds)
+
+            return outputs
 
 
         fg_idx = (ref_label.view(-1) == 1).nonzero().view(-1)#torch.Size([99])
@@ -518,6 +543,7 @@ class FrustumConvNetv1(nn.Module):
         det_outputs = self._slice_output(outputs)
         center_boxnet, heading_scores, heading_res_norm, size_scores, size_res_norm = det_outputs
         #(99,3+12+12+3+3x3)
+
         heading_probs = F.softmax(heading_scores, -1)#torch.Size([99, 12])
         size_probs = F.softmax(size_scores, -1)#torch.Size([99, 3])
         # cls_loss = F.cross_entropy(cls_scores, mask_label, ignore_index=-1)
