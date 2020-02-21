@@ -176,6 +176,13 @@ class FrustumDataset(object):
         else:
             point_set = self.input_list[index]
 
+        # Use extra feature as channel
+        if not cfg.DATA.USE_REFLECTION_AS_CHANNEL and not cfg.DATA.USE_RGB_AS_CHANNEL:
+            point_set = point_set[:,:3]
+        elif cfg.DATA.USE_REFLECTION_AS_CHANNEL and not cfg.DATA.USE_RGB_AS_CHANNEL:
+            point_set = point_set[:, :4]
+        elif not cfg.DATA.USE_REFLECTION_AS_CHANNEL and cfg.DATA.USE_RGB_AS_CHANNEL:
+            point_set = point_set[:, :6]
         # Resample
         choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
         point_set = point_set[choice, :]

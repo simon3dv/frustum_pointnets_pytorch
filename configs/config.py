@@ -155,6 +155,9 @@ __C.DATA.HEIGHT_HALF = (0.25, 0.5, 1.0, 2.0)
 
 __C.DATA.EXTEND_FROM_DET = False
 
+__C.DATA.USE_RELFECTION_AS_CHANNEL = False
+
+__C.DATA.USE_RGB_AS_CHENNEL = False
 
 # Loss options
 __C.LOSS = AttrDict()
