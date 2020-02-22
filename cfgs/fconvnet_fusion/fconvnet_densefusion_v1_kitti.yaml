@@ -1,6 +1,6 @@
 TRAIN:
   FILE: kitti/frustum_caronly_wimage_train.pickle
-  BATCH_SIZE: 1
+  BATCH_SIZE: 32
   START_EPOCH: 0
   MAX_EPOCH: 50
   OPTIMIZER: adam
@@ -19,7 +19,7 @@ MODEL:
 
 TEST:
   FILE: kitti/frustum_caronly_wimage_val.pickle
-  BATCH_SIZE: 1
+  BATCH_SIZE: 32
   METHOD: nms
   NUM_POINT: 1024
   TEST_SETS: val
