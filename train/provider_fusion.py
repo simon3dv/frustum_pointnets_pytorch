@@ -25,9 +25,6 @@ import torchvision.transforms as transforms
 from PIL import Image
 import cv2
 
-W_CROP = cfg.DATA.W_CROP
-H_CROP = cfg.DATA.H_CROP
-
 def rotate_pc_along_y(pc, rot_angle):
     '''
     Input:
@@ -148,7 +145,7 @@ class FrustumDataset(object):
         self.from_rgb_detection = from_rgb_detection
         self.with_image = with_image
         self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.resize = transforms.Resize(size=(W_CROP,H_CROP))#,interpolation=Image.NEAREST)
+        self.resize = transforms.Resize(size=(cfg.DATA.W_CROP,cfg.DATA.H_CROP))#,interpolation=Image.NEAREST)
         if from_rgb_detection:
             with open(overwritten_data_path,'rb') as fp:
                 self.id_list = pickle.load(fp)
@@ -229,8 +226,8 @@ class FrustumDataset(object):
 
             h = image_crop.shape[0]
             w = image_crop.shape[1]
-            H = H_CROP
-            W = W_CROP
+            H = cfg.DATA.H_CROP
+            W = cfg.DATA.W_CROP
             P = self.calib_list[index]  # 3x4(kitti) or 3x3(nuscenes)
 
             # Query rgb point cloud
@@ -265,8 +262,8 @@ class FrustumDataset(object):
                 newx = int(x*inv_w_scale)
                 if newy >= H: newy = H-1###
                 if newx >= W: newx = W-1###
-                #query_v1[i] = y * h + x
-                query_v1[i] = newy * H + newx
+                #query_v1[i] = y * w + x
+                query_v1[i] = newy * W + newx###fix bug
 
             """
             query_v1 = np.full(pts_2d.shape[0],-1)
