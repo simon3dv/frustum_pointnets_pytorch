@@ -41,7 +41,7 @@ DATA:
 
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz'
+OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz_wo_resize'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4
