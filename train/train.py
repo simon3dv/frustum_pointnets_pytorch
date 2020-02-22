@@ -232,6 +232,9 @@ def train():
     elif 'frustum_convnet_densefusion_v1' in MODEL_FILE:
         from frustum_convnet_densefusion_v1 import FrustumConvNetv1
         model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
+    elif 'frustum_convnet_pointfusion_latefusion_v1' in MODEL_FILE:
+        from frustum_convnet_pointfusion_latefusion_v1 import FrustumConvNetv1
+        model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
 
     # set optimizer and scheduler
     if OPTIMIZER == 'adam':
