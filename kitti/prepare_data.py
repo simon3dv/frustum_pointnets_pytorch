@@ -195,7 +195,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
     box3d_size_list = [] # array of l,w,h
     frustum_angle_list = [] # angle of 2d box center from pos x-axis
     calib_list = [] # calibration matrix 3x4 for fconvnet
-    image_list = [] # for fusion
+    image_filename_list = [] # for fusion
     input_2d_list = []
 
     pos_cnt = 0
@@ -204,7 +204,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         #print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
         if with_image:
-            image = dataset.get_image(data_idx)#(370, 1224, 3),uint8
+            image_filename = os.path.join(dataset.image_dir, '%06d.png'%(data_idx))#dataset.get_image(data_idx)#(370, 1224, 3),uint8
         objects = dataset.get_label_objects(data_idx)
         pc_velo = dataset.get_lidar(data_idx)
         pc_rect = np.zeros_like(pc_velo)
@@ -267,7 +267,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 frustum_angle_list.append(frustum_angle)
                 calib_list.append(calib.P)
                 if with_image:
-                    image_list.append(image)
+                    image_filename_list.append(image_filename)
                     input_2d_list.append(pc_image_coord[box_fov_inds,:])
                 # collect statistics
                 pos_cnt += np.sum(label)
@@ -288,7 +288,7 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         pickle.dump(frustum_angle_list, fp)
         pickle.dump(calib_list, fp)
         if with_image:
-            pickle.dump(image_list, fp)
+            pickle.dump(image_filename_list, fp)
             pickle.dump(input_2d_list, fp)
     if viz:
         import mayavi.mlab as mlab

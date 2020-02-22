@@ -23,6 +23,7 @@ import ipdb
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
+import cv2
 
 W_CROP = 300
 H_CROP = 150
@@ -158,7 +159,7 @@ class FrustumDataset(object):
                 self.prob_list = pickle.load(fp)
                 self.calib_list = pickle.load(fp)
                 if with_image:
-                    self.image_list = pickle.load(fp)
+                    self.image_filename_list = pickle.load(fp)
                     self.input_2d_list = pickle.load(fp)
         else:
             with open(overwritten_data_path,'rb') as fp:
@@ -174,7 +175,7 @@ class FrustumDataset(object):
                 self.frustum_angle_list = pickle.load(fp)
                 self.calib_list = pickle.load(fp)
                 if with_image:
-                    self.image_list = pickle.load(fp)
+                    self.image_filename_list = pickle.load(fp)
                     self.input_2d_list = pickle.load(fp)
 
         if gen_ref:
@@ -184,8 +185,6 @@ class FrustumDataset(object):
             self.z3 = np.arange(0, 70, s3) + s3 / 2.#[0.5,1.5,...,69.5]
             self.z4 = np.arange(0, 70, s4) + s4 / 2.#[1,3,...,69]
 
-        self.xmap = np.array([[j for i in range(1024)] for j in range(375)])
-        self.ymap = np.array([[i for i in range(1024)] for j in range(375)])
 
     def __len__(self):
             return len(self.input_list)
@@ -216,7 +215,8 @@ class FrustumDataset(object):
             # With whole Image(whole size, not region)
             import time
             #tic = time.perf_counter()
-            image = self.image_list[index]#(370, 1224, 3),uint8 or (375, 1242, 3)
+            image_filename = self.image_filename_list[index]
+            image = cv2.imread(image_filename)#(370, 1224, 3),uint8 or (375, 1242, 3)
             xmin,ymin,xmax,ymax = np.array(box,dtype=np.int32)
             xmax += 1
             ymax += 1
