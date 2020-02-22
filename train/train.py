@@ -327,7 +327,6 @@ def train():
             batch_rot_angle:[32],alpha, not rotation_y,
             batch_one_hot_vec:[32,3],
             '''
-            ipdb.set_trace()
             data_dicts_var = {key: value.cuda() for key, value in data_dicts.items()}
             #ipdb.set_trace()
             '''deprecated

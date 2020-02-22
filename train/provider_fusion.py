@@ -220,6 +220,10 @@ class FrustumDataset(object):
             xmin,ymin,xmax,ymax = np.array(box,dtype=np.int32)
             xmax += 1
             ymax += 1
+            if xmin < 0 : xmin = 0
+            if ymin < 0 : ymin = 0
+            if xmax >= image.shape[1] : xmax = image.shape[1]
+            if ymax >= image.shape[0] : ymax = image.shape[0]
             image_crop = image[ymin:ymax, xmin:xmax, :]#(34=h, 47=w, 3)
 
             h = image_crop.shape[0]
