@@ -159,6 +159,10 @@ __C.DATA.USE_REFLECTION_AS_CHANNEL = False
 
 __C.DATA.USE_RGB_AS_CHANNEL = False
 
+__C.DATA.W_CROP = 150
+
+__C.DATA.H_CROP = 100
+
 # Loss options
 __C.LOSS = AttrDict()
 

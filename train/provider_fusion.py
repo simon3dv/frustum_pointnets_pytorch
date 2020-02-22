@@ -25,8 +25,9 @@ import torchvision.transforms as transforms
 from PIL import Image
 import cv2
 
-W_CROP = 300
-H_CROP = 150
+W_CROP = cfg.DATA.W_CROP
+H_CROP = cfg.DATA.H_CROP
+
 def rotate_pc_along_y(pc, rot_angle):
     '''
     Input:

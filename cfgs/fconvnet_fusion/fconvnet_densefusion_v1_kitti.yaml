@@ -38,13 +38,14 @@ DATA:
   NUM_HEADING_BIN: 12
   USE_REFLECTION_AS_CHANNEL: False
   USE_RGB_AS_CHANNEL: False
-
+  W_CROP: 150
+  H_CROP: 100
 
 RESUME: False
 NUM_GPUS: 1
 OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz'
 SAVE_SUB_DIR: 'val_nms'
-USE_TFBOARD: False
+USE_TFBOARD: True
 NUM_WORKERS: 4
 FROM_RGB_DET: True
 disp: 100
