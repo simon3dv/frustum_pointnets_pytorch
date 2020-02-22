@@ -278,7 +278,6 @@ class FrustumDataset(object):
             for i in range(n_point):
                 x, y = pts_2d[i,:]
                 query_v1[i] = y * w + x
-            ipdb.set_trace()
 
             #print("%.3fs"%(time.perf_counter()-tic))
         # Use extra feature as channel
