@@ -189,7 +189,7 @@ def test_one_epoch(model, loader):
             if i == 1:
                 break
 
-        data_dicts_var = {key: value.squeeze().cuda() for key, value in data_dicts.items()}
+        data_dicts_var = {key: value.cuda() for key, value in data_dicts.items()}
 
         model = model.eval()
 
