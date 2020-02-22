@@ -205,7 +205,7 @@ class FrustumDataset(object):
         ymin = center[1] - int(y_b / 2)
         ymax = center[1] + int(y_b / 2)
         if xmin < 0:
-            delt = -ymin
+            delt = -xmin
             xmin = 0
             xmax += delt
         if ymin < 0:
