@@ -22,7 +22,10 @@ from configs.config import cfg
 import ipdb
 import torch
 import torchvision.transforms as transforms
+from PIL import Image
 
+W_CROP = 300
+H_CROP = 150
 def rotate_pc_along_y(pc, rot_angle):
     '''
     Input:
@@ -91,7 +94,7 @@ def class2size(pred_cls, residual):
     return mean_size + residual
 
 
-def cart2hom(self, pts_3d):
+def cart2hom(pts_3d):
     ''' Input: nx3 points in Cartesian
         Oupput: nx4 points in Homogeneous by pending 1
     '''
@@ -99,12 +102,12 @@ def cart2hom(self, pts_3d):
     pts_3d_hom = np.hstack((pts_3d, np.ones((n,1))))
     return pts_3d_hom
 
-def project_rect_to_image(self, pts_3d_rect):
+def project_rect_to_image(pts_3d_rect, P):
     ''' Input: nx3 points in rect camera coord.
         Output: nx2 points in image2 coord.
     '''
-    pts_3d_rect = self.cart2hom(pts_3d_rect)
-    pts_2d = np.dot(pts_3d_rect, np.transpose(self.P)) # nx3
+    pts_3d_rect = cart2hom(pts_3d_rect)
+    pts_2d = np.dot(pts_3d_rect, np.transpose(P)) # nx3
     pts_2d[:,0] /= pts_2d[:,2]
     pts_2d[:,1] /= pts_2d[:,2]
     return pts_2d[:,0:2]
@@ -117,7 +120,7 @@ class FrustumDataset(object):
     def __init__(self, npoints, split,
                  random_flip=False, random_shift=False, rotate_to_center=False,
                  overwritten_data_path=None, from_rgb_detection=False, one_hot=False,
-                 gen_ref=False,with_image=False):
+                 gen_ref=False, with_image=False):
         '''
         Input:
             npoints: int scalar, number of points for frustum point cloud.
@@ -143,6 +146,7 @@ class FrustumDataset(object):
         self.from_rgb_detection = from_rgb_detection
         self.with_image = with_image
         self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        self.resize = transforms.Resize(size=(W_CROP,H_CROP))#,interpolation=Image.NEAREST)
         if from_rgb_detection:
             with open(overwritten_data_path,'rb') as fp:
                 self.id_list = pickle.load(fp)
@@ -155,6 +159,7 @@ class FrustumDataset(object):
                 self.calib_list = pickle.load(fp)
                 if with_image:
                     self.image_list = pickle.load(fp)
+                    self.input_2d_list = pickle.load(fp)
         else:
             with open(overwritten_data_path,'rb') as fp:
                 self.id_list = pickle.load(fp)
@@ -170,6 +175,8 @@ class FrustumDataset(object):
                 self.calib_list = pickle.load(fp)
                 if with_image:
                     self.image_list = pickle.load(fp)
+                    self.input_2d_list = pickle.load(fp)
+
         if gen_ref:
             s1, s2, s3, s4 = cfg.DATA.STRIDE#(0.25, 0.5, 1.0, 2.0)
             self.z1 = np.arange(0, 70, s1) + s1 / 2.#[0.125,0.375,...,69.875]
@@ -207,20 +214,64 @@ class FrustumDataset(object):
         # Get image
         if self.with_image:
             # With whole Image(whole size, not region)
-            image = self.image_list[index]#(370, 1224, 3),uint8
-            xmin,ymin,xmax,ymax = box
-            ipdb.set_trace()
-            image_crop =np.transpose(image, (2, 0, 1))[:, ymin:ymax, xmin:xmax]
-            h, w = image_crop.shape
-            P = self.calib_list[index]  # 3x4(kitti) or 3x3(nuscenes)
-            # Query rgb point cloud
-            pts_2d = project_rect_to_image(point_set[:,3], P) #(n,2)
-            pts_2d[:,0] -= w
-            pts_2d[:,1] -= h
-            pts_2d = np.array(pts_2d, dtype=np.int32)
-            query_v1 = pts_2d[:,0] * w + pts_2d[:,1]#vector that map ind_pc to ind_rgb
-            ipdb.set_trace()
+            import time
+            #tic = time.perf_counter()
+            image = self.image_list[index]#(370, 1224, 3),uint8 or (375, 1242, 3)
+            xmin,ymin,xmax,ymax = np.array(box,dtype=np.int32)
+            xmax += 1
+            ymax += 1
+            image_crop = image[ymin:ymax, xmin:xmax, :]#(34=h, 47=w, 3)
 
+            h = image_crop.shape[0]
+            w = image_crop.shape[1]
+            H = H_CROP
+            W = W_CROP
+            P = self.calib_list[index]  # 3x4(kitti) or 3x3(nuscenes)
+
+            # Query rgb point cloud
+            #pts_2d = project_rect_to_image(point_set[:,:3], P) #(n,2)
+            pts_2d = self.input_2d_list[index]
+            pts_2d[:,0] -= xmin
+            pts_2d[:,1] -= ymin
+            pts_2d = np.array(pts_2d, dtype=np.int32)
+
+            """
+            # add indices channel
+            image_crop_indices = np.zeros((h*w),dtype=np.int32)
+            for n in range(pts_2d.shape[0]):
+                px, py = pts_2d[n,:]
+                image_crop_indices[int(py), int(px)] = n
+            """
+
+            # resize RGB
+            #image_crop_rgbi = np.concatenate((image_crop, image_crop_indices),axis=2)#(34, 44, 4)
+            image_crop_pil = Image.fromarray(image_crop)
+            image_crop_resized = self.resize(image_crop_pil)
+            image_crop_resized = np.array(image_crop_resized)
+            image_crop_resized = np.transpose(image_crop_resized,(2, 0, 1))#(3, 300, 150),uint8
+            inv_h_scale = H / image_crop.shape[0]
+            inv_w_scale = W / image_crop.shape[1]
+
+            n_point = pts_2d.shape[0]
+            query_v1 = np.full(n_point,-1)
+            for i in range(n_point):
+                y, x = pts_2d[i,:]
+                newy = int(y*inv_h_scale)
+                newx = int(x*inv_w_scale)
+                if newy >= H: newy = H-1###
+                if newx >= W: newx = W-1###
+                #query_v1[i] = y * h + x
+                query_v1[i] = newy * H + newx
+
+            """
+            query_v1 = np.full(pts_2d.shape[0],-1)
+            image_crop_indices_resized = image_crop_indices_resized.reshape(-1)#(45000=H*W)
+            for i in range(image_crop_indices_resized.shape[0]):
+                if image_crop_indices_resized[i] != -1:
+                    query_v1[image_crop_indices_resized[i]] = i
+            """
+
+            #print("%.3fs"%(time.perf_counter()-tic))
         # Use extra feature as channel
         if not cfg.DATA.USE_REFLECTION_AS_CHANNEL and not cfg.DATA.USE_RGB_AS_CHANNEL:
             point_set = point_set[:,:3]
@@ -228,9 +279,12 @@ class FrustumDataset(object):
             point_set = point_set[:, :4]
         elif not cfg.DATA.USE_REFLECTION_AS_CHANNEL and cfg.DATA.USE_RGB_AS_CHANNEL:
             point_set = point_set[:, :6]
+
         # Resample
         choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
         point_set = point_set[choice, :]
+        if self.with_image:
+            query_v1 = query_v1[choice]
 
         if self.gen_ref:#fconvnet
             P = self.calib_list[index]  # 3x4(kitti) or 3x3(nuscenes)
@@ -261,7 +315,7 @@ class FrustumDataset(object):
                 data_inputs.update({'center_ref4': torch.FloatTensor(ref4).transpose(1, 0)})
 
             if self.with_image:
-                data_inputs.update({'img': self.nrom(torch.FloatTensor(image_crop))})
+                data_inputs.update({'image': self.norm(torch.FloatTensor(image_crop_resized))})
                 data_inputs.update({'P': torch.FloatTensor(P)})
                 data_inputs.update({'query_v1': torch.LongTensor(query_v1)})
 
@@ -343,7 +397,7 @@ class FrustumDataset(object):
             data_inputs.update({'angle_residual':torch.FloatTensor([angle_residual])})
 
         if self.with_image:
-            data_inputs.update({'img': self.nrom(torch.FloatTensor(image_crop))})
+            data_inputs.update({'image': self.norm(torch.FloatTensor(image_crop_resized))})
             data_inputs.update({'P': torch.FloatTensor(P)})
             data_inputs.update({'query_v1': torch.LongTensor(query_v1)})
 
@@ -577,14 +631,15 @@ def extract_pc_in_box3d(pc, box3d):
 if __name__=='__main__':
     gen_ref = True
     show = False
+    with_image = True
     import mayavi.mlab as mlab 
     sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
     from viz_util import draw_lidar, draw_gt_boxes3d
     median_list = []
     dataset = FrustumDataset(1024, split='val',
         rotate_to_center=True, random_flip=True, random_shift=True,
-        overwritten_data_path='kitti/frustum_caronly_val.pickle',
-        gen_ref = gen_ref)
+        overwritten_data_path='kitti/frustum_caronly_wimage_val.pickle',
+        gen_ref = gen_ref, with_image=with_image)
     for i in range(len(dataset)):
         print(i)
         data_dicts = dataset[i]

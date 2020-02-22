@@ -224,11 +224,9 @@ def train():
     elif 'frustum_convnet_v1' in MODEL_FILE:
         from frustum_convnet_v1 import FrustumConvNetv1
         model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
-
-    # load pre-trained model
-    if RESUME:
-        ckpt = torch.load(RESUME)###
-        model.load_state_dict(ckpt['model_state_dict'])
+    elif 'frustum_convnet_densefusion_v1' in MODEL_FILE:
+        from frustum_convnet_densefusion_v1 import FrustumConvNetv1
+        model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
 
     # set optimizer and scheduler
     if OPTIMIZER == 'adam':
@@ -324,8 +322,8 @@ def train():
             batch_rot_angle:[32],alpha, not rotation_y,
             batch_one_hot_vec:[32,3],
             '''
-
-            data_dicts_var = {key: value.squeeze().cuda() for key, value in data_dicts.items()}
+            ipdb.set_trace()
+            data_dicts_var = {key: value.cuda() for key, value in data_dicts.items()}
             #ipdb.set_trace()
             '''deprecated
             batch_data, batch_label, batch_center, \

@@ -163,7 +163,7 @@ def random_shift_box2d(box2d, shift_ratio=0.1):
     return np.array([cx2-w2/2.0, cy2-h2/2.0, cx2+w2/2.0, cy2+h2/2.0])
  
 def extract_frustum_data(idx_filename, split, output_filename, viz=False,
-                       perturb_box2d=False, augmentX=1, type_whitelist=['Car']):
+                       perturb_box2d=False, augmentX=1, type_whitelist=['Car'], with_image=False):
     ''' Extract point clouds and corresponding annotations in frustums
         defined generated from 2D bounding boxes
         Lidar points and 3d boxes are in *rect camera* coord system
@@ -195,12 +195,16 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
     box3d_size_list = [] # array of l,w,h
     frustum_angle_list = [] # angle of 2d box center from pos x-axis
     calib_list = [] # calibration matrix 3x4 for fconvnet
+    image_list = [] # for fusion
+    input_2d_list = []
 
     pos_cnt = 0
     all_cnt = 0
     for data_idx in tqdm(data_idx_list):
         #print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
+        if with_image:
+            image = dataset.get_image(data_idx)#(370, 1224, 3),uint8
         objects = dataset.get_label_objects(data_idx)
         pc_velo = dataset.get_lidar(data_idx)
         pc_rect = np.zeros_like(pc_velo)
@@ -210,7 +214,6 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         img_height, img_width, img_channel = img.shape
         _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov(pc_velo[:,0:3],
             calib, 0, 0, img_width, img_height, True)
-
         for obj_idx in range(len(objects)):
             if objects[obj_idx].type not in type_whitelist :continue
 
@@ -263,6 +266,9 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
                 box3d_size_list.append(box3d_size)
                 frustum_angle_list.append(frustum_angle)
                 calib_list.append(calib.P)
+                if with_image:
+                    image_list.append(image)
+                    input_2d_list.append(pc_image_coord[box_fov_inds,:])
                 # collect statistics
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
@@ -281,7 +287,9 @@ def extract_frustum_data(idx_filename, split, output_filename, viz=False,
         pickle.dump(box3d_size_list, fp)
         pickle.dump(frustum_angle_list, fp)
         pickle.dump(calib_list, fp)
-    
+        if with_image:
+            pickle.dump(image_list, fp)
+            pickle.dump(input_2d_list, fp)
     if viz:
         import mayavi.mlab as mlab
         for i in range(10):
@@ -524,8 +532,11 @@ if __name__=='__main__':
     parser.add_argument('--cluster', action='store_true', help='Run cluster.')
     parser.add_argument('--gen_train', action='store_true', help='Generate train split frustum data with perturbed GT 2D boxes')
     parser.add_argument('--gen_val', action='store_true', help='Generate val split frustum data with GT 2D boxes')
-    parser.add_argument('--gen_val_rgb_detection', action='store_true', help='Generate val split frustum data with RGB detection 2D boxes')
+    parser.add_argument('--gen_val_rgb_detection', action='store_true',
+                        help='Generate val split frustum data with RGB detection 2D boxes')
+    parser.add_argument('--gen_mini', action='store_true')
     parser.add_argument('--car_only', action='store_true', help='Only generate cars; otherwise cars, peds and cycs')
+    parser.add_argument('--with_image', action='store_true')
     args = parser.parse_args()
 
     if args.cluster:
@@ -553,6 +564,21 @@ if __name__=='__main__':
         type_whitelist = ['Car', 'Pedestrian', 'Cyclist']
         output_prefix = 'frustum_carpedcyc_'
 
+    if args.with_image:
+        output_prefix += 'wimage_'
+
+    if args.gen_mini:
+        print('Start gen_train...')
+        imagesets_file = os.path.join(BASE_DIR, 'image_sets/mini.txt')
+        extract_frustum_data( \
+            imagesets_file,
+            'training',
+            os.path.join(BASE_DIR, output_prefix + 'mini.pickle'),
+            viz=False, perturb_box2d=True, augmentX=5,
+            type_whitelist=type_whitelist,
+            with_image=args.with_image)
+        get_box3d_dim_statistics(imagesets_file, type_whitelist, 'train')
+
     if args.gen_train:
         print('Start gen_train...')
         imagesets_file = os.path.join(BASE_DIR, 'image_sets/train.txt')
@@ -561,7 +587,8 @@ if __name__=='__main__':
             'training',
             os.path.join(BASE_DIR, output_prefix+'train.pickle'), 
             viz=False, perturb_box2d=True, augmentX=5,
-            type_whitelist=type_whitelist)
+            type_whitelist=type_whitelist,
+            with_image=args.with_image)
         get_box3d_dim_statistics(imagesets_file, type_whitelist,'train')
 
     if args.gen_val:
@@ -572,7 +599,8 @@ if __name__=='__main__':
             'training',
             os.path.join(BASE_DIR, output_prefix+'val.pickle'),
             viz=False, perturb_box2d=False, augmentX=1,
-            type_whitelist=type_whitelist)
+            type_whitelist=type_whitelist,
+            with_image=args.with_image)
         get_box3d_dim_statistics(imagesets_file, type_whitelist,'val')
 
     if args.gen_val_rgb_detection:

@@ -1,5 +1,5 @@
 TRAIN:
-  FILE: kitti/frustum_caronly_train.pickle
+  FILE: kitti/frustum_caronly_wimage_train.pickle
   BATCH_SIZE: 32
   START_EPOCH: 0
   MAX_EPOCH: 50
@@ -14,11 +14,11 @@ TRAIN:
   TRAIN_SETS: train
 
 MODEL:
-  FILE: models/frustum_convnet_v1.py
+  FILE: models/frustum_convnet_densefusion_v1.py
   NUM_CLASSES: 2
 
 TEST:
-  FILE: kitti/frustum_caronly_val.pickle
+  FILE: kitti/frustum_caronly_wimage_val.pickle
   BATCH_SIZE: 32
   METHOD: nms
   NUM_POINT: 1024
@@ -31,18 +31,18 @@ DATA:
   OBJTYPE: caronly
   SENSOR: cam_front
   ROTATE_TO_CENTER: True
-  NUM_CHANNEL: 4
+  NUM_CHANNEL: 3
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
   NUM_HEADING_BIN: 12
-  USE_REFLECTION_AS_CHANNEL: True
+  USE_REFLECTION_AS_CHANNEL: False
   USE_RGB_AS_CHANNEL: False
 
 
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'log/fconvnet_v1_kitti_caronly_fromgt/xyzr'
+OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: False
 NUM_WORKERS: 4

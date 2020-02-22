@@ -19,11 +19,32 @@ from model_util import g_type2class, g_class2type, g_type2onehotclass
 from model_util import g_type_mean_size, g_mean_size_arr
 from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
 from model_util import get_box3d_corners_helper
-from provider import compute_box3d_iou
+from provider_fusion import compute_box3d_iou
 from configs.config import cfg
 
 from ops.query_depth_point.query_depth_point import QueryDepthPoint
 from ops.pybind11.box_ops_cc import rbbox_iou_3d_pair
+from models.pspnet import PSPNet
+
+psp_models = {
+    'resnet18': lambda: PSPNet(sizes=(1, 2, 3, 6), psp_size=512, deep_features_size=256, backend='resnet18'),
+    'resnet34': lambda: PSPNet(sizes=(1, 2, 3, 6), psp_size=512, deep_features_size=256, backend='resnet34'),
+    'resnet50': lambda: PSPNet(sizes=(1, 2, 3, 6), psp_size=2048, deep_features_size=1024, backend='resnet50'),
+    'resnet101': lambda: PSPNet(sizes=(1, 2, 3, 6), psp_size=2048, deep_features_size=1024, backend='resnet101'),
+    'resnet152': lambda: PSPNet(sizes=(1, 2, 3, 6), psp_size=2048, deep_features_size=1024, backend='resnet152')
+}
+
+class ModifiedResnet(nn.Module):
+
+    def __init__(self, usegpu=True):
+        super(ModifiedResnet, self).__init__()
+
+        self.model = psp_models['resnet18'.lower()]()
+        self.model = nn.DataParallel(self.model)
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
 
 def get_accuracy(output, target, ignore=None):
 
@@ -162,13 +183,43 @@ class PointNetModule(nn.Module):
         else:
             self.conv1 = Conv2d(Infea, mlp[0], 1)
 
-        self.conv2 = Conv2d(mlp[0], mlp[1], 1)
+        self.conv2 = Conv2d(mlp[0]*2, mlp[1], 1)#x2 because of fusion
         self.conv3 = Conv2d(mlp[1], mlp[2], 1)
+        self.conv4 = Conv2d(mlp[2], mlp[3], 1)
 
-        init_params([self.conv1[0], self.conv2[0], self.conv3[0]], 'kaiming_normal')###
-        init_params([self.conv1[1], self.conv2[1], self.conv3[1]], 1)###
+        init_params([self.conv1[0], self.conv2[0], self.conv3[0], self.conv4[0]], 'kaiming_normal')###
+        init_params([self.conv1[1], self.conv2[1], self.conv3[1], self.conv4[1]], 1)###
+    """
+    def cart2hom(self, pts_3d):
+        ''' Input: 3xn points in Cartesian
+            Oupput: 4xn points in Homogeneous by pending 1
+        '''
+        n = pts_3d.shape[1]
+        pts_3d_hom = torch.vstack((pts_3d, torch.ones((1,n))))
+        return pts_3d_hom
+    
+    def project_rect_to_image(self, pts_3d_rect, P):
+        ''' Input: 3xn points in rect camera coord.
+            Output: 2xn points in image2 coord.
+        '''
+        pts_3d_rect = self.cart2hom(pts_3d_rect)
+        pts_2d = torch.dot(pts_3d_rect, np.transpose(P)) # 3xn
+        pts_2d[0,:] /= pts_2d[2,:]
+        pts_2d[1,:] /= pts_2d[2,:]
+        return pts_2d[0:2,:]
+    """
+    def query_rgb_point(self, pc, img, P):
+        pass
+        '''
+        bs = pc.shape[0]
+        n_channel = pc.shape[1]
+        n_points = pc.shape[2]
+        pc_2d = torch.zeros(bs,n_channel-1,n_points)
+        for b in range(bs):
+            pc_2d[b,...] = self.project_rect_to_image(pc[b,...].squeeze(), P).unsqueeze(0)
+        '''
 
-    def forward(self, pc, feat, new_pc=None):
+    def forward(self, pc, feat, img, P, query_v1, new_pc=None):
         batch_size = pc.shape[0]
         npoint = new_pc.shape[2]
         k = self.nsample
@@ -176,15 +227,21 @@ class PointNetModule(nn.Module):
         #ipdb> indices.shape torch.Size([32, 140, 64])
         #ipdb> num.shape torch.Size([32, 140])
 
+        # indices_rgb = self.query_rgb_point(pc, img) # torch.Size([32, 140, 64])
+        indices_rgb = torch.gather(query_v1, 1, indices.view(batch_size, npoint*k))\
+            .view(batch_size,npoint,k)#torch.Size([32, 140, 64])
+        img = img.view(batch_size,32,-1)#torch.Size([32, 32, 46208])
+
         assert indices.data.max() < pc.shape[2] and indices.data.min() >= 0
         grouped_pc = None
         grouped_feature = None
+        grouped_rgb = None
 
         if self.use_xyz:
             grouped_pc = torch.gather(
                 pc, 2,
                 indices.view(batch_size, 1, npoint * k).expand(-1, 3, -1)
-            ).view(batch_size, 3, npoint, k)
+            ).view(batch_size, 3, npoint, k)#torch.Size([32, 3, 140, 64])
 
             grouped_pc = grouped_pc - new_pc.unsqueeze(3)
 
@@ -192,18 +249,25 @@ class PointNetModule(nn.Module):
             grouped_feature = torch.gather(
                 feat, 2,
                 indices.view(batch_size, 1, npoint * k).expand(-1, feat.size(1), -1)
-            ).view(batch_size, feat.size(1), npoint, k)
+            ).view(batch_size, feat.size(1), npoint, k)#torch.Size([32, 1, 140, 64])
 
             # grouped_feature = torch.cat([new_feat.unsqueeze(3), grouped_feature], -1)
+
+        grouped_rgb = torch.gather(
+            img, 2,
+            indices_rgb.view(batch_size, 1, npoint * k).expand(-1, 32, -1)
+        ).view(batch_size, 32, npoint, k)#torch.Size([32, 32, 140, 64])
 
         if self.use_feature and self.use_xyz:
             grouped_feature = torch.cat([grouped_pc, grouped_feature], 1)#torch.Size([32, 4, 140, 64])
         elif self.use_xyz:
             grouped_feature = grouped_pc.contiguous()
 
-        grouped_feature = self.conv1(grouped_feature)#torch.Size([32, 64, 140, 64])
+        grouped_feature = self.conv1(grouped_feature)#torch.Size([32, 32, 140, 64])
+        grouped_feature = torch.cat([grouped_feature, grouped_rgb],1)##torch.Size([32, 64, 140, 64])
         grouped_feature = self.conv2(grouped_feature)#torch.Size([32, 64, 140, 64])
-        grouped_feature = self.conv3(grouped_feature)#torch.Size([32, 128, 140, 64])
+        grouped_feature = self.conv3(grouped_feature)#torch.Size([32, 64, 140, 64])
+        grouped_feature = self.conv4(grouped_feature)#torch.Size([32, 128, 140, 64])
         # output, _ = torch.max(grouped_feature, -1)
 
         valid = (num > 0).view(batch_size, 1, -1, 1)#torch.Size([32, 1, 140, 1])
@@ -220,33 +284,33 @@ class PointNetFeat(nn.Module):
         u = cfg.DATA.HEIGHT_HALF
         assert len(u) == 4
         self.pointnet1 = PointNetModule(
-            input_channel - 3, [64, 64, 128], u[0], 32, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 64, 64, 128], u[0], 32, use_xyz=True, use_feature=True)
 
         self.pointnet2 = PointNetModule(
-            input_channel - 3, [64, 64, 128], u[1], 64, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 64, 64, 128], u[1], 64, use_xyz=True, use_feature=True)
 
         self.pointnet3 = PointNetModule(
-            input_channel - 3, [128, 128, 256], u[2], 64, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 128, 128, 256], u[2], 64, use_xyz=True, use_feature=True)
 
         self.pointnet4 = PointNetModule(
-            input_channel - 3, [256, 256, 512], u[3], 128, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 256, 256, 512], u[3], 128, use_xyz=True, use_feature=True)
 
-    def forward(self, point_cloud, sample_pc, feat=None, one_hot_vec=None):
+    def forward(self, point_cloud, sample_pc, img, P, query_v1, feat=None, one_hot_vec=None):
         pc = point_cloud#torch.Size([32, 3, 1024])
         pc1 = sample_pc[0]
         pc2 = sample_pc[1]
         pc3 = sample_pc[2]
         pc4 = sample_pc[3]
-        feat1 = self.pointnet1(pc, feat, pc1)
+        feat1 = self.pointnet1(pc, feat, img, P, query_v1, pc1)
         feat1, _ = torch.max(feat1, -1)
 
-        feat2 = self.pointnet2(pc, feat, pc2)
+        feat2 = self.pointnet2(pc, feat, img, P, query_v1, pc2)
         feat2, _ = torch.max(feat2, -1)
 
-        feat3 = self.pointnet3(pc, feat, pc3)
+        feat3 = self.pointnet3(pc, feat, img, P, query_v1, pc3)
         feat3, _ = torch.max(feat3, -1)
 
-        feat4 = self.pointnet4(pc, feat, pc4)
+        feat4 = self.pointnet4(pc, feat, img, P, query_v1, pc4)
         feat4, _ = torch.max(feat4, -1)
 
         if one_hot_vec is not None:
@@ -365,6 +429,7 @@ class FrustumConvNetv1(nn.Module):
         self.cls_out.bias.data.zero_()###
         self.reg_out.bias.data.zero_()###
 
+        self.cnn = ModifiedResnet()
     def _slice_output(self, output):
         '''
         :param output: torch.Size([99, 39])
@@ -445,6 +510,11 @@ class FrustumConvNetv1(nn.Module):
     def forward(self, data_dicts):
         #dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'one_hot', 'label', 'center_ref1', 'center_ref2', 'center_ref3', 'center_ref4'])
 
+        image = data_dicts.get('image')#torch.Size([32, 3, 400, 200])
+        out_image = self.cnn(image)#torch.Size([32, 32, 400, 200])
+        P = data_dicts.get('P')#torch.Size([32, 3, 4])
+        query_v1 = data_dicts.get('query_v1')#torch.Size([32, 1024])
+
         point_cloud = data_dicts.get('point_cloud')#torch.Size([32, 4, 1024])
         one_hot = data_dicts.get('one_hot')#torch.Size([32, 3])
         ref_label = data_dicts.get('ref_label')#torch.Size([32, 140])
@@ -478,6 +548,9 @@ class FrustumConvNetv1(nn.Module):
         feat1, feat2, feat3, feat4 = self.feat_net(
             object_point_cloud_xyz,
             [center_ref1, center_ref2, center_ref3, center_ref4],
+            out_image,
+            P,
+            query_v1,
             object_point_cloud_i,
             one_hot)
         #feat1:torch.Size([32, 131, 280])
@@ -650,16 +723,19 @@ class FrustumConvNetv1(nn.Module):
         return losses, metrics
 
 if __name__ == '__main__':
-    from provider import FrustumDataset
+    from provider_fusion import FrustumDataset
     dataset = FrustumDataset(npoints=1024, split='val',
         rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
-        overwritten_data_path='kitti/frustum_caronly_val.pickle',
-        gen_ref = True)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False,
+        overwritten_data_path='kitti/frustum_caronly_wimage_val.pickle',
+        gen_ref = True, with_image=True)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False,
                             num_workers=4, pin_memory=True)
-    model = FrustumConvNetv1().cuda()
+    model = FrustumConvNetv1(n_classes=2, n_channel=3).cuda()
     for batch, data_dicts in enumerate(dataloader):
-        data_dicts_var = {key: value.squeeze().cuda() for key, value in data_dicts.items()}
+        data_dicts_var = {key: value.cuda() for key, value in data_dicts.items()}
+        # dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'one_hot',
+        # 'ref_label', 'center_ref1', 'center_ref2', 'center_ref3', 'center_ref4',
+        # 'size_class', 'box3d_size', 'box3d_heading', 'image', 'P', 'query_v1'])
         losses, metrics= model(data_dicts_var)
 
         print()
