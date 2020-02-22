@@ -276,8 +276,9 @@ class FrustumDataset(object):
             n_point = pts_2d.shape[0]
             query_v1 = np.full(n_point,-1)
             for i in range(n_point):
-                y, x = pts_2d[i,:]
-                query_v1[i] = y * h + x
+                x, y = pts_2d[i,:]
+                query_v1[i] = y * w + x
+
 
             #print("%.3fs"%(time.perf_counter()-tic))
         # Use extra feature as channel
