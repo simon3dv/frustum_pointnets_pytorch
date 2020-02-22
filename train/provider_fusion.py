@@ -257,11 +257,11 @@ class FrustumDataset(object):
             n_point = pts_2d.shape[0]
             query_v1 = np.full(n_point,-1)
             for i in range(n_point):
-                y, x = pts_2d[i,:]
-                newy = int(y*inv_h_scale)
+                x, y = pts_2d[i,:]
                 newx = int(x*inv_w_scale)
-                if newy >= H: newy = H-1###
+                newy = int(y*inv_h_scale)
                 if newx >= W: newx = W-1###
+                if newy >= H: newy = H-1###
                 #query_v1[i] = y * w + x
                 query_v1[i] = newy * W + newx###fix bug
 
