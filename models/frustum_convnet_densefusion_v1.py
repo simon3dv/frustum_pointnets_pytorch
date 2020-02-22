@@ -232,7 +232,8 @@ class PointNetModule(nn.Module):
             .view(batch_size,npoint,k)#torch.Size([32, 140, 64])
         img = img.view(batch_size,32,-1)#torch.Size([32, 32, 46208])
 
-        assert indices_rgb.data.max() < img.shape[2] and indices_rgb.data.min() >= 0
+        assert indices_rgb.data.max() < img.shape[2]
+        assert indices_rgb.data.min() >= 0
         assert indices.data.max() < pc.shape[2] and indices.data.min() >= 0
         grouped_pc = None
         grouped_feature = None
