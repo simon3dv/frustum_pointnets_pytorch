@@ -133,16 +133,21 @@ else:
     print("Wrong model parameter.")
     exit(0)
 
+if 'fusion' in MODEL_FILE:
+    with_image = True
+else:
+    with_image = False
+
 provider = import_from_file(DATA_FILE)
 
 TRAIN_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=TRAIN_SETS,
         rotate_to_center=True, random_flip=True, random_shift=True, one_hot=True,
         overwritten_data_path=TRAIN_FILE,
-        gen_ref = gen_ref)
+        gen_ref = gen_ref, with_image = with_image)
 TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split=TEST_SETS,
         rotate_to_center=True, one_hot=True,
         overwritten_data_path=TEST_FILE,
-        gen_ref = gen_ref)
+        gen_ref = gen_ref, with_image = with_image)
 train_dataloader = DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True,
                                 num_workers=NUM_WORKERS,pin_memory=True)
 test_dataloader = DataLoader(TEST_DATASET, batch_size=TEST_BATCH_SIZE, shuffle=False,
