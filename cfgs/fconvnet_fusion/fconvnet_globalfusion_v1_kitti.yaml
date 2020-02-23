@@ -2,10 +2,10 @@ TRAIN:
   FILE: kitti/frustum_caronly_wimage_train.pickle
   BATCH_SIZE: 32
   START_EPOCH: 0
-  MAX_EPOCH: 50
+  MAX_EPOCH: 100
   OPTIMIZER: adam
-  BASE_LR: 0.0001
-  MIN_LR: 1e-5
+  BASE_LR: 1e-4
+  MIN_LR: 1e-7
   GAMMA: 0.1
   LR_STEPS: [20]
   MOMENTUM: 0.9
@@ -14,7 +14,7 @@ TRAIN:
   TRAIN_SETS: train
 
 MODEL:
-  FILE: models/frustum_convnet_pointfusion_latefusion_v1.py
+  FILE: models/frustum_convnet_globalfusion_v1.py
   NUM_CLASSES: 2
 
 TEST:
@@ -47,5 +47,5 @@ OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4
-FROM_RGB_DET: True
+FROM_RGB_DET: False
 disp: 100
