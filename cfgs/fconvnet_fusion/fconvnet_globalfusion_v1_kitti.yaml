@@ -40,6 +40,7 @@ DATA:
   USE_RGB_AS_CHANNEL: False
   W_CROP: 100
   H_CROP: 60
+  BLACK_TEST: False
 
 RESUME: False
 NUM_GPUS: 1

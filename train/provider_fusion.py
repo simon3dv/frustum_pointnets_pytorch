@@ -265,6 +265,9 @@ class FrustumDataset(object):
                 #query_v1[i] = y * w + x
                 query_v1[i] = newy * W + newx###fix bug
 
+            if cfg.DATA.BLACK_TEST:
+                image_crop_resized = np.zeros(image_crop_resized.shape)
+
             """
             query_v1 = np.full(pts_2d.shape[0],-1)
             image_crop_indices_resized = image_crop_indices_resized.reshape(-1)#(45000=H*W)
