@@ -41,6 +41,7 @@ DATA:
   W_CROP: 100
   H_CROP: 60
   BLACK_TEST: False
+  WHITE_TEST: False
 
 RESUME: False
 NUM_GPUS: 1

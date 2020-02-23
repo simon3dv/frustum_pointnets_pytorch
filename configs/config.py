@@ -165,6 +165,8 @@ __C.DATA.H_CROP = 100
 
 __C.DATA.BLACK_TEST = False
 
+__C.DATA.WHITE_TEST = False
+
 # Loss options
 __C.LOSS = AttrDict()
 

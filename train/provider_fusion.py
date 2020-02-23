@@ -268,6 +268,9 @@ class FrustumDataset(object):
             if cfg.DATA.BLACK_TEST:
                 image_crop_resized = np.zeros(image_crop_resized.shape)
 
+            if cfg.DATA.WHITE_TEST:
+                image_crop_resized = np.full(image_crop_resized.shape,255)
+
             """
             query_v1 = np.full(pts_2d.shape[0],-1)
             image_crop_indices_resized = image_crop_indices_resized.reshape(-1)#(45000=H*W)
