@@ -105,10 +105,7 @@ NUM_CHANNEL = cfg.DATA.NUM_CHANNEL
 NUM_SAMPLES = cfg.DATA.NUM_SAMPLES
 
 strtime = time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time()))
-if 'nuscenes' in DATASET:
-    NAME = DATASET + '_' + OBJTYPE + '_' + SENSOR + '_' + strtime
-else:
-    NAME = DATASET + '_' + OBJTYPE + '_' + strtime
+NAME = '_'.join(OUTPUT_DIR.split('/'))+ '_' + strtime
 
 MODEL = import_from_file(MODEL_FILE) # import network module
 LOG_DIR = OUTPUT_DIR + '/' + NAME
@@ -232,8 +229,8 @@ def train():
     elif 'frustum_convnet_densefusion_v1' in MODEL_FILE:
         from frustum_convnet_densefusion_v1 import FrustumConvNetv1
         model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
-    elif 'frustum_convnet_pointfusion_latefusion_v1' in MODEL_FILE:
-        from frustum_convnet_pointfusion_latefusion_v1 import FrustumConvNetv1
+    elif 'frustum_convnet_globalfusion_v1' in MODEL_FILE:
+        from frustum_convnet_globalfusion_v1 import FrustumConvNetv1
         model = FrustumConvNetv1(n_classes=NUM_CLASSES,n_channel=NUM_CHANNEL).cuda()
 
     # set optimizer and scheduler
