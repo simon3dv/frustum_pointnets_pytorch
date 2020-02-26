@@ -4,7 +4,7 @@ TRAIN:
   START_EPOCH: 0
   MAX_EPOCH: 100
   OPTIMIZER: adam
-  BASE_LR: 1e-4
+  BASE_LR: 1e-3
   MIN_LR: 1e-7
   GAMMA: 0.1
   LR_STEPS: [20]
@@ -14,7 +14,7 @@ TRAIN:
   TRAIN_SETS: train
 
 MODEL:
-  FILE: models/frustum_convnet_globalfusion_v1.py
+  FILE: models/frustum_convnet_paintfusion_v1.py
   NUM_CLASSES: 2
 
 TEST:
@@ -31,7 +31,7 @@ DATA:
   OBJTYPE: caronly
   SENSOR: cam_front
   ROTATE_TO_CENTER: True
-  NUM_CHANNEL: 3
+  NUM_CHANNEL: 6
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
