@@ -62,16 +62,55 @@ class PSPNet(nn.Module):
         )
 
     def forward(self, x):
-        f, class_f = self.feats(x) 
-        p = self.psp(f)
+        f, class_f = self.feats(x) #torch.Size([32, 512, 13, 8]),torch.Size([32, 256, 13, 8])
+        p = self.psp(f)#torch.Size([32, 1024, 13, 8])
+        p = self.drop_1(p)#torch.Size([32, 1024, 13, 8])
+        p = self.up_1(p)#torch.Size([32, 256, 26, 16])
+        p = self.drop_2(p)#torch.Size([32, 256, 26, 16])
+        p = self.up_2(p)#torch.Size([32, 64, 52, 32])
+        p = self.drop_2(p)#torch.Size([32, 64, 52, 32])
+        p = self.up_3(p)#torch.Size([32, 64, 104, 64])
+        return self.final(p)#torch.Size([32, 32, 104, 64])
+
+class PSPNet2Global(nn.Module):
+    def __init__(self, n_classes=21, sizes=(1, 2, 3, 6), psp_size=2048, deep_features_size=1024, backend='resnet18',
+                 pretrained=False):
+        super(PSPNet2Global, self).__init__()
+        self.feats = getattr(extractors, backend)(pretrained)
+        self.psp = PSPModule(psp_size, 1024, sizes)
+        self.drop_1 = nn.Dropout2d(p=0.3)
+
+        self.up_1 = PSPUpsample(1024, 256)
+        self.up_2 = PSPUpsample(256, 64)
+        self.up_3 = PSPUpsample(64, 64)
+
+        self.conv_1 = PSPModule(1024, 512, sizes)
+        self.conv_2 = PSPModule(512, 64, sizes)
+        self.conv_3 = PSPModule(64, 1, sizes)
+
+        self.drop_2 = nn.Dropout2d(p=0.15)
+        self.final_1 = nn.Sequential(
+            nn.Conv2d(64, 32, kernel_size=1),
+            nn.LogSoftmax()
+        )
+        self.final_2 = nn.Sequential(
+            nn.Conv2d(32, 1, kernel_size=1),
+            nn.LogSoftmax()
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(deep_features_size, 256),
+            nn.ReLU(),
+            nn.Linear(256, n_classes)
+        )
+
+    def forward(self, x):
+        f, class_f = self.feats(x) #torch.Size([32, 512, 13, 8]),torch.Size([32, 256, 13, 8])
+        p = self.psp(f)#torch.Size([32, 1024, 13, 8])
         p = self.drop_1(p)
-
-        p = self.up_1(p)
+        p = self.conv_1(p)
         p = self.drop_2(p)
-
-        p = self.up_2(p)
+        p = self.conv_2(p)
         p = self.drop_2(p)
-
-        p = self.up_3(p)
-        
-        return self.final(p)
+        p = self.conv_3(p)#torch.Size([32, 1, 13, 8])
+        return p

@@ -25,6 +25,7 @@ from configs.config import cfg
 from ops.query_depth_point.query_depth_point import QueryDepthPoint
 from ops.pybind11.box_ops_cc import rbbox_iou_3d_pair
 from models.pspnet import PSPNet
+from models.pspnet import PSPNet2Global
 
 psp_models = {
     'resnet18': lambda: PSPNet(sizes=(1, 2, 3, 6), psp_size=512, deep_features_size=256, backend='resnet18'),
@@ -40,6 +41,19 @@ class ModifiedResnet(nn.Module):
         super(ModifiedResnet, self).__init__()
 
         self.model = psp_models['resnet18'.lower()]()
+        self.model = nn.DataParallel(self.model)
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
+
+class Resnet2Global(nn.Module):
+
+    def __init__(self, usegpu=True):
+        super(Resnet2Global, self).__init__()
+
+        self.model = PSPNet2Global(sizes=(1, 2, 3, 6), psp_size=512, deep_features_size=256, backend='resnet18')
         self.model = nn.DataParallel(self.model)
 
     def forward(self, x):
@@ -333,6 +347,12 @@ class ConvFeatNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+        img_size = 104
+        self.conv1 = torch.nn.Conv1d(768+img_size,768+img_size,1)
+        self.conv2 = torch.nn.Conv1d(768+img_size,768,1)
+        self.bn1 = nn.BatchNorm1d(768+img_size)
+        self.bn2 = nn.BatchNorm1d(768)
+
     def forward(self, x1, x2, x3, x4, global_image):
         '''
         :param x1:torch.Size([32, 131, 280])
@@ -370,8 +390,10 @@ class ConvFeatNet(nn.Module):
         bs = x.shape[0]
         num_out = x.shape[-1]
         y = global_image.view(bs,-1,1).repeat(1,1,num_out)
-
+        y = torch.zeros(y.shape)
         xy = torch.cat([x,y],1)
+        xy = F.relu(self.bn1(self.conv1(xy)))
+        xy = F.relu(self.bn2(self.conv2(xy)))
         return xy
 
 class FrustumConvNetv1(nn.Module):
@@ -385,15 +407,17 @@ class FrustumConvNetv1(nn.Module):
         self.num_bins = num_bins
 
         output_size = 3 + num_bins * 2 + NUM_SIZE_CLUSTER * 4
-        self.reg_out = nn.Conv1d(768+768, output_size, 1)
-        self.cls_out = nn.Conv1d(768+768, 2, 1)
+        self.reg_out = nn.Conv1d(768, output_size, 1)
+        self.cls_out = nn.Conv1d(768, 2, 1)
         nn.init.kaiming_uniform_(self.cls_out.weight, mode='fan_in')###
         nn.init.kaiming_uniform_(self.reg_out.weight, mode='fan_in')###
         self.cls_out.bias.data.zero_()###
         self.reg_out.bias.data.zero_()###
 
-        self.cnn = ModifiedResnet()
-        self.fc = nn.Linear(6656, 768)
+        self.cnn =  Resnet2Global()
+        self.fc1 = nn.Linear(6656, 2048)
+        self.fcbn1 = nn.BatchNorm1d(2048)
+        self.fc2 = nn.Linear(2048, 768)
     def _slice_output(self, output):
         '''
         :param output: torch.Size([99, 39])
@@ -474,10 +498,10 @@ class FrustumConvNetv1(nn.Module):
     def forward(self, data_dicts):
         #dict_keys(['point_cloud', 'rot_angle', 'box3d_center', 'size_class', 'size_residual', 'angle_class', 'angle_residual', 'one_hot', 'label', 'center_ref1', 'center_ref2', 'center_ref3', 'center_ref4'])
 
-        image = data_dicts.get('image')#torch.Size([32, 3, 400, 200])
-        out_image = self.cnn(image)#torch.Size([32, 32, 400, 200])
-        global_image = torch.max(out_image,1)[0].view(image.shape[0],-1)
-        global_image = self.fc(global_image)
+        image = data_dicts.get('image')#torch.Size([32, 3, W, H])
+        out_image = self.cnn(image)#torch.Size([32, 1, w, h])
+        global_image = out_image.view(out_image.shape[0],-1)
+
         P = data_dicts.get('P')#torch.Size([32, 3, 4])
         query_v1 = data_dicts.get('query_v1')#torch.Size([32, 1024])
 
