@@ -390,7 +390,7 @@ class ConvFeatNet(nn.Module):
         bs = x.shape[0]
         num_out = x.shape[-1]
         y = global_image.view(bs,-1,1).repeat(1,1,num_out)
-        y = torch.zeros(y.shape).cuda()
+        # y = torch.zeros(y.shape).cuda()
         xy = torch.cat([x,y],1)
         xy = F.relu(self.bn1(self.conv1(xy)))
         xy = F.relu(self.bn2(self.conv2(xy)))
