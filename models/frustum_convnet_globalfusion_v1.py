@@ -392,8 +392,8 @@ class ConvFeatNet(nn.Module):
         y = global_image.view(bs,-1,1).repeat(1,1,num_out)
         # y = torch.zeros(y.shape).cuda()
         xy = torch.cat([x,y],1)
-        xy = F.relu(self.bn1(self.conv1(xy)))
-        xy = F.relu(self.bn2(self.conv2(xy)))
+        #xy = F.relu(self.bn1(self.conv1(xy)))
+        #xy = F.relu(self.bn2(self.conv2(xy)))
         return xy
 
 class FrustumConvNetv1(nn.Module):
@@ -407,8 +407,9 @@ class FrustumConvNetv1(nn.Module):
         self.num_bins = num_bins
 
         output_size = 3 + num_bins * 2 + NUM_SIZE_CLUSTER * 4
-        self.reg_out = nn.Conv1d(768, output_size, 1)
-        self.cls_out = nn.Conv1d(768, 2, 1)
+        img_size = 104
+        self.reg_out = nn.Conv1d(768+img_size, output_size, 1)
+        self.cls_out = nn.Conv1d(768+img_size, 2, 1)
         nn.init.kaiming_uniform_(self.cls_out.weight, mode='fan_in')###
         nn.init.kaiming_uniform_(self.reg_out.weight, mode='fan_in')###
         self.cls_out.bias.data.zero_()###
