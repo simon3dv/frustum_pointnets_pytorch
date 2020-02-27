@@ -190,7 +190,8 @@ def test_one_epoch(model, loader):
 
         model = model.eval()
 
-        losses, metrics = model(data_dicts_var)
+        with torch.no_grad():
+            losses, metrics = model(data_dicts_var)
 
         for key in test_losses.keys():
             if key in losses.keys():

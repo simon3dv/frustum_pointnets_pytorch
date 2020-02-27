@@ -168,6 +168,7 @@ class PointNetModule(nn.Module):
         self.dist = dist
         self.nsample = nsample
         self.use_xyz = use_xyz
+        self.mlp = mlp
 
         if Infea > 0:
             use_feature = True
@@ -186,9 +187,6 @@ class PointNetModule(nn.Module):
         self.conv2 = Conv2d(mlp[0], mlp[1], 1)
         self.conv3 = Conv2d(mlp[1], mlp[2], 1)
         self.conv4 = Conv2d(mlp[2], mlp[3], 1)
-
-        self.econv1 = Conv2d(mlp[0], mlp[0], 1)
-        self.econv2 = Conv2d(mlp[0], mlp[1], 1)
 
         init_params([self.conv1[0], self.conv2[0], self.conv3[0], self.conv4[0]], 'kaiming_normal')###
         init_params([self.conv1[1], self.conv2[1], self.conv3[1], self.conv4[1]], 1)###
@@ -222,7 +220,7 @@ class PointNetModule(nn.Module):
             pc_2d[b,...] = self.project_rect_to_image(pc[b,...].squeeze(), P).unsqueeze(0)
         '''
 
-    def forward(self, pc, feat, img, P, query_v1, new_pc=None):
+    def forward(self, pc, feat, img1, img2, P, query_v1, new_pc=None):
         batch_size = pc.shape[0]
         npoint = new_pc.shape[2]
         k = self.nsample
@@ -233,9 +231,8 @@ class PointNetModule(nn.Module):
         # indices_rgb = self.query_rgb_point(pc, img) # torch.Size([32, 140, 64])
         indices_rgb = torch.gather(query_v1, 1, indices.view(batch_size, npoint*k))\
             .view(batch_size,npoint,k)#torch.Size([32, 140, 64])
-        img = img.view(batch_size,32,-1)#torch.Size([32, 32, 46208])
 
-        assert indices_rgb.data.max() < img.shape[2]
+        assert indices_rgb.data.max() < img1.shape[2]*img1.shape[3]
         assert indices_rgb.data.min() >= 0
         assert indices.data.max() < pc.shape[2] and indices.data.min() >= 0
         grouped_pc = None
@@ -258,10 +255,19 @@ class PointNetModule(nn.Module):
 
             # grouped_feature = torch.cat([new_feat.unsqueeze(3), grouped_feature], -1)
 
-        grouped_rgb = torch.gather(
-            img, 2,
-            indices_rgb.view(batch_size, 1, npoint * k).expand(-1, 32, -1)
-        ).view(batch_size, 32, npoint, k)#torch.Size([32, 32, 140, 64])
+        img1 = img1.view(batch_size,self.mlp[0],-1)#torch.Size([32, 32, 46208])
+        grouped_rgb1 = torch.gather(
+            img1, 2,
+            indices_rgb.view(batch_size, 1, npoint * k).expand(-1, self.mlp[0], -1)
+        ).view(batch_size, self.mlp[0], npoint, k)#torch.Size([32, 32, 140, 64])
+
+        grouped_rgb2 = None
+        if img2 is not None:
+            img2 = img2.view(batch_size,self.mlp[1],-1)
+            grouped_rgb2 = torch.gather(
+                img2, 2,
+                indices_rgb.view(batch_size, 1, npoint * k).expand(-1, self.mlp[1], -1)
+            ).view(batch_size, self.mlp[1], npoint, k)  # torch.Size([32, 32, 140, 64])
 
         if self.use_feature and self.use_xyz:
             grouped_feature = torch.cat([grouped_pc, grouped_feature], 1)#torch.Size([32, 4, 140, 64])
@@ -269,15 +275,14 @@ class PointNetModule(nn.Module):
             grouped_feature = grouped_pc.contiguous()
 
         point_feature = self.conv1(grouped_feature)#torch.Size([32, 32, 140, 64])
-        grouped_rgb = self.econv1(grouped_rgb)
+        #grouped_rgb = self.econv1(grouped_rgb)
         #32+32:
-        feature1_fusion = torch.cat([point_feature, grouped_rgb],1)#torch.Size([32, 64, 140, 64]
+        feature1_fusion = torch.cat([point_feature, grouped_rgb1],1)#torch.Size([32, 64, 140, 64]
 
         point_feature = self.conv2(point_feature)#torch.Size([32, 64, 140, 64])
-        grouped_rgb = self.econv2(grouped_rgb)
+        #grouped_rgb = self.econv2(grouped_rgb)
         #64+64:
-        feature2_fusion = torch.cat([point_feature, grouped_rgb],1)#[32, 128, 140, 64])
-
+        feature2_fusion = torch.cat([point_feature, grouped_rgb2],1)#[32, 128, 140, 64])
 
         point_feature = self.conv3(point_feature)#torch.Size([32, 64, 140, 64])
         #grouped_rgb = self.econv3(grouped_rgb)
@@ -312,22 +317,35 @@ class PointNetFeat(nn.Module):
         self.pointnet4 = PointNetModule(
             input_channel - 3, [32, 256, 256, 512], u[3], 128, use_xyz=True, use_feature=True)
 
+        self.econv1 = Conv2d(32, 32, 1)
+        self.econv2 = Conv2d(32, 64, 1)
+        self.econv3 = Conv2d(64, 64, 1)
+        self.econv4 = Conv2d(64, 128, 1)
+        self.econv5 = Conv2d(128, 256, 1)
+
     def forward(self, point_cloud, sample_pc, img, P, query_v1, feat=None, one_hot_vec=None):
         pc = point_cloud#torch.Size([32, 3, 1024])
         pc1 = sample_pc[0]
         pc2 = sample_pc[1]
         pc3 = sample_pc[2]
         pc4 = sample_pc[3]
-        feat1 = self.pointnet1(pc, feat, img, P, query_v1, pc1)#32*2+64*2+128
+
+        img1 = self.econv1(img)
+        img2 = self.econv2(img1)
+        img3 = self.econv3(img2)
+        img4 = self.econv4(img3)
+        img5 = self.econv5(img4)
+
+        feat1 = self.pointnet1(pc, feat, img1, img2, P, query_v1, pc1)#32*2+64*2+128
         feat1, _ = torch.max(feat1, -1)
 
-        feat2 = self.pointnet2(pc, feat, img, P, query_v1, pc2)#32*2+64*2+128
+        feat2 = self.pointnet2(pc, feat, img2, img3, P, query_v1, pc2)#32*2+64*2+128
         feat2, _ = torch.max(feat2, -1)
 
-        feat3 = self.pointnet3(pc, feat, img, P, query_v1, pc3)#32*2+128*2+256
+        feat3 = self.pointnet3(pc, feat, img3, img4, P, query_v1, pc3)#32*2+128*2+256
         feat3, _ = torch.max(feat3, -1)
 
-        feat4 = self.pointnet4(pc, feat, img, P, query_v1, pc4)#32*2+256*2+512
+        feat4 = self.pointnet4(pc, feat, img4, img5, P, query_v1, pc4)#32*2+256*2+512
         feat4, _ = torch.max(feat4, -1)
 
         if one_hot_vec is not None:
