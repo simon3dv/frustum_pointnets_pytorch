@@ -144,14 +144,16 @@ class FrustumDataset(object):
         self.gen_ref = gen_ref
         self.from_rgb_detection = from_rgb_detection
         self.with_image = with_image
-        _R_MEAN = 92.8403
-        _G_MEAN = 97.7996
-        _B_MEAN = 93.5843
+        self._R_MEAN = 92.8403
+        self._G_MEAN = 97.7996
+        self._B_MEAN = 93.5843
+        """
         self.norm = transforms.Compose([
-            transforms.ToTensor(), # range [0, 255] -> [0.0,1.0]
-            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            transforms.Normalize(mean=(_R_MEAN, _G_MEAN, _B_MEAN), std=(1, 1, 1)),
+            #transforms.ToTensor(), # range [0, 255] -> [0.0,1.0]
             ]
         )
+        """
         self.resize = transforms.Resize(size=(cfg.DATA.W_CROP,cfg.DATA.H_CROP))#,interpolation=Image.NEAREST)
         if from_rgb_detection:
             with open(overwritten_data_path,'rb') as fp:
@@ -191,6 +193,13 @@ class FrustumDataset(object):
             self.z4 = np.arange(0, 70, s4) + s4 / 2.#[1,3,...,69]
 
 
+    def norm(self,x):
+        x = x.astype(np.float32)
+        _MEAN = [self._R_MEAN,self._G_MEAN,self._B_MEAN]
+        x -= _MEAN
+        x /= 255
+        return x
+
     def __len__(self):
             return len(self.input_list)
 
@@ -222,12 +231,11 @@ class FrustumDataset(object):
             import time
             #tic = time.perf_counter()
             image_filename = self.image_filename_list[index]
-            image = cv2.imread(image_filename)#(370, 1224, 3),uint8 or (375, 1242, 3)
-            image = np.transpose(image,[2,0,1])
-            image = torch.FloatTensor(image)
-            #image = self.norm(image)
+            #image = cv2.imread(image_filename)#(370, 1224, 3),uint8 or (375, 1242, 3)
+            image = Image.open(image_filename)
             image = np.array(image)
-            image = np.transpose(image,[1,2,0])
+            image = self.norm(image)
+            image = np.array(image)
             n_point = point_set.shape[0]
             point_rgb = np.zeros((n_point,3))
             for n in range(n_point):
