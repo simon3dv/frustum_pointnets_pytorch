@@ -42,6 +42,8 @@ class nuscenes2kitti_object(object):
             self.num_samples = 7518
         elif split == 'v1.0-trainval':
             self.num_samples = 34149
+        #elif split == 'v1.0-val':
+        #    self.num_samples = 34149#17074
         else:
             print('Unknown split: %s' % (split))
             exit(-1)
