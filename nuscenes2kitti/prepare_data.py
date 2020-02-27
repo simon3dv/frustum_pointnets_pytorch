@@ -467,7 +467,7 @@ def random_shift_box2d(box2d, shift_ratio=0.1):
     return np.array([cx2-w2/2.0, cy2-h2/2.0, cx2+w2/2.0, cy2+h2/2.0])
 
 def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False,
-                         perturb_box2d=False, augmentX=1, type_whitelist=['Car']):
+                         perturb_box2d=False, augmentX=1, type_whitelist=['Car'], with_image=False):
     ''' Extract point clouds and corresponding annotations in frustums
         defined generated from 2D bounding boxes
         Lidar points and 3d boxes are in *rect camera* coord system
@@ -498,6 +498,9 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
     # (cont.) clockwise angle from positive x axis in velo coord.
     box3d_size_list = []  # array of l,w,h
     frustum_angle_list = []  # angle of 2d box center from pos x-axis
+    calib_list = [] # for fconvnet
+    image_filename_list = [] # for fusion
+    input_2d_list = []
 
     pos_cnt = 0.0
     all_cnt = 0.0
@@ -505,6 +508,9 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
     for data_idx in data_idx_list:
         print('------------- ', data_idx)
         calib = dataset.get_calibration(data_idx)
+        if with_image:
+            image_filename = os.path.join(getattr(dataset,sensor+'_dir'),
+                '%06d.png' % (data_idx))  # dataset.get_image(data_idx)#(370, 1224, 3),uint8
         objects = dataset.get_label_objects(sensor, data_idx)
         pc_velo = dataset.get_lidar(data_idx)
         pc_cam = np.zeros_like(pc_velo)
@@ -542,7 +548,7 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 uvdepth = np.zeros((1, 3))
                 uvdepth[0, 0:2] = box2d_center
                 uvdepth[0, 2] = 20  # some random depth
-                box2d_center_cam = calib.project_image_to_cam(uvdepth, sensor)
+                box2d_center_cam = calib.project_image_to_cam(uvdepth.T, sensor).T
                 #box2d_center_rect = calib.project_image_to_rect(uvdepth.T).T
                 frustum_angle = -1 * np.arctan2(box2d_center_cam[0, 2],
                                                 box2d_center_cam[0, 0])
@@ -570,7 +576,10 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                 heading_list.append(heading_angle)
                 box3d_size_list.append(box3d_size)
                 frustum_angle_list.append(frustum_angle)
-
+                calib_list.append(getattr(calib,sensor))#for fconvnet, 3x3, not 3x4
+                if with_image:
+                    image_filename_list.append(image_filename)
+                    input_2d_list.append(pc_image_coord[box_fov_inds,:])
                 # collect statistics
                 pos_cnt += np.sum(label)
                 all_cnt += pc_in_box_fov.shape[0]
@@ -589,7 +598,10 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
         pickle.dump(heading_list, fp)
         pickle.dump(box3d_size_list, fp)
         pickle.dump(frustum_angle_list, fp)
-
+        pickle.dump(calib_list, fp)
+        if with_image:
+            pickle.dump(image_filename_list, fp)
+            pickle.dump(input_2d_list, fp)
     if viz:
         import mayavi.mlab as mlab
         for i in range(10):
@@ -648,6 +660,7 @@ if __name__ == '__main__':
                         help='Only generate cars; otherwise cars, peds and cycs')
     parser.add_argument('--CAM_FRONT_only', action='store_true',
                         help='Only generate CAM_FRONT; otherwise six cameras')
+    parser.add_argument('--with_image', action='store_true')
     args = parser.parse_args()
 
 
@@ -668,10 +681,12 @@ if __name__ == '__main__':
         demo(args.data_idx,args.obj_idx)
         print('demo is done. Exit now.')
         exit()
+
     if args.vis_label:
         vis_label(split='training',sensor_list=sensor_list,type_whitelist=type_whitelist)
         print('vis_label is done. Exit now.')
         exit()
+
     if args.vis_pred:
         vis_pred(split='training',sensor_list=sensor_list,type_whitelist=type_whitelist,vis_pred_path=args.vis_pred_path)
         print('vis_pred is done. Exit now.')
@@ -686,7 +701,8 @@ if __name__ == '__main__':
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + 'v1.0-mini.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
-                type_whitelist=type_whitelist)
+                type_whitelist=type_whitelist,
+                with_image=args.with_image)
         print('gen_mini is done.')
 
     if args.gen_train:
@@ -698,7 +714,8 @@ if __name__ == '__main__':
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.train_sets+'.pickle'),
                 viz=False, perturb_box2d=True, augmentX=5,
-                type_whitelist=type_whitelist)
+                type_whitelist=type_whitelist,
+                with_image=args.with_image)
         print('gen_train is done.')
 
     if args.gen_val:
@@ -710,5 +727,6 @@ if __name__ == '__main__':
                 sensor,
                 os.path.join(BASE_DIR, output_prefix + sensor_prefix + args.val_sets+'.pickle'),
                 viz=False, perturb_box2d=False, augmentX=1,
-                type_whitelist=type_whitelist)
+                type_whitelist=type_whitelist,
+                with_image=args.with_image)
         print('gen_val is done.')
