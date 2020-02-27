@@ -285,26 +285,26 @@ def DeConv1d(i_c, o_c, k, s=1, p=0, bn=True):
         return nn.Sequential(nn.ConvTranspose1d(i_c, o_c, k, s, p), nn.ReLU(True))
 
 class ConvFeatNet(nn.Module):
-    def __init__(self, i_c=128, num_vec=3):
+    def __init__(self, i_c=128*2, num_vec=3):
         super(ConvFeatNet, self).__init__()
 
-        self.block1_conv1 = Conv1d(i_c + num_vec, 128, 3, 1, 1)
+        self.block1_conv1 = Conv1d(i_c + num_vec, i_c, 3, 1, 1)
 
-        self.block2_conv1 = Conv1d(128, 128, 3, 2, 1)
-        self.block2_conv2 = Conv1d(128, 128, 3, 1, 1)
-        self.block2_merge = Conv1d(128 + 128 + num_vec, 128, 1, 1)
+        self.block2_conv1 = Conv1d(i_c, i_c, 3, 2, 1)
+        self.block2_conv2 = Conv1d(i_c, i_c, 3, 1, 1)
+        self.block2_merge = Conv1d(i_c + i_c + num_vec, i_c, 1, 1)
 
-        self.block3_conv1 = Conv1d(128, 256, 3, 2, 1)
-        self.block3_conv2 = Conv1d(256, 256, 3, 1, 1)
-        self.block3_merge = Conv1d(256 + 256 + num_vec, 256, 1, 1)
+        self.block3_conv1 = Conv1d(i_c, i_c*2, 3, 2, 1)
+        self.block3_conv2 = Conv1d(i_c*2, i_c*2, 3, 1, 1)
+        self.block3_merge = Conv1d(i_c*2 + i_c*2 + num_vec, i_c*2, 1, 1)
 
-        self.block4_conv1 = Conv1d(256, 512, 3, 2, 1)
-        self.block4_conv2 = Conv1d(512, 512, 3, 1, 1)
-        self.block4_merge = Conv1d(512 + 512 + num_vec, 512, 1, 1)
+        self.block4_conv1 = Conv1d(i_c*2, i_c*4, 3, 2, 1)
+        self.block4_conv2 = Conv1d(i_c*4, i_c*4, 3, 1, 1)
+        self.block4_merge = Conv1d(i_c*4 + i_c*4 + num_vec, i_c*4, 1, 1)
 
-        self.block2_deconv = DeConv1d(128, 256, 1, 1, 0)
-        self.block3_deconv = DeConv1d(256, 256, 2, 2, 0)
-        self.block4_deconv = DeConv1d(512, 256, 4, 4, 0)
+        self.block2_deconv = DeConv1d(i_c, i_c*2, 1, 1, 0)
+        self.block3_deconv = DeConv1d(i_c*2, i_c*2, 2, 2, 0)
+        self.block4_deconv = DeConv1d(i_c*4, i_c*2, 4, 4, 0)
 
         for m in self.modules():
             if isinstance(m, (nn.Conv1d, nn.ConvTranspose1d)):
