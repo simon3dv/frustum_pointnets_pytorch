@@ -1,6 +1,6 @@
 TRAIN:
-  FILE: kitti/frustum_caronly_wimage_train.pickle
-  BATCH_SIZE: 1
+  FILE: kitti/frustum_caronly_train.pickle
+  BATCH_SIZE: 32
   START_EPOCH: 0
   MAX_EPOCH: 50
   OPTIMIZER: adam
@@ -14,18 +14,18 @@ TRAIN:
   TRAIN_SETS: train
 
 MODEL:
-  FILE: models/frustum_convnet_densefusion_v1.py
+  FILE: models/frustum_convnet_v1.py
   NUM_CLASSES: 2
 
 TEST:
-  FILE: kitti/frustum_caronly_wimage_val.pickle
-  BATCH_SIZE: 1
+  FILE: kitti/frustum_caronly_val.pickle
+  BATCH_SIZE: 32
   METHOD: nms
   NUM_POINT: 1024
   TEST_SETS: val
 
 DATA:
-  FILE: train/provider_fusion_wo_resize.py
+  FILE: train/provider.py
   DATASET: kitti
   DATA_ROOT: kitti
   OBJTYPE: caronly
@@ -39,9 +39,10 @@ DATA:
   USE_REFLECTION_AS_CHANNEL: False
   USE_RGB_AS_CHANNEL: False
 
+
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz_wo_resize'
+OUTPUT_DIR: 'log/fconvnet_v1_kitti_caronly_fromgt/xyzr'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4

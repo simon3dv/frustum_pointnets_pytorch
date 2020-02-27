@@ -179,11 +179,7 @@ class PointNetModule(nn.Module):
 
         self.query_depth_point = QueryDepthPoint(dist, nsample)
 
-        if self.use_xyz:
-            self.conv1 = Conv2d(Infea + 3, mlp[0], 1)
-        else:
-            self.conv1 = Conv2d(Infea, mlp[0], 1)
-
+        self.conv1 = Conv2d(Infea + 3, mlp[0], 1)
         self.conv2 = Conv2d(mlp[0], mlp[1], 1)
         self.conv3 = Conv2d(mlp[1], mlp[2], 1)
         self.conv4 = Conv2d(mlp[2], mlp[3], 1)
@@ -274,6 +270,10 @@ class PointNetModule(nn.Module):
         elif self.use_xyz:
             grouped_feature = grouped_pc.contiguous()
 
+        if not self.use_xyz:
+            grouped_feature = torch.cat([grouped_rgb1, grouped_rgb2],1)
+            return grouped_feature
+
         point_feature = self.conv1(grouped_feature)#torch.Size([32, 32, 140, 64])
         #grouped_rgb = self.econv1(grouped_rgb)
         #32+32:
@@ -306,16 +306,16 @@ class PointNetFeat(nn.Module):
         u = cfg.DATA.HEIGHT_HALF
         assert len(u) == 4
         self.pointnet1 = PointNetModule(
-            input_channel - 3, [32, 64, 64, 128], u[0], 32, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 64, 64, 128], u[0], 32, use_xyz=cfg.DATA.USE_XYZ, use_feature=True)
 
         self.pointnet2 = PointNetModule(
-            input_channel - 3, [32, 64, 64, 128], u[1], 64, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 64, 64, 128], u[1], 64, use_xyz=cfg.DATA.USE_XYZ, use_feature=True)
 
         self.pointnet3 = PointNetModule(
-            input_channel - 3, [32, 128, 128, 256], u[2], 64, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 128, 128, 256], u[2], 64, use_xyz=cfg.DATA.USE_XYZ, use_feature=True)
 
         self.pointnet4 = PointNetModule(
-            input_channel - 3, [32, 256, 256, 512], u[3], 128, use_xyz=True, use_feature=True)
+            input_channel - 3, [32, 256, 256, 512], u[3], 128, use_xyz=cfg.DATA.USE_XYZ, use_feature=True)
 
         self.econv1 = Conv2d(32, 32, 1)
         self.econv2 = Conv2d(32, 64, 1)
@@ -335,6 +335,12 @@ class PointNetFeat(nn.Module):
         img3 = self.econv3(img2)
         img4 = self.econv4(img3)
         img5 = self.econv5(img4)
+        if cfg.DATA.BLACK_TEST:
+            img1 = torch.zeros(img1.shape).cuda()
+            img2 = torch.zeros(img2.shape).cuda()
+            img3 = torch.zeros(img3.shape).cuda()
+            img4 = torch.zeros(img4.shape).cuda()
+            img5 = torch.zeros(img5.shape).cuda()
 
         feat1 = self.pointnet1(pc, feat, img1, img2, P, query_v1, pc1)#32*2+64*2+128
         feat1, _ = torch.max(feat1, -1)
@@ -381,23 +387,42 @@ class ConvFeatNet(nn.Module):
     def __init__(self, i_c=320, num_vec=3):
         super(ConvFeatNet, self).__init__()
 
-        self.block1_conv1 = Conv1d(i_c + num_vec, 320, 3, 1, 1)
 
-        self.block2_conv1 = Conv1d(320, 320, 3, 2, 1)
-        self.block2_conv2 = Conv1d(320, 320, 3, 1, 1)
-        self.block2_merge = Conv1d(320 + 320 + num_vec, 320, 1, 1)
 
-        self.block3_conv1 = Conv1d(320, 640, 3, 2, 1)
-        self.block3_conv2 = Conv1d(640, 640, 3, 1, 1)
-        self.block3_merge = Conv1d(640 + 576 + num_vec, 640, 1, 1)
 
-        self.block4_conv1 = Conv1d(640, 1280, 3, 2, 1)
-        self.block4_conv2 = Conv1d(1280, 1280, 3, 1, 1)
-        self.block4_merge = Conv1d(1280 + 1088 + num_vec, 1280, 1, 1)
+        self.block1_conv1 = Conv1d(i_c + num_vec, i_c, 3, 1, 1)
 
-        self.block2_deconv = DeConv1d(320, 640, 1, 1, 0)
-        self.block3_deconv = DeConv1d(640, 640, 2, 2, 0)
-        self.block4_deconv = DeConv1d(1280, 640, 4, 4, 0)
+        self.block2_conv1 = Conv1d(i_c, i_c, 3, 2, 1)
+        self.block2_conv2 = Conv1d(i_c, i_c, 3, 1, 1)
+        self.block2_merge = Conv1d(i_c + i_c + num_vec, i_c, 1, 1)
+
+        self.block3_conv1 = Conv1d(i_c, i_c*2, 3, 2, 1)
+        self.block3_conv2 = Conv1d(i_c*2, i_c*2, 3, 1, 1)
+        self.block3_merge = Conv1d(i_c*2 + i_c*2-64 + num_vec, i_c*2, 1, 1)
+        self.block4_conv1 = Conv1d(i_c*2, i_c*4, 3, 2, 1)
+        self.block4_conv2 = Conv1d(i_c*4, i_c*4, 3, 1, 1)
+        self.block4_merge = Conv1d(i_c*4 + i_c*4-64-128 + num_vec, i_c*4, 1, 1)
+        self.block2_deconv = DeConv1d(i_c, i_c*2, 1, 1, 0)
+        self.block3_deconv = DeConv1d(i_c*2, i_c*2, 2, 2, 0)
+        self.block4_deconv = DeConv1d(i_c*4, i_c*2, 4, 4, 0)
+
+        if not cfg.DATA.USE_XYZ:
+            i_c = 32+64
+            self.block1_conv1 = Conv1d(i_c + num_vec, i_c, 3, 1, 1)
+
+            self.block2_conv1 = Conv1d(i_c, i_c, 3, 2, 1)
+            self.block2_conv2 = Conv1d(i_c, i_c, 3, 1, 1)
+            self.block2_merge = Conv1d(i_c + i_c + num_vec, i_c, 1, 1)
+
+            self.block3_conv1 = Conv1d(i_c, i_c * 2, 3, 2, 1)
+            self.block3_conv2 = Conv1d(i_c * 2, i_c * 2, 3, 1, 1)
+            self.block3_merge = Conv1d(i_c * 2 + i_c * 2 - 32 + num_vec, i_c * 2, 1, 1)
+            self.block4_conv1 = Conv1d(i_c * 2, i_c * 4, 3, 2, 1)
+            self.block4_conv2 = Conv1d(i_c * 4, i_c * 4, 3, 1, 1)
+            self.block4_merge = Conv1d(i_c * 4 + i_c * 4 - 32 - 64 + num_vec, i_c * 4, 1, 1)
+            self.block2_deconv = DeConv1d(i_c, i_c * 2, 1, 1, 0)
+            self.block3_deconv = DeConv1d(i_c * 2, i_c * 2, 2, 2, 0)
+            self.block4_deconv = DeConv1d(i_c * 4, i_c * 2, 4, 4, 0)
 
         for m in self.modules():
             if isinstance(m, (nn.Conv1d, nn.ConvTranspose1d)):
@@ -412,10 +437,10 @@ class ConvFeatNet(nn.Module):
 
     def forward(self, x1, x2, x3, x4):
         '''
-        :param x1:torch.Size([32, 131, 280])
-        :param x2:torch.Size([32, 131, 140])
-        :param x3:torch.Size([32, 259, 70])
-        :param x4:torch.Size([32, 515, 35])
+        :param x1:torch.Size([32, 323=#32*2+64*2+128+3, 280])
+        :param x2:torch.Size([32, 323, 140])
+        :param x3:torch.Size([32, 579=#32*2+128*2+256+3, 70])
+        :param x4:torch.Size([32, 1091, 35])
         :return:x:torch.Size([32, 768, 140])
         '''
         x = self.block1_conv1(x1)#torch.Size([32, 128, 280])
@@ -425,7 +450,6 @@ class ConvFeatNet(nn.Module):
         x = torch.cat([x, x2], 1)#torch.Size([32, 259, 140])
         x = self.block2_merge(x)#torch.Size([32, 128, 140])
         xx1 = x
-
         x = self.block3_conv1(x)#torch.Size([32, 256, 70])
         x = self.block3_conv2(x)#torch.Size([32, 256, 70])
         x = torch.cat([x, x3], 1)#torch.Size([32, 515, 70])
@@ -457,8 +481,9 @@ class FrustumConvNetv1(nn.Module):
         self.num_bins = num_bins
 
         output_size = 3 + num_bins * 2 + NUM_SIZE_CLUSTER * 4
-        self.reg_out = nn.Conv1d(1920, output_size, 1)
-        self.cls_out = nn.Conv1d(1920, 2, 1)
+        n_feat_channel = 1920 if cfg.DATA.USE_XYZ else 576
+        self.reg_out = nn.Conv1d(n_feat_channel, output_size, 1)
+        self.cls_out = nn.Conv1d(n_feat_channel, 2, 1)
         nn.init.kaiming_uniform_(self.cls_out.weight, mode='fan_in')###
         nn.init.kaiming_uniform_(self.reg_out.weight, mode='fan_in')###
         self.cls_out.bias.data.zero_()###
