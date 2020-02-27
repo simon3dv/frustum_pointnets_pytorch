@@ -148,7 +148,7 @@ class FrustumDataset(object):
         self._G_MEAN = 97.7996
         self._B_MEAN = 93.5843
         #self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        self.norm = transforms.Normalize(mean=[self._R_MEAN,self._G_MEAN,self._B_MEAN])
+        self.norm = transforms.Normalize(mean=[self._R_MEAN,self._G_MEAN,self._B_MEAN],std=[1,1,1])
         self.resize = transforms.Resize(size=(cfg.DATA.W_CROP,cfg.DATA.H_CROP))#,interpolation=Image.NEAREST)
         if from_rgb_detection:
             with open(overwritten_data_path,'rb') as fp:
