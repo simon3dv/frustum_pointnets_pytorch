@@ -144,7 +144,11 @@ class FrustumDataset(object):
         self.gen_ref = gen_ref
         self.from_rgb_detection = from_rgb_detection
         self.with_image = with_image
-        self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        self._R_MEAN = 92.8403
+        self._G_MEAN = 97.7996
+        self._B_MEAN = 93.5843
+        #self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        self.norm = transforms.Normalize(mean=[self._R_MEAN,self._G_MEAN,self._B_MEAN])
         self.resize = transforms.Resize(size=(cfg.DATA.W_CROP,cfg.DATA.H_CROP))#,interpolation=Image.NEAREST)
         if from_rgb_detection:
             with open(overwritten_data_path,'rb') as fp:
@@ -215,6 +219,7 @@ class FrustumDataset(object):
             #tic = time.perf_counter()
             image_filename = self.image_filename_list[index]
             image = cv2.imread(image_filename)#(370, 1224, 3),uint8 or (375, 1242, 3)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             xmin,ymin,xmax,ymax = np.array(box,dtype=np.int32)
             xmax += 1
             ymax += 1
