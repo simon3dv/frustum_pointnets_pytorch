@@ -270,6 +270,7 @@ def train():
     best_file = ''
 
     for epoch in range(MAX_EPOCH):
+        log_string('**** cfg:%s ****' % (args.cfg))
         log_string('**** EPOCH %03d ****' % (epoch + 1))
         sys.stdout.flush()
         log_string('Epoch %d/%s:' % (epoch + 1, MAX_EPOCH))
