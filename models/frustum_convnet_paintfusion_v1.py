@@ -153,16 +153,18 @@ class PointNetModule(nn.Module):
 
         self.query_depth_point = QueryDepthPoint(dist, nsample)
 
-        if self.use_xyz:
-            self.conv1 = Conv2d(Infea + 3, mlp[0], 1)
-        else:
-            self.conv1 = Conv2d(Infea, mlp[0], 1)
 
+        self.conv1 = Conv2d(3, mlp[0], 1)
         self.conv2 = Conv2d(mlp[0], mlp[1], 1)
         self.conv3 = Conv2d(mlp[1], mlp[2], 1)
 
+        self.econv1 = Conv2d(3, mlp[0],1)
+        self.econv2 = Conv2d(mlp[0], mlp[1],1)
+        self.econv3 = Conv2d(mlp[1], mlp[2],1)
+
         init_params([self.conv1[0], self.conv2[0], self.conv3[0]], 'kaiming_normal')###
         init_params([self.conv1[1], self.conv2[1], self.conv3[1]], 1)###
+        ###init?
 
     def forward(self, pc, feat, new_pc=None):
         batch_size = pc.shape[0]
@@ -193,12 +195,19 @@ class PointNetModule(nn.Module):
             # grouped_feature = torch.cat([new_feat.unsqueeze(3), grouped_feature], -1)
 
         if self.use_feature and self.use_xyz:
-            grouped_feature = torch.cat([grouped_pc, grouped_feature], 1)#torch.Size([32, 4, 140, 64])
+            #grouped_feature = torch.cat([grouped_pc, grouped_feature], 1)#torch.Size([32, 4, 140, 64])
+            grouped_feature = self.econv1(grouped_feature)
+            grouped_feature = self.econv2(grouped_feature)
+            grouped_feature = self.econv3(grouped_feature)
+            grouped_pc = self.conv1(grouped_pc)
+            grouped_pc = self.conv2(grouped_pc)
+            grouped_pc = self.conv3(grouped_pc)  # torch.Size([32, 128, 140, 64])
+            grouped_feature = torch.cat([grouped_pc,grouped_feature],1)
         elif self.use_xyz:
             grouped_feature = grouped_pc.contiguous()
-        grouped_feature = self.conv1(grouped_feature)#torch.Size([32, 64, 140, 64])
-        grouped_feature = self.conv2(grouped_feature)#torch.Size([32, 64, 140, 64])
-        grouped_feature = self.conv3(grouped_feature)#torch.Size([32, 128, 140, 64])
+            grouped_feature = self.conv1(grouped_feature)#torch.Size([32, 64, 140, 64])
+            grouped_feature = self.conv2(grouped_feature)#torch.Size([32, 64, 140, 64])
+            grouped_feature = self.conv3(grouped_feature)#torch.Size([32, 128, 140, 64])
         # output, _ = torch.max(grouped_feature, -1)
 
         valid = (num > 0).view(batch_size, 1, -1, 1)#torch.Size([32, 1, 140, 1])
@@ -355,8 +364,8 @@ class FrustumConvNetv1(nn.Module):
         self.num_bins = num_bins
 
         output_size = 3 + num_bins * 2 + NUM_SIZE_CLUSTER * 4
-        self.reg_out = nn.Conv1d(768, output_size, 1)
-        self.cls_out = nn.Conv1d(768, 2, 1)
+        self.reg_out = nn.Conv1d(768*2, output_size, 1)
+        self.cls_out = nn.Conv1d(768*2, 2, 1)
         nn.init.kaiming_uniform_(self.cls_out.weight, mode='fan_in')###
         nn.init.kaiming_uniform_(self.reg_out.weight, mode='fan_in')###
         self.cls_out.bias.data.zero_()###

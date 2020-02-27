@@ -105,8 +105,9 @@ NUM_CHANNEL = cfg.DATA.NUM_CHANNEL
 NUM_SAMPLES = cfg.DATA.NUM_SAMPLES
 
 strtime = time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time()))
-NAME = '_'.join(OUTPUT_DIR.split('/'))+ '_' + strtime
-
+strtime = strtime[4:8]
+NAME = '_'.join(OUTPUT_DIR.split('/')) + '_' + strtime
+print(NAME)
 MODEL = import_from_file(MODEL_FILE) # import network module
 LOG_DIR = OUTPUT_DIR + '/' + NAME
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
