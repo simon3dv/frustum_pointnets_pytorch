@@ -183,9 +183,12 @@ class PointNetModule(nn.Module):
         else:
             self.conv1 = Conv2d(Infea, mlp[0], 1)
 
-        self.conv2 = Conv2d(mlp[0]*2, mlp[1], 1)#x2 because of fusion
+        self.conv2 = Conv2d(mlp[0], mlp[1], 1)
         self.conv3 = Conv2d(mlp[1], mlp[2], 1)
         self.conv4 = Conv2d(mlp[2], mlp[3], 1)
+
+        self.econv1 = Conv2d(mlp[0], mlp[0], 1)
+        self.econv2 = Conv2d(mlp[0], mlp[1], 1)
 
         init_params([self.conv1[0], self.conv2[0], self.conv3[0], self.conv4[0]], 'kaiming_normal')###
         init_params([self.conv1[1], self.conv2[1], self.conv3[1], self.conv4[1]], 1)###
@@ -265,11 +268,23 @@ class PointNetModule(nn.Module):
         elif self.use_xyz:
             grouped_feature = grouped_pc.contiguous()
 
-        grouped_feature = self.conv1(grouped_feature)#torch.Size([32, 32, 140, 64])
-        grouped_feature = torch.cat([grouped_feature, grouped_rgb],1)##torch.Size([32, 64, 140, 64])
-        grouped_feature = self.conv2(grouped_feature)#torch.Size([32, 64, 140, 64])
-        grouped_feature = self.conv3(grouped_feature)#torch.Size([32, 64, 140, 64])
-        grouped_feature = self.conv4(grouped_feature)#torch.Size([32, 128, 140, 64])
+        point_feature = self.conv1(grouped_feature)#torch.Size([32, 32, 140, 64])
+        grouped_rgb = self.econv1(grouped_rgb)
+        #32+32:
+        feature1_fusion = torch.cat([point_feature, grouped_rgb],1)#torch.Size([32, 64, 140, 64]
+
+        point_feature = self.conv2(point_feature)#torch.Size([32, 64, 140, 64])
+        grouped_rgb = self.econv2(grouped_rgb)
+        #64+64:
+        feature2_fusion = torch.cat([point_feature, grouped_rgb],1)#[32, 128, 140, 64])
+
+
+        point_feature = self.conv3(point_feature)#torch.Size([32, 64, 140, 64])
+        #grouped_rgb = self.econv3(grouped_rgb)
+        point_feature = self.conv4(point_feature)#torch.Size([32, 128, 140, 64])
+        #grouped_rgb = self.econv4(grouped_rgb)
+
+        grouped_feature = torch.cat([feature1_fusion,feature2_fusion,point_feature],1)##[32, 64+128+128, 140, 64])
         # output, _ = torch.max(grouped_feature, -1)
 
         valid = (num > 0).view(batch_size, 1, -1, 1)#torch.Size([32, 1, 140, 1])
@@ -303,16 +318,16 @@ class PointNetFeat(nn.Module):
         pc2 = sample_pc[1]
         pc3 = sample_pc[2]
         pc4 = sample_pc[3]
-        feat1 = self.pointnet1(pc, feat, img, P, query_v1, pc1)
+        feat1 = self.pointnet1(pc, feat, img, P, query_v1, pc1)#32*2+64*2+128
         feat1, _ = torch.max(feat1, -1)
 
-        feat2 = self.pointnet2(pc, feat, img, P, query_v1, pc2)
+        feat2 = self.pointnet2(pc, feat, img, P, query_v1, pc2)#32*2+64*2+128
         feat2, _ = torch.max(feat2, -1)
 
-        feat3 = self.pointnet3(pc, feat, img, P, query_v1, pc3)
+        feat3 = self.pointnet3(pc, feat, img, P, query_v1, pc3)#32*2+128*2+256
         feat3, _ = torch.max(feat3, -1)
 
-        feat4 = self.pointnet4(pc, feat, img, P, query_v1, pc4)
+        feat4 = self.pointnet4(pc, feat, img, P, query_v1, pc4)#32*2+256*2+512
         feat4, _ = torch.max(feat4, -1)
 
         if one_hot_vec is not None:
@@ -345,26 +360,26 @@ def DeConv1d(i_c, o_c, k, s=1, p=0, bn=True):
         return nn.Sequential(nn.ConvTranspose1d(i_c, o_c, k, s, p), nn.ReLU(True))
 
 class ConvFeatNet(nn.Module):
-    def __init__(self, i_c=128, num_vec=3):
+    def __init__(self, i_c=320, num_vec=3):
         super(ConvFeatNet, self).__init__()
 
-        self.block1_conv1 = Conv1d(i_c + num_vec, 128, 3, 1, 1)
+        self.block1_conv1 = Conv1d(i_c + num_vec, 320, 3, 1, 1)
 
-        self.block2_conv1 = Conv1d(128, 128, 3, 2, 1)
-        self.block2_conv2 = Conv1d(128, 128, 3, 1, 1)
-        self.block2_merge = Conv1d(128 + 128 + num_vec, 128, 1, 1)
+        self.block2_conv1 = Conv1d(320, 320, 3, 2, 1)
+        self.block2_conv2 = Conv1d(320, 320, 3, 1, 1)
+        self.block2_merge = Conv1d(320 + 320 + num_vec, 320, 1, 1)
 
-        self.block3_conv1 = Conv1d(128, 256, 3, 2, 1)
-        self.block3_conv2 = Conv1d(256, 256, 3, 1, 1)
-        self.block3_merge = Conv1d(256 + 256 + num_vec, 256, 1, 1)
+        self.block3_conv1 = Conv1d(320, 640, 3, 2, 1)
+        self.block3_conv2 = Conv1d(640, 640, 3, 1, 1)
+        self.block3_merge = Conv1d(640 + 576 + num_vec, 640, 1, 1)
 
-        self.block4_conv1 = Conv1d(256, 512, 3, 2, 1)
-        self.block4_conv2 = Conv1d(512, 512, 3, 1, 1)
-        self.block4_merge = Conv1d(512 + 512 + num_vec, 512, 1, 1)
+        self.block4_conv1 = Conv1d(640, 1280, 3, 2, 1)
+        self.block4_conv2 = Conv1d(1280, 1280, 3, 1, 1)
+        self.block4_merge = Conv1d(1280 + 1088 + num_vec, 1280, 1, 1)
 
-        self.block2_deconv = DeConv1d(128, 256, 1, 1, 0)
-        self.block3_deconv = DeConv1d(256, 256, 2, 2, 0)
-        self.block4_deconv = DeConv1d(512, 256, 4, 4, 0)
+        self.block2_deconv = DeConv1d(320, 640, 1, 1, 0)
+        self.block3_deconv = DeConv1d(640, 640, 2, 2, 0)
+        self.block4_deconv = DeConv1d(1280, 640, 4, 4, 0)
 
         for m in self.modules():
             if isinstance(m, (nn.Conv1d, nn.ConvTranspose1d)):
@@ -424,8 +439,8 @@ class FrustumConvNetv1(nn.Module):
         self.num_bins = num_bins
 
         output_size = 3 + num_bins * 2 + NUM_SIZE_CLUSTER * 4
-        self.reg_out = nn.Conv1d(768, output_size, 1)
-        self.cls_out = nn.Conv1d(768, 2, 1)
+        self.reg_out = nn.Conv1d(1920, output_size, 1)
+        self.cls_out = nn.Conv1d(1920, 2, 1)
         nn.init.kaiming_uniform_(self.cls_out.weight, mode='fan_in')###
         nn.init.kaiming_uniform_(self.reg_out.weight, mode='fan_in')###
         self.cls_out.bias.data.zero_()###

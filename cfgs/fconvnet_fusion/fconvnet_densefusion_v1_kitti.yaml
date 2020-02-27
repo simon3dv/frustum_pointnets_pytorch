@@ -2,9 +2,9 @@ TRAIN:
   FILE: kitti/frustum_caronly_wimage_train.pickle
   BATCH_SIZE: 32
   START_EPOCH: 0
-  MAX_EPOCH: 50
+  MAX_EPOCH: 100
   OPTIMIZER: adam
-  BASE_LR: 0.0001
+  BASE_LR: 0.001
   MIN_LR: 1e-5
   GAMMA: 0.1
   LR_STEPS: [20]
@@ -47,5 +47,5 @@ OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4
-FROM_RGB_DET: True
+FROM_RGB_DET: False
 disp: 100
