@@ -2,12 +2,12 @@ TRAIN:
   FILE: kitti/frustum_caronly_train.pickle
   BATCH_SIZE: 32
   START_EPOCH: 0
-  MAX_EPOCH: 100
+  MAX_EPOCH: 50
   OPTIMIZER: adam
   BASE_LR: 0.001
   MIN_LR: 1e-5
-  GAMMA: 0.5
-  LR_STEPS: [10]
+  GAMMA: 0.1
+  LR_STEPS: [20]
   MOMENTUM: 0.9
   WEIGHT_DECAY: 0.0001
   NUM_POINT: 1024
@@ -31,18 +31,18 @@ DATA:
   OBJTYPE: caronly
   SENSOR: cam_front
   ROTATE_TO_CENTER: True
-  NUM_CHANNEL: 3
+  NUM_CHANNEL: 4
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
   NUM_HEADING_BIN: 12
-  USE_REFLECTION_AS_CHANNEL: False
+  USE_REFLECTION_AS_CHANNEL: True
   USE_RGB_AS_CHANNEL: False
 
 
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'log/fconvnet_v1_kitti_caronly_fromgt/xyzr'
+OUTPUT_DIR: 'log/k2k/xyz'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4

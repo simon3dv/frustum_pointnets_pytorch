@@ -4,8 +4,8 @@ TRAIN:
   START_EPOCH: 0
   MAX_EPOCH: 100
   OPTIMIZER: adam
-  BASE_LR: 1e-4
-  MIN_LR: 1e-7
+  BASE_LR: 0.001
+  MIN_LR: 1e-5
   GAMMA: 0.1
   LR_STEPS: [20]
   MOMENTUM: 0.9
@@ -25,7 +25,7 @@ TEST:
   TEST_SETS: val
 
 DATA:
-  FILE: train/provider_fusion.py
+  FILE: train/provider_paintfusion.py
   DATASET: kitti
   DATA_ROOT: kitti
   OBJTYPE: caronly
@@ -37,7 +37,7 @@ DATA:
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
   NUM_HEADING_BIN: 12
   USE_REFLECTION_AS_CHANNEL: False
-  USE_RGB_AS_CHANNEL: False
+  USE_RGB_AS_CHANNEL: True
   W_CROP: 100
   H_CROP: 60
   BLACK_TEST: False
@@ -45,7 +45,7 @@ DATA:
 
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz'
+OUTPUT_DIR: 'log/fconvnet_densefusion_v1_kitti_caronly_fromgt/xyz_paintfusion'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4

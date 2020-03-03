@@ -18,31 +18,34 @@ MODEL:
   NUM_CLASSES: 2
 
 TEST:
-  FILE: kitti/frustum_caronly_val.pickle
+  WEIGHTS: log/fconvnet_kitti_caronly/acc0.862-epoch020.pth
+  FILE: nuscenes2kitti/frustum_caronly_CAM_FRONT_v1.0-val.pickle
   BATCH_SIZE: 32
   METHOD: nms
   NUM_POINT: 1024
   TEST_SETS: val
+  GT_DIR: dataset/nuScenes2KITTI/v1.0-mini/label_CAM_FRONT
+  IDX_PATH: nuscenes2kitti/image_sets/v1.0-val.txt
 
 DATA:
   FILE: train/provider.py
-  DATASET: kitti
-  DATA_ROOT: kitti
+  DATASET: nuscenes2kitti
+  DATA_ROOT: nuscenes2kitti
   OBJTYPE: caronly
-  SENSOR: cam_front
+  SENSOR: CAM_FRONT
   ROTATE_TO_CENTER: True
-  NUM_CHANNEL: 3
+  NUM_CHANNEL: 4
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
   NUM_HEADING_BIN: 12
-  USE_REFLECTION_AS_CHANNEL: False
+  USE_REFLECTION_AS_CHANNEL: True
   USE_RGB_AS_CHANNEL: False
 
 
 RESUME: False
 NUM_GPUS: 1
-OUTPUT_DIR: 'log/fconvnet_v1_kitti_caronly_fromgt/xyzr'
+OUTPUT_DIR: 'log/fconvnet_kitti_caronly/k2n'
 SAVE_SUB_DIR: 'val_nms'
 USE_TFBOARD: True
 NUM_WORKERS: 4

@@ -31,12 +31,12 @@ DATA:
   OBJTYPE: caronly
   SENSOR: cam_front
   ROTATE_TO_CENTER: True
-  NUM_CHANNEL: 4
+  NUM_CHANNEL: 3
   NUM_SAMPLES: 1024
   STRIDE: (0.25, 0.5, 1.0, 2.0)
   HEIGHT_HALF: (0.25, 0.5, 1.0, 2.0)
   NUM_HEADING_BIN: 12
-  USE_REFLECTION_AS_CHANNEL: True
+  USE_REFLECTION_AS_CHANNEL: False
   USE_RGB_AS_CHANNEL: False
 
 
@@ -44,7 +44,7 @@ RESUME: False
 NUM_GPUS: 1
 OUTPUT_DIR: 'log/fconvnet_v1_kitti_caronly_fromgt/xyzr'
 SAVE_SUB_DIR: 'val_nms'
-USE_TFBOARD: False
+USE_TFBOARD: True
 NUM_WORKERS: 4
-FROM_RGB_DET: True
+FROM_RGB_DET: False
 disp: 100

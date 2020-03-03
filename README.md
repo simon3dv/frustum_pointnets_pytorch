@@ -2,7 +2,7 @@
 A pytorch version of [frustum-pointnets](https://github.com/charlesq34/frustum-pointnets) 
 (Not support Pointnet++ yet)
 
-Keep updating, README is false, don't use it right now.
+## Keep updating, README is false,**don't use it right now**!
 ## Requirements
 Test on 
 * Ubuntu-18.04
@@ -57,13 +57,17 @@ frustum_pointnets_pytorch
 ├── train
 ```
 #### Kitti
-To visulize Kitti
+To visulize single sample in Kitti
 ```angular2
 python kitti/prepare_data.py --demo
 ```
 To prepare training data
 ```angular2
 python kitti/prepare_data.py --gen_train --gen_val --gen_val_rgb_detection --car_only
+```
+To visulize all gt boxes and prediction boxes:
+```angular2
+python kitti/kitti_object.py
 ```
 
 #### nuScenes
@@ -87,19 +91,26 @@ python nuscenes2kitti/prepare_data.py --gen_train --gen_val --gen_mini --car_onl
 ## train
 ### Kitti
 ```angular2
-CUDA_VISIBLE_DEVICES=0 python train/train.py
+CUDA_VISIBLE_DEVICES=0 python train/train_fpointnets.py
 ```
 ### nuScenes2Kitti
 ```angular2
-CUDA_VISIBLE_DEVICES=0 python train/train.py --dataset nuscenes2kitti
+CUDA_VISIBLE_DEVICES=0 python train/train_fpointnets.py --dataset nuscenes2kitti
 ```
 
 ## Test
 ### Kitti
 ```angular2
-CUDA_VISIBLE_DEVICES=0 python train/test.py
-train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ train/test_results
+CUDA_VISIBLE_DEVICES=0 python train/test_fpointnets.py
+train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ test_results
 ```
+
+### Visulize
+```
+python kitti/kitti_object.py
+```
+
+
 ### nuScenes2Kitti
 ```angular2
 
@@ -133,10 +144,11 @@ bev  AP:85.76, 80.21, 74.20
   - [ ] pointnet++
 * models
   - [ ] frustum-convnet
-  - [ ] extend_rgb,pointfusion,densefusion
+  - [ ] extend_rgb,globalfusion,densefusion,pointpaint,...
 * datasets
   - [ ] nuScenes2kitti
   - [ ] SUN-RGBD
+
 
   
 # Acknowledgement
