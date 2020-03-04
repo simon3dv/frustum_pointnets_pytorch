@@ -307,6 +307,72 @@ def vis_pred(split='training', sensor_list = ['CAM_FRONT'], type_whitelist=['Car
             cv2.imwrite(os.path.join(save2ddir, str(data_idx).zfill(6) + '.jpg'), img1)
             cv2.imwrite(os.path.join(save3ddir, str(data_idx).zfill(6) + '.jpg'), img2)
 
+def demo_object(data_idx=11,object_idx=0):
+    import mayavi.mlab as mlab
+    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
+    def draw_3d_object(pc, color=None):
+        ''' Draw lidar points. simplest set up. '''
+        fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1600, 1000))
+        if color is None: color = (pc[:, 2] - np.min(pc[:,2])) / (np.max(pc[: , 2])-np.min(pc[:, 2]))
+        # draw points
+        #nodes = mlab.points3d(pc[:, 0], pc[:, 1], pc[:, 2], colormap='gnuplot', scale_factor=0.04,
+        #                  figure=fig)
+        #nodes.mlab_source.dataset.point_data.scalars = color
+        pts = mlab.pipeline.scalar_scatter(pc[:, 0], pc[:, 1], pc[:, 2])
+        pts.add_attribute(color, 'colors')
+        pts.data.point_data.set_active_scalars('colors')
+        g = mlab.pipeline.glyph(pts)
+        g.glyph.glyph.scale_factor = 0.05  # set scaling for all the points
+        g.glyph.scale_mode = 'data_scaling_off'  # make all the points same size
+        # draw origin
+        mlab.points3d(0, 0, 0, color=(1, 1, 1), mode='sphere', scale_factor=0.2)
+        # draw axis
+        axes = np.array([
+            [2., 0., 0., 0.],
+            [0., 2., 0., 0.],
+            [0., 0., 2., 0.],
+        ], dtype=np.float64)
+        mlab.plot3d([0, axes[0, 0]], [0, axes[0, 1]], [0, axes[0, 2]], color=(1, 0, 0), tube_radius=None, figure=fig)
+        mlab.plot3d([0, axes[1, 0]], [0, axes[1, 1]], [0, axes[1, 2]], color=(0, 1, 0), tube_radius=None, figure=fig)
+        mlab.plot3d([0, axes[2, 0]], [0, axes[2, 1]], [0, axes[2, 2]], color=(0, 0, 1), tube_radius=None, figure=fig)
+        mlab.view(azimuth=180, elevation=70, focalpoint=[12.0909996, -1.04700089, -2.03249991], distance=62.0,
+                  figure=fig)
+        return fig
+
+    dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'))
+    sensor = 'CAM_FRONT'
+    objects = dataset.get_label_objects(sensor,data_idx)
+    obj = objects[object_idx]
+    obj.print_object()
+    calib = dataset.get_calibration(data_idx)#utils.Calibration(calib_filename)
+    box2d = obj.box2d
+    xmin, ymin, xmax, ymax = box2d
+    cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    w, l = xmax - xmin, ymax - ymin
+    # box3d
+    x, y, z = obj.t
+    # show 3d
+    pc_velo = dataset.get_lidar(data_idx)[:, 0:3]
+    pc_global = calib.project_lidar_to_global(pc_velo.T)
+    pc_rect = calib.project_global_to_cam(pc_global,sensor).T
+    pc_norm = pc_rect - obj.t
+    keep = []
+    for i in range(len(pc_norm)):
+        if np.sum(pc_norm[i]**2) < 4:
+            keep.append(i)
+    pc_keep = pc_norm[keep,:]
+    pc_keep[:,1] *= -1
+    pc_keep = pc_keep[:,[0,2,1]]
+    print("num_points:%d"%(pc_keep.shape[0]))
+    fig = draw_3d_object(pc_keep)
+
+    box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[object_idx], getattr(calib,sensor))
+    box3d_pts_3d -= obj.t
+    box3d_pts_3d[:,1] *= -1
+    box3d_pts_3d = box3d_pts_3d[:,[0,2,1]]
+    draw_gt_boxes3d([box3d_pts_3d], fig=fig, draw_text=False)
+    input()
+
 
 def demo(data_idx=0,obj_idx=-1,show_lidar_with_box=True,show_image=True,
          show_bev=True,show_lidar_2d=True,show_lidar_in_box=True,show_project=True,show_frustum=True):
@@ -627,11 +693,68 @@ def get_box3d_dim_statistics(idx_filename):
     ''' Collect and dump 3D bounding box statistics '''
     pass
 
+def print_box3d_statistics(idx_filename,type_whitelist=['Car','Pedestrian','Cyclist'],split='v1.0-mini', sensor='CAM_FRONT'):
+    ''' Collect and dump 3D bounding box statistics '''
+    dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR,'dataset/nuScenes2KITTI'),split, sensor_list=['CAM_FRONT'])
 
+    dimension_list = []
+    type_list = []
+    ry_list = []
+    mean_t_list = []
+    mean_t_by_center_list = []
+    data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
+    for data_idx in tqdm(data_idx_list):
+        calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
+        pc_velo = dataset.get_lidar(data_idx)
+        pc_global = calib.project_lidar_to_global(pc_velo[:, 0:3].T)
+        pc_rect = calib.project_global_to_cam(pc_global, sensor).T
+        objects = dataset.get_label_objects(sensor, data_idx)
+        for obj_idx in range(len(objects)):
+            obj = objects[obj_idx]
+            if obj.type not in type_whitelist:continue
+            dimension_list.append(np.array([obj.l,obj.w,obj.h]))
+            type_list.append(obj.type)
+            ry_list.append(obj.ry)
+
+            box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[obj_idx], getattr(calib, sensor))
+            pts_in_box3d, _ = extract_pc_in_box3d(pc_rect, box3d_pts_3d)
+            if len(pts_in_box3d) == 0: continue
+            mean_t_list.append(pts_in_box3d.mean(0))
+            pts_in_box3d -= obj.t
+            mean_t_by_center_list.append(pts_in_box3d.mean(0))
+
+    dimensions = np.array(dimension_list)
+    mts = np.array(mean_t_list)
+    rys = np.array(ry_list)
+    mtbcs = np.array(mean_t_by_center_list)
+    md = dimensions.mean(0)
+    mmt = mts.mean(0)
+    mry = rys.mean()
+    mmtbcs = mtbcs.mean(0)
+
+    print('mean points in 3d box: (%.1f,%.1f,%.1f)' % (mmt[0],mmt[1],mmt[2]))
+    print('mean points related to box center: (%.1f,%.1f,%.1f)' % (mmtbcs[0], mmtbcs[1], mmtbcs[2]))
+    print('mean size: (%.1f,%.1f,%.1f)' % (md[0],md[1],md[2]))
+    print('mean ry: (%.2f)' % (mry))
+    """
+    v1.0-mini-caronly-CAM_FRONT
+    mean points in 3d box: (2.2,0.8,27.8)
+    mean points related to box center: (-0.1,-0.6,-1.0)
+    mean size: (4.6,1.9,1.7)
+    mean ry: (0.04)
+
+    training
+    
+    v1.0-trainval
+    """
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true',
                         help='Run demo.')
+    parser.add_argument('--demo_object', action='store_true',
+                        help='Run demo_object.')
+    parser.add_argument('--show_stats', action='store_true',
+                        help='Run print_box3d_statistics.')
     parser.add_argument('--data_idx', type=int, default=0,
                         help='data_idx for demo.')
     parser.add_argument('--obj_idx', type=int, default=-1,
@@ -681,6 +804,13 @@ if __name__ == '__main__':
         sensor_list = ['CAM_FRONT']
     else:
         sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+
+    if args.demo_object:
+        demo_object(data_idx=args.data_idx, object_idx=args.obj_idx)
+
+    if args.show_stats:
+        print_box3d_statistics('nuscenes2kitti/image_sets/v1.0-mini.txt',
+                               type_whitelist=type_whitelist, split='v1.0-mini', sensor='CAM_FRONT')
 
     if args.demo:
         demo(args.data_idx,args.obj_idx,show_lidar_with_box=False,show_image=True,

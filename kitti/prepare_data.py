@@ -41,19 +41,81 @@ def extract_pc_in_box2d(pc, box2d):
     box2d_corners[3,:] = [box2d[0],box2d[3]] 
     box2d_roi_inds = in_hull(pc[:,0:2], box2d_corners)
     return pc[box2d_roi_inds,:], box2d_roi_inds
-     
-def demo():
+
+def demo_object(data_idx=11,object_idx=0):
+    import mayavi.mlab as mlab
+    from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
+    def draw_3d_object(pc, color=None):
+        ''' Draw lidar points. simplest set up. '''
+        fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1600, 1000))
+        if color is None: color = (pc[:, 2] - np.min(pc[:,2])) / (np.max(pc[: , 2])-np.min(pc[:, 2]))
+        # draw points
+        #nodes = mlab.points3d(pc[:, 0], pc[:, 1], pc[:, 2], colormap='gnuplot', scale_factor=0.04,
+        #                  figure=fig)
+        #nodes.mlab_source.dataset.point_data.scalars = color
+        pts = mlab.pipeline.scalar_scatter(pc[:, 0], pc[:, 1], pc[:, 2])
+        pts.add_attribute(color, 'colors')
+        pts.data.point_data.set_active_scalars('colors')
+        g = mlab.pipeline.glyph(pts)
+        g.glyph.glyph.scale_factor = 0.05  # set scaling for all the points
+        g.glyph.scale_mode = 'data_scaling_off'  # make all the points same size
+        # draw origin
+        mlab.points3d(0, 0, 0, color=(1, 1, 1), mode='sphere', scale_factor=0.2)
+        # draw axis
+        axes = np.array([
+            [2., 0., 0., 0.],
+            [0., 2., 0., 0.],
+            [0., 0., 2., 0.],
+        ], dtype=np.float64)
+        mlab.plot3d([0, axes[0, 0]], [0, axes[0, 1]], [0, axes[0, 2]], color=(1, 0, 0), tube_radius=None, figure=fig)
+        mlab.plot3d([0, axes[1, 0]], [0, axes[1, 1]], [0, axes[1, 2]], color=(0, 1, 0), tube_radius=None, figure=fig)
+        mlab.plot3d([0, axes[2, 0]], [0, axes[2, 1]], [0, axes[2, 2]], color=(0, 0, 1), tube_radius=None, figure=fig)
+        mlab.view(azimuth=180, elevation=70, focalpoint=[12.0909996, -1.04700089, -2.03249991], distance=62.0,
+                  figure=fig)
+        return fig
+
+    dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
+    objects = dataset.get_label_objects(data_idx)
+    obj = objects[object_idx]
+    obj.print_object()
+    calib = dataset.get_calibration(data_idx)#utils.Calibration(calib_filename)
+    box2d = obj.box2d
+    xmin, ymin, xmax, ymax = box2d
+    cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    w, l = xmax - xmin, ymax - ymin
+    # box3d
+    x, y, z = obj.t
+    # show 3d
+    pc_velo = dataset.get_lidar(data_idx)[:, 0:3]
+    pc_rect = calib.project_velo_to_rect(pc_velo)
+    pc_norm = pc_rect - obj.t
+    keep = []
+    for i in range(len(pc_norm)):
+        if np.sum(pc_norm[i]**2) < 4:
+            keep.append(i)
+    pc_keep = pc_norm[keep,:]
+    pc_keep[:,1] *= -1
+    pc_keep = pc_keep[:,[0,2,1]]
+    fig = draw_3d_object(pc_keep)
+
+    box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[object_idx], calib.P)
+    box3d_pts_3d -= obj.t
+    box3d_pts_3d[:,1] *= -1
+    box3d_pts_3d = box3d_pts_3d[:,[0,2,1]]
+    draw_gt_boxes3d([box3d_pts_3d], fig=fig, draw_text=False)
+    input()
+
+def demo(data_idx=11,object_idx=0,show_images=True,show_lidar=True,show_lidar_2d=True,show_lidar_box=True,show_project=True,show_lidar_frustum=True):
     import mayavi.mlab as mlab
     from viz_util import draw_lidar, draw_lidar_simple, draw_gt_boxes3d
     dataset = kitti_object(os.path.join(ROOT_DIR, 'dataset/KITTI/object'))
-    data_idx = 11
 
     # Load data from dataset
     objects = dataset.get_label_objects(data_idx)#objects = [Object3d(line) for line in lines]
-    objects[0].print_object()
+    objects[object_idx].print_object()
 
     calib = dataset.get_calibration(data_idx)#utils.Calibration(calib_filename)
-    box2d = objects[0].box2d
+    box2d = objects[object_idx].box2d
     xmin, ymin, xmax, ymax = box2d
     box2d_center = np.array([(xmin + xmax) / 2.0, (ymin + ymax) / 2.0])
     uvdepth = np.zeros((1, 3))
@@ -82,70 +144,76 @@ def demo():
     #fig = draw_lidar_simple(pc_rect)
     #raw_input()
     # Draw 2d and 3d boxes on image
-    print(' -------- 2D/3D bounding boxes in images --------')
-    show_image_with_boxes(img, objects, calib)
-    raw_input()
+    if show_images:
+        print(' -------- 2D/3D bounding boxes in images --------')
+        show_image_with_boxes(img, objects, calib)
+        raw_input()
 
-    # Show all LiDAR points. Draw 3d box in LiDAR point cloud
-    print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
-    #show_lidar_with_boxes(pc_velo, objects, calib)
-    #raw_input()
-    show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
-    raw_input()
+    if show_lidar:
+        # Show all LiDAR points. Draw 3d box in LiDAR point cloud
+        print(' -------- LiDAR points and 3D boxes in velodyne coordinate --------')
+        #show_lidar_with_boxes(pc_velo, objects, calib)
+        #raw_input()
+        show_lidar_with_boxes(pc_velo, objects, calib, True, img_width, img_height)
+        raw_input()
 
-    # Visualize LiDAR points on images
-    print(' -------- LiDAR points projected to image plane --------')
-    show_lidar_on_image(pc_velo, img, calib, img_width, img_height, showtime=True)
-    raw_input()
-    
-    # Show LiDAR points that are in the 3d box
-    print(' -------- LiDAR points in a 3D bounding box --------')
-    box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[0], calib.P) 
-    box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
-    box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo)
-    print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
+    if show_lidar_2d:
+        # Visualize LiDAR points on images
+        print(' -------- LiDAR points projected to image plane --------')
+        show_lidar_on_image(pc_velo, img, calib, img_width, img_height, showtime=True)
+        raw_input()
 
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
-        fgcolor=None, engine=None, size=(1000, 500))
-    draw_lidar(box3droi_pc_velo, fig=fig)
-    draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
-    mlab.show(1)
-    raw_input()
-    
-    # UVDepth Image and its backprojection to point clouds
-    print(' -------- LiDAR points in a frustum from a 2D box --------')
-    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
-        calib, 0, 0, img_width, img_height, True)
-    imgfov_pts_2d = pts_2d[fov_inds,:]
-    imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
+    if show_lidar_box:
+        # Show LiDAR points that are in the 3d box
+        print(' -------- LiDAR points in a 3D bounding box --------')
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[object_idx], calib.P)
+        box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
+        box3droi_pc_velo, _ = extract_pc_in_box3d(pc_velo, box3d_pts_3d_velo)
+        print(('Number of points in 3d box: ', box3droi_pc_velo.shape[0]))
 
-    cameraUVDepth = np.zeros_like(imgfov_pc_rect)
-    cameraUVDepth[:,0:2] = imgfov_pts_2d
-    cameraUVDepth[:,2] = imgfov_pc_rect[:,2]
+        fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+            fgcolor=None, engine=None, size=(1000, 500))
+        draw_lidar(box3droi_pc_velo, fig=fig)
+        draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
+        mlab.show(1)
+        raw_input()
 
-    # Show that the points are exactly the same
-    backprojected_pc_velo = calib.project_image_to_velo(cameraUVDepth)
-    print(imgfov_pc_velo[0:20])
-    print(backprojected_pc_velo[0:20])
+    if show_project:
+        # UVDepth Image and its backprojection to point clouds
+        print(' -------- LiDAR points in a frustum from a 2D box --------')
+        imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
+            calib, 0, 0, img_width, img_height, True)
+        imgfov_pts_2d = pts_2d[fov_inds,:]
+        imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
 
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
-        fgcolor=None, engine=None, size=(1000, 500))
-    draw_lidar(backprojected_pc_velo, fig=fig)
-    raw_input()
+        cameraUVDepth = np.zeros_like(imgfov_pc_rect)
+        cameraUVDepth[:,0:2] = imgfov_pts_2d
+        cameraUVDepth[:,2] = imgfov_pc_rect[:,2]
 
-    # Only display those points that fall into 2d box
-    print(' -------- LiDAR points in a frustum from a 2D box --------')
-    xmin,ymin,xmax,ymax = \
-        objects[0].xmin, objects[0].ymin, objects[0].xmax, objects[0].ymax
-    boxfov_pc_velo = \
-        get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax)
-    print(('2d box FOV point num: ', boxfov_pc_velo.shape[0]))
+        # Show that the points are exactly the same
+        backprojected_pc_velo = calib.project_image_to_velo(cameraUVDepth)
+        print(imgfov_pc_velo[0:20])
+        print(backprojected_pc_velo[0:20])
 
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
-        fgcolor=None, engine=None, size=(1000, 500))
-    draw_lidar(boxfov_pc_velo, fig=fig)
-    mlab.show(1)
-    raw_input()
+        fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+            fgcolor=None, engine=None, size=(1000, 500))
+        draw_lidar(backprojected_pc_velo, fig=fig)
+        raw_input()
+
+    if show_lidar_frustum:
+        # Only display those points that fall into 2d box
+        print(' -------- LiDAR points in a frustum from a 2D box --------')
+        xmin,ymin,xmax,ymax = \
+            objects[object_idx].xmin, objects[object_idx].ymin, objects[object_idx].xmax, objects[object_idx].ymax
+        boxfov_pc_velo = \
+            get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax)
+        print(('2d box FOV point num: ', boxfov_pc_velo.shape[0]))
+
+        fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+            fgcolor=None, engine=None, size=(1000, 500))
+        draw_lidar(boxfov_pc_velo, fig=fig)
+        mlab.show(1)
+        raw_input()
 
 def random_shift_box2d(box2d, shift_ratio=0.1):
     ''' Randomly shift box center, randomly scale width and height 
@@ -341,6 +409,65 @@ def get_box3d_dim_statistics(idx_filename, type_whitelist=['Car','Pedestrian','C
             with open(os.path.join(BASE_DIR, split + '_' + type + '_' + 'box3d_mean_dimensions.pickle'), 'wb') as fp:
                 pickle.dump(dimensions_mean, fp)
 
+def print_box3d_statistics(idx_filename,type_whitelist=['Car','Pedestrian','Cyclist'],split='train'):
+    ''' Collect and dump 3D bounding box statistics '''
+    dataset = kitti_object(os.path.join(ROOT_DIR,'dataset/KITTI/object'))
+
+    dimension_list = []
+    type_list = []
+    ry_list = []
+    mean_t_list = []
+    mean_t_by_center_list = []
+    data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
+    for data_idx in tqdm(data_idx_list):
+        calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
+        pc_velo = dataset.get_lidar(data_idx)
+        pc_rect = calib.project_velo_to_rect(pc_velo[:, 0:3])
+        objects = dataset.get_label_objects(data_idx)
+        for obj_idx in range(len(objects)):
+            obj = objects[obj_idx]
+            if obj.type not in type_whitelist:continue
+            dimension_list.append(np.array([obj.l,obj.w,obj.h]))
+            type_list.append(obj.type)
+            ry_list.append(obj.ry)
+
+            box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[obj_idx], calib.P)
+            pts_in_box3d, _ = extract_pc_in_box3d(pc_rect, box3d_pts_3d)
+            if len(pts_in_box3d) == 0: continue
+            mean_t_list.append(pts_in_box3d.mean(0))
+            pts_in_box3d -= obj.t
+            mean_t_by_center_list.append(pts_in_box3d.mean(0))
+
+    dimensions = np.array(dimension_list)
+    mts = np.array(mean_t_list)
+    rys = np.array(ry_list)
+    mtbcs = np.array(mean_t_by_center_list)
+    md = dimensions.mean(0)
+    mmt = mts.mean(0)
+    mry = rys.mean()
+    mmtbcs = mtbcs.mean(0)
+
+
+    print('mean points in 3d box: (%.1f,%.1f,%.1f)' % (mmt[0],mmt[1],mmt[2]))
+    print('mean points related to box center: (%.1f,%.1f,%.1f)' % (mmtbcs[0], mmtbcs[1], mmtbcs[2]))
+    print('mean size: (%.1f,%.1f,%.1f)' % (md[0],md[1],md[2]))
+    print('mean ry: (%.2f)' % (mry))
+    """
+    train-carpedcyc
+    mean points in 3d box: (-1.8,1.0,26.5)
+    mean points related to box center: (0.0,-0.7,-0.8)
+    mean size: (3.4,1.4,1.6)
+    mean ry: (0.03)
+
+
+    train-car
+    mean points in 3d box: (-2.3,1.0,28.0)
+    mean points related to box center: (0.0,-0.7,-1.0)
+    mean size: (3.9,1.6,1.5)
+    mean ry: (0.02)
+
+    """
+
 def read_det_file(det_filename):
     ''' Parse lines in 2D detection output files '''
     det_id2str = {1:'Pedestrian', 2:'Car', 3:'Cyclist'}
@@ -529,6 +656,12 @@ if __name__=='__main__':
     #python kitti/prepare_data.py --gen_train --gen_val --gen_val_rgb_detection
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true', help='Run demo.')
+    parser.add_argument('--demo_object', action='store_true', help='Run demo_object.')
+    parser.add_argument('--show_stats', action='store_true', help='show_stats.')
+    parser.add_argument('--data_idx', type=int, default=0,
+                        help='data_idx for demo.')
+    parser.add_argument('--obj_idx', type=int, default=0,
+                        help='obj_idx for demo.')
     parser.add_argument('--cluster', action='store_true', help='Run cluster.')
     parser.add_argument('--gen_train', action='store_true', help='Generate train split frustum data with perturbed GT 2D boxes')
     parser.add_argument('--gen_val', action='store_true', help='Generate val split frustum data with GT 2D boxes')
@@ -539,24 +672,6 @@ if __name__=='__main__':
     parser.add_argument('--with_image', action='store_true')
     args = parser.parse_args()
 
-    if args.cluster:
-        cluster()
-        exit()
-
-    if args.demo:
-        demo()# draw 2d box and 3d box
-        exit()
-        '''
-        python kitti/prepare_data.py --demo
-        Type, truncation, occlusion, alpha: Pedestrian, 0, 0, -0.200000
-        2d bbox (x0,y0,x1,y1): 712.400000, 143.000000, 810.730000, 307.920000
-        3d bbox h,w,l: 1.890000, 0.480000, 1.200000
-        3d bbox location, ry: (1.840000, 1.470000, 8.410000), 0.010000
-        ('Image shape: ', (370, 1224, 3))
-         -------- 2D/3D bounding boxes in images --------
-        ('pts_3d_extend shape: ', (8, 4))
-        '''
-
     if args.car_only:
         type_whitelist = ['Car']
         output_prefix = 'frustum_caronly_'
@@ -566,6 +681,21 @@ if __name__=='__main__':
 
     if args.with_image:
         output_prefix += 'wimage_'
+
+
+    if args.cluster:
+        cluster()
+        exit()
+    if args.show_stats:
+        imagesets_file = os.path.join(BASE_DIR, 'image_sets/train.txt')
+        print_box3d_statistics(imagesets_file, type_whitelist, 'train')
+    if args.demo_object:
+        demo_object(data_idx=args.data_idx, object_idx=args.obj_idx)
+    if args.demo:
+        demo(data_idx=args.data_idx, object_idx=args.obj_idx, show_images=True, show_lidar=False,
+             show_lidar_2d=False, show_lidar_box=True,
+             show_project=False, show_lidar_frustum=True)  # draw 2d box and 3d box
+        exit()
 
     if args.gen_mini:
         print('Start gen_train...')
