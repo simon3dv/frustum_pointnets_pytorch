@@ -811,8 +811,8 @@ if __name__ == '__main__':
     if args.show_stats:
         print_box3d_statistics('nuscenes2kitti/image_sets/v1.0-mini.txt',
                                type_whitelist=type_whitelist, split='v1.0-mini', sensor='CAM_FRONT')
-        print_box3d_statistics('nuscenes2kitti/image_sets/v1.0-train.txt',
-                               type_whitelist=type_whitelist, split='v1.0-train', sensor='CAM_FRONT')
+        print_box3d_statistics('nuscenes2kitti/image_sets/v1.0-trainval.txt',
+                               type_whitelist=type_whitelist, split='v1.0-trainval', sensor='CAM_FRONT')
 
     if args.demo:
         demo(args.data_idx,args.obj_idx,show_lidar_with_box=False,show_image=True,
