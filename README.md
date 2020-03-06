@@ -204,7 +204,7 @@ car_detection AP: 94.753860 86.358948 84.424759
 car_detection_ground AP: 85.699196 80.538277 73.625732
 car_detection_3d AP: 81.882027 70.021523 63.075848
 ```
-![car_detection_fromrgb_maxscore](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_fromrgb_maxscore.png)
+![car_detection_fromrgb_maxscore](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_fromrgb_maxscore.png)
 
 using rgb detection scores
 ```
