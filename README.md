@@ -2,7 +2,6 @@
 A pytorch version of [frustum-pointnets](https://github.com/charlesq34/frustum-pointnets) 
 (Not support Pointnet++ yet)
 
-## Update 2020.3.4
 main function of f-pointnets now:
 train/train_fpointnets.py, 
 train/test_fpointnets.py,
@@ -190,7 +189,7 @@ car_detection AP: 100.000000 100.000000 100.000000
 car_detection_ground AP: 87.663536 85.591621 77.763123
 car_detection_3d AP: 84.790321 74.122635 66.642036
 ```
-![car_detection_3d_from_gt](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_from_gt.png)
+![car_detection_3d_from_gt](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_fromgt.png)
 
 #### Test with rgb detection results
 ```
