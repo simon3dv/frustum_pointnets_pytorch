@@ -190,7 +190,7 @@ car_detection AP: 100.000000 100.000000 100.000000
 car_detection_ground AP: 87.663536 85.591621 77.763123
 car_detection_3d AP: 84.790321 74.122635 66.642036
 ```
-![gt2gt](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_from_gt.png)
+![car_detection_3d_from_gt](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_from_gt.png)
 
 #### Test with rgb detection results
 ```
@@ -204,7 +204,7 @@ car_detection AP: 94.753860 86.358948 84.424759
 car_detection_ground AP: 85.699196 80.538277 73.625732
 car_detection_3d AP: 81.882027 70.021523 63.075848
 ```
-![gt2rgb_maxscore](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_fromrgb_maxscore.png)
+![car_detection_fromrgb_maxscore](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_fromrgb_maxscore.png)
 
 using rgb detection scores
 ```
@@ -212,7 +212,7 @@ car_detection AP: 96.482544 90.305161 87.626389
 car_detection_ground AP: 87.814728 82.850800 75.781403
 car_detection_3d AP: 84.952042 72.118301 64.253830
 ```
-![gt2rgb_rgbscore](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_fromrgb_rgbscore.png)
+![car_detection_3d_fromrgb_rgbscore](https://github.com/simon3dv/frustum_pointnets_pytorch/blob/master/doc/results/car_detection_3d_fromrgb_rgbscore.png)
 
 
 
