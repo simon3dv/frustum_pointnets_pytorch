@@ -2,7 +2,15 @@
 A pytorch version of [frustum-pointnets](https://github.com/charlesq34/frustum-pointnets) 
 (Not support Pointnet++ yet)
 
-## Keep updating, README is false,**don't use it right now**!
+## Update 2020.3.4
+main function of f-pointnets now:
+train/train_fpointnets.py, 
+train/test_fpointnets.py,
+train/provider_fpointnet.py,
+models/frustum_pointnets_v1_old.py
+model_util_old.py
+kitti/*
+
 ## Requirements
 Test on 
 * Ubuntu-18.04
@@ -12,8 +20,9 @@ Test on
 
 
 ## Usage
-### Installation
-Some visulization demos need mayavi,I install mayavi(python3) by:
+### Installation(optional)
+Some visulization demos need mayavi, it would be a little bit difficult to install it.
+I install mayavi(python3) by:
 (ref:http://docs.enthought.com/mayavi/mayavi/installation.html#installing-with-pip) 
 ```angular2
 1. download vtk(https://vtk.org/download/) and compile:
@@ -91,7 +100,7 @@ python nuscenes2kitti/prepare_data.py --gen_train --gen_val --gen_mini --car_onl
 ## train
 ### Kitti
 ```angular2
-CUDA_VISIBLE_DEVICES=0 python train/train_fpointnets.py
+CUDA_VISIBLE_DEVICES=0 python train/train_fpointnets.py --log_dir log
 ```
 ### nuScenes2Kitti
 ```angular2
@@ -101,7 +110,7 @@ CUDA_VISIBLE_DEVICES=0 python train/train_fpointnets.py --dataset nuscenes2kitti
 ## Test
 ### Kitti
 ```angular2
-CUDA_VISIBLE_DEVICES=0 python train/test_fpointnets.py
+CUDA_VISIBLE_DEVICES=0 python train/test_fpointnets.py --model_path <log/.../xx.pth> --output test_results
 train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ test_results
 ```
 
@@ -125,17 +134,84 @@ bbox AP:96.48, 90.31, 87.63
 bev  AP:88.57, 84.78, 76.79
 3d   AP:85.09, 72.11, 64.25
 ```
+
 ### FrustumPointnetv1 with 2D gt box on KITTI(val) Dataset
+(using f-pointnets scores(max positive score of segmentation mask here, check `test.py`))
 ```
-test segmentation accuracy: 0.902415
-test box IoU(ground/3D): 0.800471/0.748862
-test box estimation accuracy (IoU=0.7): 0.776121
-(batch_scores = mask_mean_prob)
+test segmentation accuracy: 0.901991
+test box IoU(ground/3D): 0.796272/0.744235
+test box estimation accuracy (IoU=0.7): 0.766470
+(batch_scores = mask_max_prob)
 car  AP @0.70, 0.70,  0.70:
 bbox AP:100.00,100.00,100.00
-bev  AP:85.76, 80.21, 74.20
-3d   AP:68.41, 63.89, 66.46
+bev  AP:87.66, 85.59, 77.76
+3d   AP:84.79, 74.12, 66.64
 ```
+(test from gt leads to 2~3 AP decrese, because f-pointnets cannot output a good "score")
+
+### Model Time cost:
+train per batch: 6.00ms/32 objects
+
+test per batch: 15.21ms/32 objects
+
+test per object: 135.83ms/object
+
+## More Results(2020.3.7)
+### Train from 2d ground truth
+```python train/train_fpointnets.py --name three```
+```
+**** EPOCH 150 ****
+Epoch 150/150:
+100%|███████████████████████████████████████████████████| 1851/1851 [05:08<00:00,  6.00it/s]
+[150: 1850/1851] train loss: 0.051460
+segmentation accuracy: 0.960588
+box IoU(ground/3D): 0.845676/0.790897
+box estimation accuracy (IoU=0.7): 0.880115
+100%|█████████████████████████████████████████████████████| 392/392 [00:25<00:00, 15.21it/s]
+[150] test loss: 0.106460
+test segmentation accuracy: 0.901991
+test box IoU(ground/3D): 0.796272/0.744235
+test box estimation accuracy (IoU=0.7): 0.766470
+learning rate: 0.000082
+Best Test acc: 0.769261(Epoch 130)
+Time 14.12774204615861 hours
+model saved to log/three_caronly_kitti_2020-03-05-16/three_caronly_kitti_2020-03-05-16/acc0.769261-epoch129.pth
+```
+
+#### Test with 2d ground truth
+```
+python train/test_fpointnets.py --output output/default --model_path log/three_caronly_kitti_2020-03-05-16/three_caronly_kitti_2020-03-05-16/acc0.769261-epoch129.pth
+train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ output/default/
+```
+
+```
+car_detection AP: 100.000000 100.000000 100.000000
+car_detection_ground AP: 87.663536 85.591621 77.763123
+car_detection_3d AP: 84.790321 74.122635 66.642036
+```
+
+
+
+#### Test with rgb detection results
+```
+python train/test_fpointnets.py --output output/gt2rgb --model_path log/three_caronly_kitti_2020-03-05-16/three_caronly_kitti_2020-03-05-16/acc0.769261-epoch129.pth --data_path kitti/frustum_caronly_val_rgb_detection.pickle --from_rgb_det
+train/kitti_eval/evaluate_object_3d_offline dataset/KITTI/object/training/label_2/ output/gt2rgb/
+```
+
+using f-pointnets scores(use max positive score of segmentation mask here, check `test.py`)
+```
+car_detection AP: 94.753860 86.358948 84.424759
+car_detection_ground AP: 85.699196 80.538277 73.625732
+car_detection_3d AP: 81.882027 70.021523 63.075848
+```
+
+using rgb detection scores
+```
+car_detection AP: 96.482544 90.305161 87.626389
+car_detection_ground AP: 87.814728 82.850800 75.781403
+car_detection_3d AP: 84.952042 72.118301 64.253830
+```
+
 
 
 

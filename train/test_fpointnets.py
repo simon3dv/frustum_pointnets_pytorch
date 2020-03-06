@@ -29,7 +29,7 @@ parser.add_argument('--model_path',
 # ex. log/20200121-decay_rate=0.7-decay_step=20_caronly/20200121-decay_rate=0.7-decay_step=20_caronly-acc0.777317-epoch130.pth
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
 parser.add_argument('--output', default='test_results', help='output file/folder name [default: test_results]')
-parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
+parser.add_argument('--data_path', default='kitti/frustum_caronly_val.pickle', help='frustum dataset pickle filepath [default: None]')
 # ex. nuscenes2kitti/frustum_caronly_CAM_FRONT_val.pickle
 parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
 parser.add_argument('--idx_path', default='kitti/image_sets/val.txt',
@@ -343,11 +343,6 @@ def test_one_epoch(model, loader):
 
         heading_prob = np.max(softmax(heading_scores), 1)  # B
         size_prob = np.max(softmax(size_scores), 1)  # B,
-        """
-        batch_scores = heading_prob
-        if mask_mean_prob < 0.1:
-            batch_scores = 0.0
-        """
         mask_max_prob = np.max(batch_seg_prob * batch_seg_mask, 1)
         batch_scores = mask_max_prob
 
@@ -356,8 +351,8 @@ def test_one_epoch(model, loader):
         # batch_scores = mask_mean_prob/3 + heading_prob/3 + size_prob/3
         # batch_scores = np.ones_like(mask_mean_prob) + 0.1
         # batch_scores = heading_prob/2 + size_prob/2
-
         # batch_scores = heading_prob
+
         for j in range(batch_output.shape[0]):
             ps_list.append(batch_data[j, ...])
             seg_list.append(batch_label[j, ...])
@@ -717,8 +712,8 @@ def test_from_rgb_detection(model, loader):
             size_cls_list.append(batch_sclass_pred[j])
             size_res_list.append(batch_sres_pred[j, :])
             rot_angle_list.append(batch_rot_angle[j])
-            score_list.append(batch_scores[j])
-            # score_list.append(batch_rgb_prob[j])
+            # score_list.append(batch_scores[j]) # car_detection_3d AP: 81.882027 70.021523 63.075848
+            score_list.append(batch_rgb_prob[j]) #
             onehot_list.append(batch_one_hot_vec[j])
 
     '''

@@ -20,7 +20,7 @@ import provider_fpointnet as provider
 
 parser = argparse.ArgumentParser()
 ###parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
-parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
+parser.add_argument('--model', default='frustum_pointnets_v1_old_1', help='Model name [default: frustum_pointnets_v1]')
 parser.add_argument('--log_dir', default='log', help='Log dir [default: log]')
 parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 2048]')
 parser.add_argument('--max_epoch', type=int, default=150, help='Epoch to run [default: 201]')
@@ -34,7 +34,7 @@ parser.add_argument('--no_intensity', action='store_true', help='Only use XYZ fo
 parser.add_argument('--restore_model_path', default=None, help='Restore model path e.g. log/model.ckpt [default: None]')
 parser.add_argument('--ckpt',type=str,default=None,help='Pre-trained model file')
 parser.add_argument('--weight_decay', type=float, default=0.0, help='Weight Decay of Adam [default: 1e-4]')
-parser.add_argument('--name', type=str, default='1-', help='tensorboard writer name')
+parser.add_argument('--name', type=str, default='default', help='tensorboard writer name')
 parser.add_argument('--return_all_loss', default=False, action='store_true',help='only return total loss default')
 parser.add_argument('--debug', default=False, action='store_true',help='debug mode')
 parser.add_argument('--objtype', type=str, default='caronly', help='caronly or carpedcyc')
@@ -46,11 +46,11 @@ FLAGS = parser.parse_args()
 
 # Set training configurations
 
-strtime = time.strftime('%Y-%m-%d-%H:%M:%S',time.localtime(time.time()))
+strtime = time.strftime('%Y-%m-%d-%H%M%S',time.localtime(time.time()))
 if 'nuscenes' in FLAGS.dataset:
-    NAME = strtime + '_' + FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + FLAGS.sensor + '_'
+    NAME = FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + FLAGS.sensor + strtime[:13]
 else:
-    NAME = strtime + '_' + FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + strtime
+    NAME = FLAGS.name  + '_' + FLAGS.objtype + '_' + FLAGS.dataset + '_' + strtime[:13]
 EPOCH_CNT = 0
 BATCH_SIZE = FLAGS.batch_size
 NUM_POINT = FLAGS.num_point
@@ -69,11 +69,11 @@ elif FLAGS.objtype == 'caronly':
     n_classes = 1
 MODEL = importlib.import_module(FLAGS.model) # import network module
 MODEL_FILE = os.path.join(ROOT_DIR, 'models', FLAGS.model+'.py')
-LOG_DIR = FLAGS.log_dir
+LOG_DIR = FLAGS.log_dir + '/' + NAME
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 if not os.path.exists(LOG_DIR + '/' + NAME): os.mkdir(LOG_DIR + '/' + NAME)
 os.system('cp %s %s' % (MODEL_FILE, LOG_DIR)) # bkp of model def
-os.system('cp %s %s' % (os.path.join(BASE_DIR, 'train.py'), LOG_DIR))
+os.system('cp %s %s' % (os.path.join(BASE_DIR, 'train_fpointnets.py'), LOG_DIR))
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(FLAGS)+'\n')
 # BN_INIT_DECAY = 0.5
@@ -270,8 +270,8 @@ def train():
     blue = lambda x: '\033[94m' + x + '\033[0m'
 
     # set model
-    if FLAGS.model == 'frustum_pointnets_v1':
-        from frustum_pointnets_v1_old import FrustumPointNetv1
+    if FLAGS.model == 'frustum_pointnets_v1_old_1':
+        from frustum_pointnets_v1_old_1 import FrustumPointNetv1
         FrustumPointNet = FrustumPointNetv1(n_classes=n_classes).cuda()
 
     # load pre-trained model
@@ -295,7 +295,7 @@ def train():
 
     # train
     if os.path.exists('runs/' + NAME):
-        print('name has been existed')
+        log_string('name has been existed')
         shutil.rmtree('runs/' + NAME)
 
     writer = SummaryWriter('runs/' + NAME)
@@ -303,11 +303,11 @@ def train():
     best_iou3d_acc = 0.0
     best_epoch = 1
     best_file = ''
-
+    best_save_pth = ''
     for epoch in range(MAX_EPOCH):
         log_string('**** EPOCH %03d ****' % (epoch + 1))
         sys.stdout.flush()
-        print('Epoch %d/%s:' % (epoch + 1, MAX_EPOCH))
+        log_string('Epoch %d/%s:' % (epoch + 1, MAX_EPOCH))
 
         # record for one epoch
         train_total_loss = 0.0
@@ -468,11 +468,11 @@ def train():
             train_stage1_center_loss /= n_samples
             train_corners_loss /= n_samples
 
-        print('[%d: %d/%d] train loss: %.6f' % \
+        log_string('[%d: %d/%d] train loss: %.6f' % \
               (epoch + 1, i, len(train_dataloader),train_total_loss))
-        print('segmentation accuracy: %.6f'% train_acc )
-        print('box IoU(ground/3D): %.6f/%.6f'% (train_iou2d, train_iou3d))
-        print('box estimation accuracy (IoU=0.7): %.6f'%(train_iou3d_acc))
+        log_string('segmentation accuracy: %.6f'% train_acc )
+        log_string('box IoU(ground/3D): %.6f/%.6f'% (train_iou2d, train_iou3d))
+        log_string('box estimation accuracy (IoU=0.7): %.6f'%(train_iou3d_acc))
 
         # test one epoch
         if FLAGS.return_all_loss:
@@ -492,12 +492,12 @@ def train():
                 = \
                 test_one_epoch(FrustumPointNet,test_dataloader)
 
-        print('[%d] %s loss: %.6f' % \
+        log_string('[%d] %s loss: %.6f' % \
               (epoch + 1, blue('test'), test_total_loss))
-        print('%s segmentation accuracy: %.6f'% (blue('test'),test_acc))
-        print('%s box IoU(ground/3D): %.6f/%.6f'% (blue('test'),test_iou2d, test_iou3d))
-        print('%s box estimation accuracy (IoU=0.7): %.6f'%(blue('test'), test_iou3d_acc))
-        print("learning rate: {:.6f}".format(optimizer.param_groups[0]['lr']))
+        log_string('%s segmentation accuracy: %.6f'% (blue('test'),test_acc))
+        log_string('%s box IoU(ground/3D): %.6f/%.6f'% (blue('test'),test_iou2d, test_iou3d))
+        log_string('%s box estimation accuracy (IoU=0.7): %.6f'%(blue('test'), test_iou3d_acc))
+        log_string("learning rate: {:.6f}".format(optimizer.param_groups[0]['lr']))
         scheduler.step()
 
         if not FLAGS.debug:
@@ -538,12 +538,12 @@ def train():
             best_iou3d_acc = test_iou3d_acc
             best_epoch = epoch + 1
             if epoch > MAX_EPOCH / 5:
-                savepath = LOG_DIR + '/' + NAME + '/%s-acc%04f-epoch%03d.pth' % \
-                           (NAME, test_iou3d_acc, epoch)
-                print('save to:',savepath)
+                savepath = LOG_DIR + '/acc%04f-epoch%03d.pth' % \
+                           (test_iou3d_acc, epoch)
+                log_string('save to:%s'%(savepath))
                 if os.path.exists(best_file):
                     os.remove(best_file)# update to newest best epoch
-                best_file = savepath
+                bestfile = savepath
                 state = {
                     'epoch': epoch + 1,
                     'train_iou3d_acc': train_iou3d_acc,
@@ -552,15 +552,17 @@ def train():
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
                 torch.save(state,savepath)
-                print('Saving model to %s'%savepath)
-        print('Best Test acc: %f(Epoch %d)' % (best_iou3d_acc, best_epoch))
+                log_string('Saving model to %s'%(savepath))
+                best_save_path = savepath
+        log_string('Best Test acc: %f(Epoch %d)' % (best_iou3d_acc, best_epoch))
 
         # Save the variables to disk.
         #if epoch % 10 == 0:
         #    save_path = saver.save(sess, os.path.join(LOG_DIR, "model.ckpt"))
         #    log_string("Model saved in file: %s" % save_path)
-    print("Time {} hours".format(
+    log_string("Time {} hours".format(
         float(time.perf_counter()-start)/3600))
+    log_string('model saved to %s' % (best_save_path))
     writer.close()
 
 if __name__ == "__main__":

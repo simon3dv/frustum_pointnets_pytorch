@@ -91,7 +91,7 @@ def point_cloud_masking(pts, logits, xyz_only=True):
     pts_xyz = pts[:, :3, :]  # (bs,3,n)
     mask_xyz_mean = (mask.repeat(1, 3, 1) * pts_xyz).sum(2,keepdim=True)  # (bs, 3, 1)
     mask_xyz_mean = mask_xyz_mean / torch.clamp(mask_count,min=1)  # (bs, 3, 1)
-    mask = mask.squeeze()  # (bs,n)
+    mask = mask.view(bs,-1)  # (bs,n)
     pts_xyz_stage1 = pts_xyz - mask_xyz_mean.repeat(1, 1, n_pts)
 
     if xyz_only:
