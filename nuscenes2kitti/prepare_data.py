@@ -688,7 +688,66 @@ def extract_frustum_data(idx_filename, split, sensor, output_filename, viz=False
                           colormap='gnuplot', scale_factor=1, figure=fig)
             raw_input()
 
+def print_npts_statistics(idx_filename,type_whitelist=['Car'],split='v1.0-mini'):
+    dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR,'dataset/nuScenes2KITTI'),split=split, sensor_list=['CAM_FRONT'])
 
+    x = [0,50,100,150,200,250,300,350,400,450,500,600,700,800,900,1000,10000]
+    x = np.array(x).astype(np.int32)
+    y = np.zeros(x.shape).astype(np.int32)
+    data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
+    for data_idx in tqdm(data_idx_list):
+        calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
+        pc_velo = dataset.get_lidar(data_idx)
+        pc_global = calib.project_lidar_to_global(pc_velo[:, 0:3].T)
+        pc_rect = calib.project_global_to_cam(pc_global, sensor).T
+        objects = dataset.get_label_objects(sensor, data_idx)
+        for obj_idx in range(len(objects)):
+            obj = objects[obj_idx]
+            if obj.type not in type_whitelist:continue
+
+            box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[obj_idx], getattr(calib, sensor))
+            pts_in_box3d, _ = extract_pc_in_box3d(pc_rect, box3d_pts_3d)
+            npts = len(pts_in_box3d)
+            for k in range(1, len(x)-1):
+                if npts < x[k]:
+                    y[k-1] += 1
+                    break
+    np.savetxt('kitti_npts_info', (x, y))
+
+def print_npts_statistics_v2(idx_filename, type_whitelist=['Car'], split='train', sensor='CAM_FRONT'):
+    dataset = nuscenes2kitti_object(os.path.join(ROOT_DIR, 'dataset/nuScenes2KITTI'), split=split,
+                                    sensor_list=['CAM_FRONT'])
+    N = 10000
+    x = np.zeros(N)
+    data_idx_list = [int(line.rstrip()) for line in open(idx_filename)]
+    for data_idx in tqdm(data_idx_list):
+        calib = dataset.get_calibration(data_idx) # 3 by 4 matrix
+        pc_velo = dataset.get_lidar(data_idx)
+        pc_global = calib.project_lidar_to_global(pc_velo[:, 0:3].T)
+        pc_rect = calib.project_global_to_cam(pc_global, sensor).T
+        objects = dataset.get_label_objects(sensor, data_idx)
+        for obj_idx in range(len(objects)):
+            obj = objects[obj_idx]
+            if obj.type not in type_whitelist:continue
+
+            box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(objects[obj_idx], getattr(calib, sensor))
+            pts_in_box3d, _ = extract_pc_in_box3d(pc_rect, box3d_pts_3d)
+            npts = len(pts_in_box3d)
+            if npts >= 10000:continue
+            x[npts] += 1
+    tot = np.sum(x)
+    prefix = np.zeros(N)
+    prefix[0] = x[0]
+    now = 0.1
+    step = 0.1
+    y = []
+    for i in range(1,N):
+        prefix[i] = prefix[i-1] + x[i]
+        if prefix[i] > now*tot:
+            y.append(i)
+            now += step
+    print(y)
+    np.savetxt('kitti_npts_info_v2', (y), fmt='%d')
 def get_box3d_dim_statistics(idx_filename):
     ''' Collect and dump 3D bounding box statistics '''
     pass
@@ -746,6 +805,10 @@ def print_box3d_statistics(idx_filename,type_whitelist=['Car','Pedestrian','Cycl
     training
     
     v1.0-trainval
+    mean points in 3d box: (-0.9,1.0,29.8)
+    mean points related to box center: (0.0,-0.6,-1.2)
+    mean size: (4.7,2.0,1.7)
+    mean ry: (-0.12)
     """
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -755,6 +818,7 @@ if __name__ == '__main__':
                         help='Run demo_object.')
     parser.add_argument('--show_stats', action='store_true',
                         help='Run print_box3d_statistics.')
+    parser.add_argument('--npts_stats', action='store_true', help='npts_stats.')
     parser.add_argument('--data_idx', type=int, default=0,
                         help='data_idx for demo.')
     parser.add_argument('--obj_idx', type=int, default=-1,
@@ -807,6 +871,12 @@ if __name__ == '__main__':
 
     if args.demo_object:
         demo_object(data_idx=args.data_idx, object_idx=args.obj_idx)
+
+    if args.npts_stats:
+        imagesets_file = os.path.join(BASE_DIR, 'image_sets/v1.0-mini.txt')
+        print_npts_statistics_v2(imagesets_file, type_whitelist, 'v1.0-mini')
+        imagesets_file = os.path.join(BASE_DIR, 'image_sets/v1.0-trainval.txt')
+        print_npts_statistics_v2(imagesets_file, type_whitelist, 'v1.0-trainval')
 
     if args.show_stats:
         print_box3d_statistics('nuscenes2kitti/image_sets/v1.0-mini.txt',
